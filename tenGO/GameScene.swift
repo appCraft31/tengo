@@ -553,7 +553,6 @@ class GameScene: SKScene {
             let duration = min(0.08 + 0.04 * Double(rowsDropped), 0.4)
             maxDuration = max(maxDuration, duration)
             m.node.playFallAnimation(toY: gridOriginY + CGFloat(m.toRow) * GameScene.cellSize, duration: duration, completion: {})
-            SoundManager.shared.playFall()
         }
 
         if movements.isEmpty {

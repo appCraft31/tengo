@@ -51,43 +51,39 @@ final class SoundManager {
         guard !isMuted else { return }
         let freq = noteMap[value] ?? 440.0
         pathFrequencies = [freq]
-        piano(freq: freq, amp: 0.38, duration: 1.8)
+        piano(freq: freq, amp: 0.38, duration: 0.5)
     }
 
-    /// Bulle ajoutée au chemin — joue la note + résonance douce des précédentes
+    /// Bulle ajoutée au chemin — joue la note + résonance très courte des précédentes
     func playConnect(value: Int) {
         guard !isMuted else { return }
         let freq = noteMap[value] ?? 440.0
         pathFrequencies.append(freq)
-        // Note principale
-        piano(freq: freq, amp: 0.32, duration: 1.6)
-        // Résonance douce de toutes les notes précédentes → l'accord se construit
+        piano(freq: freq, amp: 0.32, duration: 0.45)
         for f in pathFrequencies.dropLast() {
-            piano(freq: f, amp: 0.10, duration: 1.2)
+            piano(freq: f, amp: 0.07, duration: 0.30)
         }
     }
 
-    /// Backtrack — retire la dernière note
+    /// Backtrack — bref ping de la note précédente
     func playBacktrack() {
         guard !isMuted else { return }
         if !pathFrequencies.isEmpty { pathFrequencies.removeLast() }
-        // Son court et doux pour signaler le recul
         if let freq = pathFrequencies.last {
-            piano(freq: freq, amp: 0.14, duration: 0.8)
+            piano(freq: freq, amp: 0.14, duration: 0.35)
         }
     }
 
-    /// Combo — joue l'accord entier simultanément puis réinitialise
+    /// Combo — strum rapide de l'accord puis réinitialise
     func playCombo() {
         guard !isMuted else { return }
         let chord = pathFrequencies
         pathFrequencies = []
-        let baseAmp: Float = min(0.28, 0.50 / Float(max(chord.count, 1)))
+        let baseAmp: Float = min(0.30, 0.52 / Float(max(chord.count, 1)))
         for (i, freq) in chord.enumerated() {
-            // Léger échelonnement (strum) : 18 ms entre chaque note
-            let delay = Double(i) * 0.018
+            let delay = Double(i) * 0.012   // 12 ms entre chaque note — strum net
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.piano(freq: freq, amp: baseAmp, duration: 2.5)
+                self.piano(freq: freq, amp: baseAmp, duration: 0.9)
             }
         }
     }
