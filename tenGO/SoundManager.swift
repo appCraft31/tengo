@@ -26,11 +26,26 @@ final class SoundManager {
     }
 
     private init() {
+        setupAudioSession()
         reverb.loadFactoryPreset(.mediumHall2)
         reverb.wetDryMix = 45
         engine.attach(reverb)
         engine.connect(reverb, to: engine.mainMixerNode, format: nil)
-        try? engine.start()
+        do {
+            try engine.start()
+        } catch {
+            print("[SoundManager] Erreur démarrage engine : \(error)")
+        }
+    }
+
+    private func setupAudioSession() {
+        do {
+            let session = AVAudioSession.sharedInstance()
+            try session.setCategory(.ambient, mode: .default, options: .mixWithOthers)
+            try session.setActive(true)
+        } catch {
+            print("[SoundManager] Erreur AVAudioSession : \(error)")
+        }
     }
 
     // MARK: - Interface publique
