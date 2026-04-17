@@ -19,7 +19,6 @@ class GameViewController: UIViewController {
 
         guard let skView = self.view as? SKView else { return }
 
-        MobileAds.shared.start(completionHandler: nil)
         #if DEBUG
         MobileAds.shared.requestConfiguration.testDeviceIdentifiers = ["052b09f5dbca790a5d0b42140dcfa503"]
         #endif
@@ -32,7 +31,11 @@ class GameViewController: UIViewController {
         skView.showsFPS = false
         skView.showsNodeCount = false
 
-        setupBanner()
+        MobileAds.shared.start { [weak self] _ in
+            DispatchQueue.main.async {
+                self?.setupBanner()
+            }
+        }
 
         NotificationCenter.default.addObserver(
             self,
