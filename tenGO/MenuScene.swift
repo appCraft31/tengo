@@ -91,6 +91,7 @@ class MenuScene: SKScene {
 
         addMenuButton(text: "Classement", name: "classement",
                       width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
+
     }
 
     private func addLogo(atY y: CGFloat) {
@@ -107,7 +108,7 @@ class MenuScene: SKScene {
         // Bulle colorée au centre (rose = index 6)
         let dotRadius: CGFloat = 14
         let dot = SKShapeNode(circleOfRadius: dotRadius)
-        dot.fillColor = bubbleColors[6]
+        dot.fillColor = bubbleColors[Int.random(in: 0..<bubbleColors.count)]
         dot.strokeColor = .clear
         dot.position = CGPoint(x: 0, y: y + 4)
         dot.zPosition = 1
@@ -174,8 +175,12 @@ class MenuScene: SKScene {
             case "newGame":
                 animateTap(node.parent ?? node)
                 run(SKAction.wait(forDuration: 0.12)) {
-                    GameState.clear()
-                    self.navigateToGame(savedState: nil)
+                    if !UserDefaults.standard.bool(forKey: "hasSeenTutorial") {
+                        self.navigateToTutorial()
+                    } else {
+                        GameState.clear()
+                        self.navigateToGame(savedState: nil)
+                    }
                 }
                 return
             case "continuer":
@@ -212,6 +217,12 @@ class MenuScene: SKScene {
 
     private func navigateToLeaderboard() {
         let scene = LeaderboardScene(size: size)
+        scene.scaleMode = .aspectFill
+        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+    }
+
+    private func navigateToTutorial() {
+        let scene = TutorialScene(size: size)
         scene.scaleMode = .aspectFill
         view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
     }
