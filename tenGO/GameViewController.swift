@@ -19,8 +19,10 @@ class GameViewController: UIViewController {
 
         guard let skView = self.view as? SKView else { return }
 
-        // Initialiser le SDK AdMob
         MobileAds.shared.start(completionHandler: nil)
+        #if DEBUG
+        MobileAds.shared.requestConfiguration.testDeviceIdentifiers = ["052b09f5dbca790a5d0b42140dcfa503"]
+        #endif
 
         let scene = MenuScene(size: CGSize(width: 750, height: 1334))
         scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
@@ -44,8 +46,13 @@ class GameViewController: UIViewController {
 
     private func setupBanner() {
         let banner = BannerView(adSize: AdSizeBanner)
+        #if DEBUG
+        banner.adUnitID = "ca-app-pub-3940256099942544/2934735716"
+        #else
         banner.adUnitID = "ca-app-pub-4352408747876735/9831578000"
+        #endif
         banner.rootViewController = self
+        banner.delegate = self
         banner.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(banner)
 
@@ -80,3 +87,14 @@ class GameViewController: UIViewController {
     }
 }
 
+// MARK: - BannerViewDelegate
+
+extension GameViewController: BannerViewDelegate {
+    func bannerViewDidReceiveAd(_ bannerView: BannerView) {
+        print("[AdMob] Bannière chargée avec succès")
+    }
+
+    func bannerView(_ bannerView: BannerView, didFailToReceiveAdWithError error: Error) {
+        print("[AdMob] Échec chargement bannière : \(error.localizedDescription)")
+    }
+}
