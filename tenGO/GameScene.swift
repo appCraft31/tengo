@@ -353,7 +353,8 @@ class GameScene: SKScene {
 
         currentPath = [coord]
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
-        SoundManager.shared.playSelect()
+        let selectValue = gridModel.cells[coord.row][coord.col]?.value ?? 1
+        SoundManager.shared.playSelect(value: selectValue)
         updateSumLabel()
         updatePathLine()
     }
@@ -373,6 +374,7 @@ class GameScene: SKScene {
             if coord.row == prev.row && coord.col == prev.col {
                 bubbleNodes[last.row][last.col]?.setSelected(false)
                 currentPath.removeLast()
+                SoundManager.shared.playBacktrack()
                 updateSumLabel()
                 updatePathLine()
                 return
@@ -392,7 +394,7 @@ class GameScene: SKScene {
         currentPath.append(coord)
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
         tapFeedback.impactOccurred()
-        SoundManager.shared.playConnect(pathIndex: currentPath.count - 1)
+        SoundManager.shared.playConnect(value: bubble.value)
         updateSumLabel()
         updatePathLine()
     }
@@ -443,6 +445,7 @@ class GameScene: SKScene {
         currentPath = []
         pathLineNode?.removeFromParent()
         pathLineNode = nil
+        SoundManager.shared.cancelPath()
     }
 
     // MARK: - Scoring
