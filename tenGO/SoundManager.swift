@@ -18,11 +18,29 @@ final class SoundManager {
     private let sr     = 44100.0
 
     private var pathFrequencies: [Double] = []
+    private var currentScale: [Double] = []
 
-    // Pentatonique majeure — Do Ré Mi Sol La × 2 octaves
-    private let pentatonic: [Double] = [
-        261.6, 293.7, 329.6, 392.0, 440.0,
-        523.3, 587.3, 659.3, 784.0, 880.0
+    // Demi-tons depuis la tonique, gammes zen (toutes harmonieusement stables)
+    private let scales: [[Int]] = [
+        [0, 2, 4, 7, 9],    // Pentatonique majeure — brillante
+        [0, 3, 5, 7, 10],   // Pentatonique mineure — contemplative
+        [0, 2, 3, 7, 8],    // Hirajoshi (Japon) — méditative
+        [0, 2, 3, 7, 9],    // Kumoi (Japon) — sereine
+        [0, 1, 5, 7, 10],   // In Sen (Japon) — mystérieuse
+        [0, 2, 4, 7, 11]    // Hemitonic pentatonic — douce lumineuse
+    ]
+
+    // Toniques disponibles (Hz) — registre confortable, chaleur médium
+    private let roots: [Double] = [
+        196.0,  // G3
+        220.0,  // A3
+        233.1,  // A#3
+        246.9,  // B3
+        261.6,  // C4
+        277.2,  // C#4
+        293.7,  // D4
+        311.1,  // D#4
+        329.6   // E4
     ]
 
     var isMuted: Bool {
@@ -39,15 +57,16 @@ final class SoundManager {
 
     func playSelect(value: Int) {
         guard !isMuted else { return }
-        let freq = pentatonic[0]
+        pickNewScale()
+        let freq = currentScale[0]
         pathFrequencies = [freq]
         pluck(freq: freq, amp: 0.38, duration: 0.9, damping: 0.994, brightness: 0.55)
     }
 
     func playConnect(value: Int) {
         guard !isMuted else { return }
-        let idx = min(pathFrequencies.count, pentatonic.count - 1)
-        let freq = pentatonic[idx]
+        let idx = min(pathFrequencies.count, currentScale.count - 1)
+        let freq = currentScale[idx]
         pathFrequencies.append(freq)
         pluck(freq: freq, amp: 0.35, duration: 0.8, damping: 0.993, brightness: 0.50)
     }
@@ -84,6 +103,34 @@ final class SoundManager {
     }
 
     func cancelPath() { pathFrequencies = [] }
+
+    // MARK: - Sélection dynamique de gamme
+
+    private var lastScaleKey: Int = -1
+
+    /// Tire une tonique et une gamme au hasard ; évite de rejouer la même
+    private func pickNewScale() {
+        var key: Int
+        repeat {
+            let r = Int.random(in: 0..<roots.count)
+            let s = Int.random(in: 0..<scales.count)
+            key = r * 100 + s
+        } while key == lastScaleKey && roots.count * scales.count > 1
+        lastScaleKey = key
+
+        let root = roots[key / 100]
+        let offsets = scales[key % 100]
+
+        // Construit 2 octaves : donne 10 notes pour un chemin long
+        var notes: [Double] = []
+        for octave in 0..<2 {
+            for offset in offsets {
+                let semitones = Double(octave * 12 + offset)
+                notes.append(root * pow(2.0, semitones / 12.0))
+            }
+        }
+        currentScale = notes
+    }
 
     func playWin() {
         guard !isMuted else { return }
