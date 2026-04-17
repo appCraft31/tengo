@@ -6,8 +6,15 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		4774EF91E70E4EC8FD245454 /* Pods_tenGO.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 248CCA31B7BAB5D961E2BCBC /* Pods_tenGO.framework */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		248CCA31B7BAB5D961E2BCBC /* Pods_tenGO.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_tenGO.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		378E09672F923D1800C1AF40 /* tenGO.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = tenGO.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		6118FE8A70E0B9ED8B9E823D /* Pods-tenGO.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-tenGO.debug.xcconfig"; path = "Target Support Files/Pods-tenGO/Pods-tenGO.debug.xcconfig"; sourceTree = "<group>"; };
+		6136CE08528BFA2696BA3BAC /* Pods-tenGO.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-tenGO.release.xcconfig"; path = "Target Support Files/Pods-tenGO/Pods-tenGO.release.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -23,6 +30,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				4774EF91E70E4EC8FD245454 /* Pods_tenGO.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -34,6 +42,8 @@
 			children = (
 				378E09692F923D1800C1AF40 /* tenGO */,
 				378E09682F923D1800C1AF40 /* Products */,
+				F7C0ACBC08A8C410C418946C /* Pods */,
+				FB32EF1189BDF5726CAE364D /* Frameworks */,
 			);
 			sourceTree = "<group>";
 		};
@@ -45,6 +55,23 @@
 			name = Products;
 			sourceTree = "<group>";
 		};
+		F7C0ACBC08A8C410C418946C /* Pods */ = {
+			isa = PBXGroup;
+			children = (
+				6118FE8A70E0B9ED8B9E823D /* Pods-tenGO.debug.xcconfig */,
+				6136CE08528BFA2696BA3BAC /* Pods-tenGO.release.xcconfig */,
+			);
+			path = Pods;
+			sourceTree = "<group>";
+		};
+		FB32EF1189BDF5726CAE364D /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				248CCA31B7BAB5D961E2BCBC /* Pods_tenGO.framework */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -52,9 +79,11 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 378E097E2F923D1900C1AF40 /* Build configuration list for PBXNativeTarget "tenGO" */;
 			buildPhases = (
+				4BC1969A6230651BCC3023F2 /* [CP] Check Pods Manifest.lock */,
 				378E09632F923D1800C1AF40 /* Sources */,
 				378E09642F923D1800C1AF40 /* Frameworks */,
 				378E09652F923D1800C1AF40 /* Resources */,
+				C463011D8C294C54C33DB02C /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -64,8 +93,6 @@
 				378E09692F923D1800C1AF40 /* tenGO */,
 			);
 			name = tenGO;
-			packageProductDependencies = (
-			);
 			productName = tenGO;
 			productReference = 378E09672F923D1800C1AF40 /* tenGO.app */;
 			productType = "com.apple.product-type.application";
@@ -113,6 +140,52 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4BC1969A6230651BCC3023F2 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-tenGO-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
+		C463011D8C294C54C33DB02C /* [CP] Copy Pods Resources */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-tenGO/Pods-tenGO-resources-${CONFIGURATION}-input-files.xcfilelist",
+			);
+			inputPaths = (
+			);
+			name = "[CP] Copy Pods Resources";
+			outputFileListPaths = (
+				"${PODS_ROOT}/Target Support Files/Pods-tenGO/Pods-tenGO-resources-${CONFIGURATION}-output-files.xcfilelist",
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-tenGO/Pods-tenGO-resources.sh\"\n";
+			showEnvVarsInLog = 0;
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		378E09632F923D1800C1AF40 /* Sources */ = {
@@ -248,6 +321,7 @@
 		};
 		378E097F2F923D1900C1AF40 /* Debug */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 6118FE8A70E0B9ED8B9E823D /* Pods-tenGO.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -255,6 +329,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JDKABK93UH;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_GADApplicationIdentifier = "ca-app-pub-4352408747876735~9718003723";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;
@@ -280,6 +355,7 @@
 		};
 		378E09802F923D1900C1AF40 /* Release */ = {
 			isa = XCBuildConfiguration;
+			baseConfigurationReference = 6136CE08528BFA2696BA3BAC /* Pods-tenGO.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
@@ -287,6 +363,7 @@
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = JDKABK93UH;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_GADApplicationIdentifier = "ca-app-pub-4352408747876735~9718003723";
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchStoryboardName = LaunchScreen;
 				INFOPLIST_KEY_UIMainStoryboardFile = Main;

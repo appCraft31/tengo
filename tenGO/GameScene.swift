@@ -96,6 +96,7 @@ class GameScene: SKScene {
         repositionBottomRow(in: view)
         tapFeedback.prepare()
         successFeedback.prepare()
+        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     private func repositionBottomRow(in view: SKView) {

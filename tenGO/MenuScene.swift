@@ -25,6 +25,7 @@ class MenuScene: SKScene {
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
         setupBackground()
         setupUI()
+        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
     }
 
     // MARK: - Fond animé

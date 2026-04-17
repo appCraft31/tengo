@@ -36,6 +36,7 @@ class LeaderboardScene: SKScene {
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
         setupBackground()
         setupUI()
+        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     // MARK: - Fond animé
@@ -85,13 +86,29 @@ class LeaderboardScene: SKScene {
         let scores = GameState.highScores()
 
         if scores.isEmpty {
-            let empty = SKLabelNode(text: "Aucune partie jouée")
-            empty.fontName = "AvenirNext-UltraLight"
-            empty.fontSize = 20
-            empty.fontColor = UIColor(white: 0.55, alpha: 1)
+            let emoji = SKLabelNode(text: "✦")
+            emoji.fontName = "AvenirNext-UltraLight"
+            emoji.fontSize = 36
+            emoji.fontColor = UIColor(white: 0.65, alpha: 1)
+            emoji.verticalAlignmentMode = .center
+            emoji.position = CGPoint(x: 0, y: 60)
+            addChild(emoji)
+
+            let empty = SKLabelNode(text: "Ton premier score t'attend.")
+            empty.fontName = "AvenirNext-Medium"
+            empty.fontSize = 22
+            empty.fontColor = UIColor(white: 0.32, alpha: 1)
             empty.verticalAlignmentMode = .center
             empty.position = CGPoint(x: 0, y: 0)
             addChild(empty)
+
+            let sub = SKLabelNode(text: "Lance une partie et reviens briller ici.")
+            sub.fontName = "AvenirNext-UltraLight"
+            sub.fontSize = 17
+            sub.fontColor = UIColor(white: 0.55, alpha: 1)
+            sub.verticalAlignmentMode = .center
+            sub.position = CGPoint(x: 0, y: -34)
+            addChild(sub)
         } else {
             addTopScore(scores[0], atY: topY - 230)
             let rest = Array(scores.dropFirst().prefix(6))
