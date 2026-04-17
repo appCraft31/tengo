@@ -60,10 +60,14 @@ class GameScene: SKScene {
     private var scoreBubbleNode: SKNode!
     private var restartBubbleNode: SKNode!
 
+    // MARK: - Haptics
+    private let tapFeedback    = UIImpactFeedbackGenerator(style: .light)
+    private let successFeedback = UIImpactFeedbackGenerator(style: .medium)
+
     // MARK: - UI nodes
 
     private var scoreLabel: SKLabelNode!
-    private var sumLabel: SKLabelNode!
+    private var sumLabel: SKLabelNode? // unused — somme masquée volontairement
     private var messageLabel: SKLabelNode!
     private var restartButton: SKLabelNode!
 
@@ -81,6 +85,26 @@ class GameScene: SKScene {
             scoreLabel.text = "\(score)"
         }
         setupGrid()
+    }
+
+    override func didMove(to view: SKView) {
+        repositionBottomRow(in: view)
+        tapFeedback.prepare()
+        successFeedback.prepare()
+    }
+
+    private func repositionBottomRow(in view: SKView) {
+        // Calcule la hauteur de scène réellement visible selon l'écran (aspectFill)
+        let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
+        let visibleBottom = -(view.bounds.height / scale) / 2
+
+        let gridEdgeBottom = gridBottom - BubbleNode.bubbleRadius
+        let available = gridEdgeBottom - visibleBottom
+        let rowY = visibleBottom + available / 2
+
+        homeBubbleNode.position.y  = rowY
+        scoreBubbleNode.position.y = rowY
+        restartBubbleNode.position.y = rowY
     }
 
     // MARK: - Background
@@ -125,20 +149,36 @@ class GameScene: SKScene {
     }
 
     private func setupUI() {
-        let titleLabel = SKLabelNode(text: "TEN·GO")
-        titleLabel.fontName = "AvenirNext-Heavy"
-        titleLabel.fontSize = 48
-        titleLabel.fontColor = UIColor(white: 0.3, alpha: 1)
-        titleLabel.position = CGPoint(x: 0, y: gridTop + 95)
-        addChild(titleLabel)
+        let logoY = gridTop + 95
 
-        sumLabel = SKLabelNode(text: "")
-        sumLabel.fontName = "AvenirNext-Medium"
-        sumLabel.fontSize = 30
-        sumLabel.fontColor = UIColor(white: 0.45, alpha: 1)
-        sumLabel.position = CGPoint(x: 0, y: gridTop + 50)
-        sumLabel.isHidden = true
-        addChild(sumLabel)
+        let ten = SKLabelNode(text: "TEN")
+        ten.fontName = "AvenirNext-Heavy"
+        ten.fontSize = 48
+        ten.fontColor = UIColor(white: 0.28, alpha: 1)
+        ten.verticalAlignmentMode = .center
+        ten.horizontalAlignmentMode = .right
+        ten.position = CGPoint(x: -14, y: logoY)
+        addChild(ten)
+
+        let dot = SKShapeNode(circleOfRadius: 11)
+        dot.fillColor = bubbleColors[Int.random(in: 0..<bubbleColors.count)]
+        dot.strokeColor = .clear
+        dot.position = CGPoint(x: 0, y: logoY + 3)
+        dot.zPosition = 1
+        addChild(dot)
+        dot.run(SKAction.repeatForever(SKAction.sequence([
+            SKAction.scale(to: 1.15, duration: 1.4),
+            SKAction.scale(to: 0.90, duration: 1.4)
+        ])))
+
+        let go = SKLabelNode(text: "GO")
+        go.fontName = "AvenirNext-Heavy"
+        go.fontSize = 48
+        go.fontColor = UIColor(white: 0.28, alpha: 1)
+        go.verticalAlignmentMode = .center
+        go.horizontalAlignmentMode = .left
+        go.position = CGPoint(x: 14, y: logoY)
+        addChild(go)
 
         messageLabel = SKLabelNode(text: "")
         messageLabel.fontName = "AvenirNext-Heavy"
@@ -324,6 +364,7 @@ class GameScene: SKScene {
 
         currentPath.append(coord)
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
+        tapFeedback.impactOccurred()
         updateSumLabel()
         updatePathLine()
     }
@@ -331,6 +372,7 @@ class GameScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard !isAnimating, !currentPath.isEmpty else { return }
         if gridModel.pathSum(currentPath) == 10 {
+            successFeedback.impactOccurred()
             commitPath()
         } else {
             cancelPath()
@@ -343,18 +385,7 @@ class GameScene: SKScene {
 
     // MARK: - Path
 
-    private func updateSumLabel() {
-        if currentPath.isEmpty {
-            sumLabel.isHidden = true
-            return
-        }
-        let sum = gridModel.pathSum(currentPath)
-        sumLabel.isHidden = false
-        sumLabel.text = "\(sum)"
-        sumLabel.fontColor = sum == 10
-            ? UIColor(red: 0.3, green: 0.7, blue: 0.4, alpha: 1)
-            : UIColor(white: 0.45, alpha: 1)
-    }
+    private func updateSumLabel() { /* somme masquée — l'utilisateur calcule lui-même */ }
 
     private func updatePathLine() {
         pathLineNode?.removeFromParent()
@@ -384,7 +415,6 @@ class GameScene: SKScene {
         currentPath = []
         pathLineNode?.removeFromParent()
         pathLineNode = nil
-        sumLabel.isHidden = true
     }
 
     // MARK: - Scoring
@@ -442,7 +472,6 @@ class GameScene: SKScene {
         isAnimating = true
         pathLineNode?.removeFromParent()
         pathLineNode = nil
-        sumLabel.isHidden = true
 
         let points = scoreForPath(length: currentPath.count)
         let lastCoord = currentPath.last!
