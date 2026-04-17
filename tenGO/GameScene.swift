@@ -60,6 +60,11 @@ class GameScene: SKScene {
     private var scoreBubbleNode: SKNode!
     private var restartBubbleNode: SKNode!
 
+    // MARK: - Stats partie
+    private var combosCreated = 0
+    private var longestChain = 0
+    private var isWinState = false
+
     // MARK: - Haptics
     private let tapFeedback    = UIImpactFeedbackGenerator(style: .light)
     private let successFeedback = UIImpactFeedbackGenerator(style: .medium)
@@ -311,6 +316,26 @@ class GameScene: SKScene {
             return
         }
 
+        // Boutons dans le panel game over
+        if gameOverPanel != nil {
+            for node in nodes(at: point) {
+                let name = node.name ?? node.parent?.name
+                if name == "replayBtn" {
+                    node.parent?.run(SKAction.sequence([
+                        SKAction.scale(to: 0.93, duration: 0.07),
+                        SKAction.scale(to: 1.0, duration: 0.1)
+                    ]))
+                    run(SKAction.wait(forDuration: 0.12)) { [weak self] in self?.resetGame() }
+                    return
+                }
+                if name == "homePanelBtn" {
+                    run(SKAction.wait(forDuration: 0.08)) { [weak self] in self?.goBackToMenu() }
+                    return
+                }
+            }
+            return  // bloquer le reste du touch si panel visible
+        }
+
         // Bulle restart — toujours réactive
         let dist = hypot(point.x - restartBubbleNode.position.x, point.y - restartBubbleNode.position.y)
         if dist < 55 {
@@ -477,6 +502,8 @@ class GameScene: SKScene {
         let lastCoord = currentPath.last!
         let popupOrigin = scenePos(row: lastCoord.row, col: lastCoord.col)
         let pathCopy = currentPath
+        combosCreated += 1
+        longestChain = max(longestChain, currentPath.count)
         currentPath = []
 
         score += points
@@ -542,106 +569,213 @@ class GameScene: SKScene {
     // MARK: - Win / Lose
 
     private func triggerWin() {
+        isWinState = true
         let bonus = 1000
         score += bonus
         updateScoreLabel()
         showScorePopup(points: bonus, at: CGPoint(x: 0, y: 50))
-
-        backgroundColor = UIColor(red: 0.97, green: 0.96, blue: 0.87, alpha: 1)
-        messageLabel.text = "Parfait !  \(score) pts"
-        messageLabel.setScale(0.1)
-        messageLabel.isHidden = false
-        messageLabel.run(SKAction.sequence([
-            SKAction.wait(forDuration: 0.3),
-            SKAction.scale(to: 1.15, duration: 0.22),
-            SKAction.scale(to: 1.0, duration: 0.1)
-        ]))
         GameState.addScore(score)
         GameState.clear()
-        // isAnimating stays true: only restart bubble re-enables play
+        run(SKAction.wait(forDuration: 0.5)) { [weak self] in
+            self?.showGameOverPanel()
+        }
     }
 
     private func triggerLose() {
+        isWinState = false
         let shake = SKAction.sequence([
-            SKAction.moveBy(x: 8, y: 0, duration: 0.05),
+            SKAction.moveBy(x: 8,  y: 0, duration: 0.05),
             SKAction.moveBy(x: -16, y: 0, duration: 0.05),
-            SKAction.moveBy(x: 16, y: 0, duration: 0.05),
-            SKAction.moveBy(x: -8, y: 0, duration: 0.05)
+            SKAction.moveBy(x: 16,  y: 0, duration: 0.05),
+            SKAction.moveBy(x: -8,  y: 0, duration: 0.05)
         ])
         for row in 0..<GridModel.rows {
-            for col in 0..<GridModel.cols {
-                bubbleNodes[row][col]?.run(shake)
-            }
+            for col in 0..<GridModel.cols { bubbleNodes[row][col]?.run(shake) }
         }
-
         run(SKAction.sequence([
             SKAction.wait(forDuration: 0.35),
             SKAction.run { [weak self] in
                 guard let self = self else { return }
-                // Estomper les bulles restantes
                 for row in 0..<GridModel.rows {
                     for col in 0..<GridModel.cols {
-                        self.bubbleNodes[row][col]?.run(
-                            SKAction.fadeAlpha(to: 0.15, duration: 0.4)
-                        )
+                        self.bubbleNodes[row][col]?.run(SKAction.fadeAlpha(to: 0.12, duration: 0.4))
                     }
                 }
                 GameState.addScore(self.score)
                 GameState.clear()
-                self.showGameOverPanel()
-                // isAnimating stays true
-            }
+            },
+            SKAction.wait(forDuration: 0.5),
+            SKAction.run { [weak self] in self?.showGameOverPanel() }
         ]))
     }
 
     private func showGameOverPanel() {
+        let panelW: CGFloat = 500
+        let panelH: CGFloat = 480
+        let cornerR: CGFloat = 36
+
+        // Overlay plein écran pour noyer la grille
+        let overlay = SKShapeNode(rectOf: CGSize(width: size.width * 2, height: size.height * 2))
+        overlay.fillColor = UIColor(white: 0.0, alpha: 0.32)
+        overlay.strokeColor = .clear
+        overlay.position = .zero
+        overlay.zPosition = 14
+        overlay.alpha = 0
+        addChild(overlay)
+        overlay.run(SKAction.fadeAlpha(to: 1, duration: 0.3))
+
         let panel = SKNode()
-        panel.position = CGPoint(x: 0, y: 20)
+        panel.position = CGPoint(x: 0, y: 0)
         panel.zPosition = 15
         panel.alpha = 0
         gameOverPanel = panel
+        addChild(panel)
 
-        // Fond doux
-        let bg = SKShapeNode(rectOf: CGSize(width: 320, height: 210), cornerRadius: 24)
-        bg.fillColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 0.97)
-        bg.strokeColor = UIColor(white: 0.72, alpha: 0.4)
+        // Ombre simulée
+        let shadow = SKShapeNode(rectOf: CGSize(width: panelW + 6, height: panelH + 6), cornerRadius: cornerR)
+        shadow.fillColor = UIColor(white: 0.0, alpha: 0.14)
+        shadow.strokeColor = .clear
+        shadow.position = CGPoint(x: 3, y: -8)
+        shadow.zPosition = -1
+        panel.addChild(shadow)
+
+        // Carte principale
+        let bg = SKShapeNode(rectOf: CGSize(width: panelW, height: panelH), cornerRadius: cornerR)
+        bg.fillColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 0.99)
+        bg.strokeColor = UIColor(white: 0.72, alpha: 0.30)
         bg.lineWidth = 1
         panel.addChild(bg)
 
         // Titre
-        let title = SKLabelNode(text: "Terminé")
+        let titleText = isWinState ? "Parfait !" : "Fin de partie"
+        let title = SKLabelNode(text: titleText)
         title.fontName = "AvenirNext-Heavy"
-        title.fontSize = 42
-        title.fontColor = UIColor(white: 0.28, alpha: 1)
+        title.fontSize = 44
+        title.fontColor = UIColor(white: 0.24, alpha: 1)
         title.verticalAlignmentMode = .center
-        title.position = CGPoint(x: 0, y: 55)
+        title.position = CGPoint(x: 0, y: 178)
         panel.addChild(title)
 
-        // Score
-        let scoreNode = SKLabelNode(text: "\(score) pts")
-        scoreNode.fontName = "AvenirNext-UltraLight"
-        scoreNode.fontSize = 34
-        scoreNode.fontColor = UIColor(white: 0.45, alpha: 1)
-        scoreNode.verticalAlignmentMode = .center
-        scoreNode.position = CGPoint(x: 0, y: 5)
-        panel.addChild(scoreNode)
+        // Séparateur haut
+        let sep = SKShapeNode(rectOf: CGSize(width: 300, height: 1))
+        sep.fillColor = UIColor(white: 0.78, alpha: 0.55)
+        sep.strokeColor = .clear
+        sep.position = CGPoint(x: 0, y: 140)
+        panel.addChild(sep)
 
-        // Sous-titre
-        let sub = SKLabelNode(text: "Plus de combinaisons possibles")
-        sub.fontName = "AvenirNext-UltraLight"
-        sub.fontSize = 14
-        sub.fontColor = UIColor(white: 0.6, alpha: 1)
-        sub.verticalAlignmentMode = .center
-        sub.position = CGPoint(x: 0, y: -48)
-        panel.addChild(sub)
+        // Score animé (count-up)
+        let scoreDisplay = SKLabelNode(text: "0 pts")
+        scoreDisplay.fontName = "AvenirNext-Heavy"
+        scoreDisplay.fontSize = 64
+        scoreDisplay.fontColor = UIColor(white: 0.26, alpha: 1)
+        scoreDisplay.verticalAlignmentMode = .center
+        scoreDisplay.position = CGPoint(x: 0, y: 80)
+        panel.addChild(scoreDisplay)
+        animateScoreCountUp(label: scoreDisplay, target: score)
 
-        addChild(panel)
+        // Record
+        let scores = GameState.highScores()
+        let isNewRecord = scores.first == score && score > 0
+
+        if isNewRecord {
+            let record = SKLabelNode(text: "★  Nouveau record !")
+            record.fontName = "AvenirNext-Bold"
+            record.fontSize = 20
+            record.fontColor = UIColor(red: 0.92, green: 0.65, blue: 0.20, alpha: 1)
+            record.verticalAlignmentMode = .center
+            record.position = CGPoint(x: 0, y: 30)
+            panel.addChild(record)
+        } else if let best = scores.first {
+            let bestLabel = SKLabelNode(text: "Meilleur : \(best) pts")
+            bestLabel.fontName = "AvenirNext-UltraLight"
+            bestLabel.fontSize = 19
+            bestLabel.fontColor = UIColor(white: 0.38, alpha: 1)
+            bestLabel.verticalAlignmentMode = .center
+            bestLabel.position = CGPoint(x: 0, y: 30)
+            panel.addChild(bestLabel)
+        }
+
+        // Stats
+        let statsLine1 = SKLabelNode(text: "Chaîne max · \(longestChain) bulles")
+        statsLine1.fontName = "AvenirNext-UltraLight"
+        statsLine1.fontSize = 17
+        statsLine1.fontColor = UIColor(white: 0.38, alpha: 1)
+        statsLine1.verticalAlignmentMode = .center
+        statsLine1.position = CGPoint(x: 0, y: -12)
+        panel.addChild(statsLine1)
+
+        let statsLine2 = SKLabelNode(text: "\(combosCreated) combinaisons créées")
+        statsLine2.fontName = "AvenirNext-UltraLight"
+        statsLine2.fontSize = 17
+        statsLine2.fontColor = UIColor(white: 0.38, alpha: 1)
+        statsLine2.verticalAlignmentMode = .center
+        statsLine2.position = CGPoint(x: 0, y: -40)
+        panel.addChild(statsLine2)
+
+        // Séparateur bas
+        let sep2 = SKShapeNode(rectOf: CGSize(width: 300, height: 1))
+        sep2.fillColor = UIColor(white: 0.78, alpha: 0.55)
+        sep2.strokeColor = .clear
+        sep2.position = CGPoint(x: 0, y: -76)
+        panel.addChild(sep2)
+
+        // Bouton Rejouer
+        let replayBtn = SKNode()
+        replayBtn.name = "replayBtn"
+        replayBtn.position = CGPoint(x: 0, y: -140)
+        panel.addChild(replayBtn)
+
+        let replayBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
+        replayBg.fillColor = UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1)
+        replayBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+        replayBg.lineWidth = 1
+        replayBtn.addChild(replayBg)
+
+        let replayLabel = SKLabelNode(text: "Rejouer")
+        replayLabel.fontName = "AvenirNext-Medium"
+        replayLabel.fontSize = 24
+        replayLabel.fontColor = UIColor(white: 0.26, alpha: 1)
+        replayLabel.verticalAlignmentMode = .center
+        replayBtn.addChild(replayLabel)
+
+        // Bouton Accueil
+        let homeBtn = SKNode()
+        homeBtn.name = "homePanelBtn"
+        homeBtn.position = CGPoint(x: 0, y: -204)
+        panel.addChild(homeBtn)
+
+        let homeBg = SKShapeNode(rectOf: CGSize(width: 200, height: 52), cornerRadius: 26)
+        homeBg.fillColor = UIColor(red: 0.94, green: 0.91, blue: 0.88, alpha: 1)
+        homeBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+        homeBg.lineWidth = 1
+        homeBtn.addChild(homeBg)
+
+        let homeLabel = SKLabelNode(text: "Accueil")
+        homeLabel.fontName = "AvenirNext-UltraLight"
+        homeLabel.fontSize = 19
+        homeLabel.fontColor = UIColor(white: 0.42, alpha: 1)
+        homeLabel.verticalAlignmentMode = .center
+        homeBtn.addChild(homeLabel)
 
         panel.setScale(0.88)
         panel.run(SKAction.group([
             SKAction.fadeIn(withDuration: 0.38),
             SKAction.scale(to: 1.0, duration: 0.38)
         ]))
+    }
+
+    private func animateScoreCountUp(label: SKLabelNode, target: Int) {
+        let steps = 24
+        let duration = 0.55
+        let stepDuration = duration / Double(steps)
+        var actions: [SKAction] = []
+        for i in 1...steps {
+            let value = Int(Double(target) * Double(i) / Double(steps))
+            actions.append(SKAction.run { label.text = "\(value) pts" })
+            actions.append(SKAction.wait(forDuration: stepDuration))
+        }
+        actions.append(SKAction.run { label.text = "\(target) pts" })
+        label.run(SKAction.sequence(actions))
     }
 
     private func resetGame() {
@@ -659,9 +793,13 @@ class GameScene: SKScene {
         messageLabel.isHidden = true
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
         score = 0
+        combosCreated = 0
+        longestChain = 0
+        isWinState = false
         scoreLabel.text = "0"
 
-        // Retirer le panneau game-over s'il est affiché
+        // Retirer le panneau game-over et l'overlay
+        children.filter { $0.zPosition == 14 }.forEach { $0.removeFromParent() } // overlay
         if let panel = gameOverPanel {
             panel.run(SKAction.sequence([
                 SKAction.fadeOut(withDuration: 0.18),
