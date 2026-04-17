@@ -353,6 +353,7 @@ class GameScene: SKScene {
 
         currentPath = [coord]
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
+        SoundManager.shared.playSelect()
         updateSumLabel()
         updatePathLine()
     }
@@ -391,6 +392,7 @@ class GameScene: SKScene {
         currentPath.append(coord)
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
         tapFeedback.impactOccurred()
+        SoundManager.shared.playConnect(pathIndex: currentPath.count - 1)
         updateSumLabel()
         updatePathLine()
     }
@@ -511,6 +513,7 @@ class GameScene: SKScene {
         updateScoreLabel()
         showScorePopup(points: points, at: popupOrigin)
 
+        SoundManager.shared.playCombo()
         for coord in pathCopy {
             bubbleNodes[coord.row][coord.col]?.playPopAnimation(completion: {})
             bubbleNodes[coord.row][coord.col] = nil
@@ -547,6 +550,7 @@ class GameScene: SKScene {
             let duration = min(0.08 + 0.04 * Double(rowsDropped), 0.4)
             maxDuration = max(maxDuration, duration)
             m.node.playFallAnimation(toY: gridOriginY + CGFloat(m.toRow) * GameScene.cellSize, duration: duration, completion: {})
+            SoundManager.shared.playFall()
         }
 
         if movements.isEmpty {
@@ -570,6 +574,7 @@ class GameScene: SKScene {
     // MARK: - Win / Lose
 
     private func triggerWin() {
+        SoundManager.shared.playWin()
         isWinState = true
         let bonus = 1000
         score += bonus
@@ -583,6 +588,7 @@ class GameScene: SKScene {
     }
 
     private func triggerLose() {
+        SoundManager.shared.playLose()
         isWinState = false
         let shake = SKAction.sequence([
             SKAction.moveBy(x: 8,  y: 0, duration: 0.05),
