@@ -7,15 +7,71 @@ import SpriteKit
 
 class LeaderboardScene: SKScene {
 
+    private let bubbleColors: [UIColor] = [
+        UIColor(red: 0.98, green: 0.72, blue: 0.68, alpha: 1),
+        UIColor(red: 0.99, green: 0.84, blue: 0.70, alpha: 1),
+        UIColor(red: 0.99, green: 0.95, blue: 0.72, alpha: 1),
+        UIColor(red: 0.78, green: 0.94, blue: 0.82, alpha: 1),
+        UIColor(red: 0.72, green: 0.88, blue: 0.98, alpha: 1),
+        UIColor(red: 0.82, green: 0.78, blue: 0.97, alpha: 1),
+        UIColor(red: 0.98, green: 0.78, blue: 0.88, alpha: 1),
+        UIColor(red: 0.80, green: 0.91, blue: 0.80, alpha: 1),
+        UIColor(red: 0.76, green: 0.82, blue: 0.97, alpha: 1),
+    ]
+
+    // Arc-en-ciel pastel par rang (couleurs des bulles du jeu, alpha réduit pour les pills)
+    // #1 rose, #2 bleu ciel, #3 menthe, #4 jaune, #5 lavande, #6 pêche, #7 sauge
+    private let rankColors: [UIColor] = [
+        UIColor(red: 0.98, green: 0.78, blue: 0.88, alpha: 1), // rose
+        UIColor(red: 0.72, green: 0.88, blue: 0.98, alpha: 1), // ciel
+        UIColor(red: 0.78, green: 0.94, blue: 0.82, alpha: 1), // menthe
+        UIColor(red: 0.99, green: 0.95, blue: 0.72, alpha: 1), // jaune
+        UIColor(red: 0.82, green: 0.78, blue: 0.97, alpha: 1), // lavande
+        UIColor(red: 0.99, green: 0.84, blue: 0.70, alpha: 1), // pêche
+        UIColor(red: 0.80, green: 0.91, blue: 0.80, alpha: 1), // sauge
+    ]
+
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
+        setupBackground()
         setupUI()
     }
 
+    // MARK: - Fond animé
+
+    private func setupBackground() {
+        let configs: [(radius: CGFloat, x: CGFloat, y: CGFloat, colorIdx: Int, duration: Double)] = [
+            (88,  -280,  480, 0, 7.2),
+            (62,   260,  350, 4, 9.5),
+            (110, -180, -150, 6, 11.0),
+            (74,   310, -320, 1, 8.3),
+            (96,   -60,  560, 3, 10.1),
+            (54,   200, -500, 7, 6.8),
+            (80,  -320, -480, 2, 12.4),
+            (68,    80,  200, 5, 9.0),
+            (50,  -200,  -30, 8, 7.6),
+        ]
+        for cfg in configs {
+            let bubble = SKShapeNode(circleOfRadius: cfg.radius)
+            bubble.fillColor = bubbleColors[cfg.colorIdx].withAlphaComponent(0.18)
+            bubble.strokeColor = .clear
+            bubble.position = CGPoint(x: cfg.x, y: cfg.y)
+            bubble.zPosition = -1
+            addChild(bubble)
+            let up = SKAction.moveBy(x: 0, y: 18, duration: cfg.duration)
+            let down = SKAction.moveBy(x: 0, y: -18, duration: cfg.duration)
+            up.timingMode = .easeInEaseOut
+            down.timingMode = .easeInEaseOut
+            bubble.run(SKAction.repeatForever(SKAction.sequence([up, down])))
+        }
+    }
+
+    // MARK: - UI
+
     private func setupUI() {
-        let centerX: CGFloat = 0
         let topY = size.height / 2
+        let bottomY = -size.height / 2
 
         // Titre
         let title = SKLabelNode(text: "Classement")
@@ -23,10 +79,9 @@ class LeaderboardScene: SKScene {
         title.fontSize = 44
         title.fontColor = UIColor(white: 0.28, alpha: 1)
         title.verticalAlignmentMode = .center
-        title.position = CGPoint(x: centerX, y: topY - 100)
+        title.position = CGPoint(x: 0, y: topY - 110)
         addChild(title)
 
-        // Scores
         let scores = GameState.highScores()
 
         if scores.isEmpty {
@@ -35,63 +90,130 @@ class LeaderboardScene: SKScene {
             empty.fontSize = 20
             empty.fontColor = UIColor(white: 0.55, alpha: 1)
             empty.verticalAlignmentMode = .center
-            empty.position = CGPoint(x: centerX, y: 0)
+            empty.position = CGPoint(x: 0, y: 0)
             addChild(empty)
         } else {
-            let rowHeight: CGFloat = 52
-            let startY = min(CGFloat(scores.count - 1), 4) * rowHeight / 2 + 80
-
-            for (i, score) in scores.enumerated() {
-                let y = startY - CGFloat(i) * rowHeight
-
-                // Rangée
-                let rankLabel = SKLabelNode(text: "#\(i + 1)")
-                rankLabel.fontName = "AvenirNext-UltraLight"
-                rankLabel.fontSize = 16
-                rankLabel.fontColor = UIColor(white: 0.55, alpha: 1)
-                rankLabel.horizontalAlignmentMode = .right
-                rankLabel.verticalAlignmentMode = .center
-                rankLabel.position = CGPoint(x: centerX - 60, y: y)
-                addChild(rankLabel)
-
-                let scoreLabel = SKLabelNode(text: "\(score) pts")
-                scoreLabel.fontName = i == 0 ? "AvenirNext-Medium" : "AvenirNext-UltraLight"
-                scoreLabel.fontSize = i == 0 ? 28 : 22
-                scoreLabel.fontColor = i == 0
-                    ? UIColor(red: 0.92, green: 0.62, blue: 0.18, alpha: 1)
-                    : UIColor(white: 0.35, alpha: 1)
-                scoreLabel.horizontalAlignmentMode = .left
-                scoreLabel.verticalAlignmentMode = .center
-                scoreLabel.position = CGPoint(x: centerX - 40, y: y)
-                addChild(scoreLabel)
+            addTopScore(scores[0], atY: topY - 230)
+            let rest = Array(scores.dropFirst().prefix(6))
+            if !rest.isEmpty {
+                addScoreList(rest, startingAt: 2, topY: topY - 410)
             }
         }
 
-        // Bouton retour
+        // Bouton retour — style bulle jeu
+        addBackButton(atY: bottomY + 90)
+    }
+
+    // Grande bulle pour le #1
+    private func addTopScore(_ score: Int, atY y: CGFloat) {
+        let radius: CGFloat = 70
+
+        // Halo rose derrière
+        let halo = SKShapeNode(circleOfRadius: radius + 6)
+        halo.fillColor = rankColors[0].withAlphaComponent(0.55)
+        halo.strokeColor = .clear
+        halo.position = CGPoint(x: 0, y: y)
+        addChild(halo)
+
+        let circle = SKShapeNode(circleOfRadius: radius)
+        circle.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 1)
+        circle.strokeColor = UIColor(white: 0.70, alpha: 0.50)
+        circle.lineWidth = 1.5
+        circle.position = CGPoint(x: 0, y: y)
+        addChild(circle)
+
+        // Petite bulle rose — marqueur #1 (comme le logo)
+        let dot = SKShapeNode(circleOfRadius: 10)
+        dot.fillColor = bubbleColors[6] // rose
+        dot.strokeColor = .clear
+        dot.position = CGPoint(x: 0, y: y + radius - 12)
+        dot.zPosition = 1
+        addChild(dot)
+
+        let ptsLabel = SKLabelNode(text: "pts")
+        ptsLabel.fontName = "AvenirNext-UltraLight"
+        ptsLabel.fontSize = 14
+        ptsLabel.fontColor = UIColor(white: 0.58, alpha: 1)
+        ptsLabel.verticalAlignmentMode = .center
+        ptsLabel.position = CGPoint(x: 0, y: y + 20)
+        addChild(ptsLabel)
+
+        let scoreLabel = SKLabelNode(text: "\(score)")
+        scoreLabel.fontName = "AvenirNext-Heavy"
+        scoreLabel.fontSize = 42
+        scoreLabel.fontColor = UIColor(white: 0.28, alpha: 1)
+        scoreLabel.verticalAlignmentMode = .center
+        scoreLabel.position = CGPoint(x: 0, y: y - 12)
+        addChild(scoreLabel)
+    }
+
+    // Pills pour les scores #2 et suivants
+    private func addScoreList(_ scores: [Int], startingAt rankStart: Int, topY: CGFloat) {
+        let pillW: CGFloat = 300
+        let pillH: CGFloat = 52
+        let gap: CGFloat = 14
+
+        for (i, score) in scores.enumerated() {
+            let rank = rankStart + i
+            let y = topY - CGFloat(i) * (pillH + gap)
+
+            let pill = SKNode()
+            pill.position = CGPoint(x: 0, y: y)
+            addChild(pill)
+
+            let fillColor = rankColors[min(i + 1, rankColors.count - 1)]
+            let bg = SKShapeNode(rectOf: CGSize(width: pillW, height: pillH), cornerRadius: pillH / 2)
+            bg.fillColor = fillColor
+            bg.strokeColor = UIColor(white: 0.68, alpha: 0.35)
+            bg.lineWidth = 1
+            pill.addChild(bg)
+
+            let rankLabel = SKLabelNode(text: "#\(rank)")
+            rankLabel.fontName = "AvenirNext-UltraLight"
+            rankLabel.fontSize = 15
+            rankLabel.fontColor = UIColor(white: 0.60, alpha: 1)
+            rankLabel.horizontalAlignmentMode = .left
+            rankLabel.verticalAlignmentMode = .center
+            rankLabel.position = CGPoint(x: -pillW / 2 + 24, y: 0)
+            pill.addChild(rankLabel)
+
+            let scoreLabel = SKLabelNode(text: "\(score) pts")
+            scoreLabel.fontName = "AvenirNext-Medium"
+            scoreLabel.fontSize = 20
+            scoreLabel.fontColor = UIColor(white: 0.30, alpha: 1)
+            scoreLabel.horizontalAlignmentMode = .right
+            scoreLabel.verticalAlignmentMode = .center
+            scoreLabel.position = CGPoint(x: pillW / 2 - 24, y: 0)
+            pill.addChild(scoreLabel)
+        }
+    }
+
+    private func addBackButton(atY y: CGFloat) {
         let back = SKNode()
         back.name = "back"
-        back.position = CGPoint(x: centerX, y: -topY + 80)
+        back.position = CGPoint(x: 0, y: y)
         addChild(back)
 
-        let backCircle = SKShapeNode(circleOfRadius: 36)
-        backCircle.fillColor = UIColor(red: 0.94, green: 0.91, blue: 0.88, alpha: 1)
-        backCircle.strokeColor = UIColor(white: 0.68, alpha: 0.45)
-        backCircle.lineWidth = 1
-        back.addChild(backCircle)
+        let circle = SKShapeNode(circleOfRadius: 36)
+        circle.fillColor = UIColor(red: 0.94, green: 0.91, blue: 0.88, alpha: 1)
+        circle.strokeColor = UIColor(white: 0.68, alpha: 0.45)
+        circle.lineWidth = 1.5
+        back.addChild(circle)
 
-        let backIcon = SKLabelNode(text: "‹")
-        backIcon.fontName = "AvenirNext-Medium"
-        backIcon.fontSize = 32
-        backIcon.fontColor = UIColor(white: 0.45, alpha: 1)
-        backIcon.verticalAlignmentMode = .center
-        backIcon.horizontalAlignmentMode = .center
-        back.addChild(backIcon)
+        let icon = SKLabelNode(text: "‹")
+        icon.fontName = "AvenirNext-Medium"
+        icon.fontSize = 32
+        icon.fontColor = UIColor(white: 0.45, alpha: 1)
+        icon.verticalAlignmentMode = .center
+        icon.horizontalAlignmentMode = .center
+        back.addChild(icon)
     }
+
+    // MARK: - Touch
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
-
         for node in nodes(at: point) {
             if node.name == "back" || node.parent?.name == "back" {
                 let menu = MenuScene(size: size)
