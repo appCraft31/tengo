@@ -2,8 +2,9 @@
 //  SoundManager.swift
 //  tenGO
 //
-//  Sons synthétisés programmatiquement — thème zen :
-//  bols tibétains, carillons, gamme pentatonique mineure.
+//  Synthèse organique : bol tibétain, carillon d'eau, gong.
+//  Technique : attaque douce (12 ms), harmoniques naturelles (2x, 3x, 4x),
+//  vibrato lent (4 Hz) et bruit de texture pour enlever le côté électronique.
 //
 
 import AVFoundation
@@ -11,14 +12,15 @@ import AVFoundation
 final class SoundManager {
     static let shared = SoundManager()
 
-    private let engine = AVAudioEngine()
-    private let reverb = AVAudioUnitReverb()
-    private var activePlayers: [AVAudioPlayerNode] = []
-    private let sampleRate = 44100.0
+    private let engine   = AVAudioEngine()
+    private let reverb   = AVAudioUnitReverb()
+    private let eq       = AVAudioUnitEQ(numberOfBands: 1)
+    private var players  : [AVAudioPlayerNode] = []
+    private let sr       = 44100.0
 
-    // Gamme pentatonique mineure — sonnorité zen
-    private let pentatonic: [Double] = [220, 261.6, 293.7, 349.2, 392.0,
-                                        440.0, 523.3, 587.3, 698.5, 784.0]
+    // Gamme pentatonique majeure — chaleur et sérénité
+    private let scale: [Double] = [261.6, 293.7, 329.6, 392.0, 440.0,
+                                   523.3, 587.3, 659.3, 784.0, 880.0]
 
     var isMuted: Bool {
         get { UserDefaults.standard.bool(forKey: "tenGO_soundMuted") }
@@ -26,134 +28,169 @@ final class SoundManager {
     }
 
     private init() {
-        setupAudioSession()
-        reverb.loadFactoryPreset(.mediumHall2)
-        reverb.wetDryMix = 45
-        engine.attach(reverb)
-        engine.connect(reverb, to: engine.mainMixerNode, format: nil)
-        do {
-            try engine.start()
-        } catch {
-            print("[SoundManager] Erreur démarrage engine : \(error)")
-        }
-    }
-
-    private func setupAudioSession() {
-        do {
-            let session = AVAudioSession.sharedInstance()
-            try session.setCategory(.ambient, mode: .default, options: .mixWithOthers)
-            try session.setActive(true)
-        } catch {
-            print("[SoundManager] Erreur AVAudioSession : \(error)")
-        }
+        configureSession()
+        buildGraph()
     }
 
     // MARK: - Interface publique
 
-    /// Première bulle touchée
+    /// Toucher initial — goutte d'eau cristalline
     func playSelect() {
-        playBell(frequency: 784.0, duration: 0.6, amplitude: 0.18, decay: 6.0)
+        bowl(freq: 659.3, dur: 1.2, amp: 0.14, attack: 0.008, decay: 4.5)
     }
 
-    /// Bulle ajoutée au chemin (index = position dans le chemin, 0-based)
+    /// Chaque bulle ajoutée au chemin — carillon ascendant doux
     func playConnect(pathIndex: Int) {
-        let freq = pentatonic[min(pathIndex, pentatonic.count - 1)]
-        playBell(frequency: freq, duration: 0.5, amplitude: 0.22, decay: 5.0)
+        let f = scale[min(pathIndex, scale.count - 1)]
+        bowl(freq: f, dur: 1.0, amp: 0.16, attack: 0.012, decay: 4.0)
     }
 
-    /// Combo réussi (somme = 10)
+    /// Combo réussi — bol tibétain grave et chaud
     func playCombo() {
-        // Bol tibétain : fondamentale + harmonique légèrement désaccordée
-        playBell(frequency: 392.0, duration: 2.0, amplitude: 0.32, decay: 2.2)
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.08) {
-            self.playBell(frequency: 528.0, duration: 1.6, amplitude: 0.12, decay: 2.8)
+        bowl(freq: 174.6, dur: 3.5, amp: 0.30, attack: 0.025, decay: 1.2)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.12) {
+            self.bowl(freq: 261.6, dur: 2.8, amp: 0.12, attack: 0.020, decay: 1.6)
         }
     }
 
-    /// Chute des bulles
+    /// Chute des bulles — souffle imperceptible
     func playFall() {
-        playNoise(duration: 0.12, amplitude: 0.04)
+        breathe(dur: 0.18, amp: 0.025)
     }
 
-    /// Victoire — arpège ascendant pentatonique
+    /// Victoire — arpège temple bells, montée apaisante
     func playWin() {
-        let arpeggio: [(Double, Double)] = [
-            (293.7, 0.0),
-            (392.0, 0.18),
-            (523.3, 0.36),
-            (698.5, 0.56),
-            (784.0, 0.80)
+        let notes: [(Double, Double)] = [
+            (261.6, 0.00), (329.6, 0.25),
+            (392.0, 0.50), (523.3, 0.78),
+            (659.3, 1.10)
         ]
-        for (freq, delay) in arpeggio {
+        for (f, delay) in notes {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.playBell(frequency: freq, duration: 2.5, amplitude: 0.28, decay: 1.8)
+                self.bowl(freq: f, dur: 3.0, amp: 0.22, attack: 0.018, decay: 1.4)
             }
         }
     }
 
-    /// Défaite — descente douce
+    /// Défaite — descente douce, pas dramatique
     func playLose() {
-        let descent: [(Double, Double)] = [
-            (440.0, 0.0),
-            (349.2, 0.22),
-            (261.6, 0.44)
+        let notes: [(Double, Double)] = [
+            (329.6, 0.00), (261.6, 0.30), (196.0, 0.60)
         ]
-        for (freq, delay) in descent {
+        for (f, delay) in notes {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.playBell(frequency: freq, duration: 1.2, amplitude: 0.20, decay: 3.0)
+                self.bowl(freq: f, dur: 2.0, amp: 0.16, attack: 0.022, decay: 1.8)
             }
         }
     }
 
     // MARK: - Synthèse
 
-    private func playBell(frequency: Double, duration: Double, amplitude: Float, decay: Double) {
+    /// Bol / carillon : attaque douce + harmoniques naturelles + vibrato + texture
+    private func bowl(freq: Double, dur: Double, amp: Float, attack: Double, decay: Double) {
         guard !isMuted else { return }
-        guard let buffer = makeBuffer(frameCount: AVAudioFrameCount(sampleRate * duration)) else { return }
-        let data = buffer.floatChannelData![0]
-        for i in 0..<Int(buffer.frameLength) {
-            let t = Double(i) / sampleRate
-            let env = Float(exp(-t * decay))
-            // Fondamentale + partiel inharmonique → timbre de carillon / bol
-            let wave = sin(Float(2 * .pi * frequency * t)) * 0.70
-                     + sin(Float(2 * .pi * frequency * 2.756 * t)) * 0.20
-                     + sin(Float(2 * .pi * frequency * 0.5 * t)) * 0.10
-            data[i] = wave * amplitude * env
+        guard let buf = makeBuffer(frames: AVAudioFrameCount(sr * dur)) else { return }
+        let data = buf.floatChannelData![0]
+
+        let vibratoRate = 3.8          // Hz — légèrement irrégulier = organique
+        let vibratoDepth = 0.0018      // ±0.18% — quasi imperceptible mais vivant
+
+        for i in 0..<Int(buf.frameLength) {
+            let t = Double(i) / sr
+
+            // Enveloppe : montée douce puis décroissance exponentielle
+            let env: Float
+            if t < attack {
+                env = Float(t / attack)          // attaque linéaire
+            } else {
+                env = Float(exp(-(t - attack) * decay))
+            }
+
+            // Vibrato sinusoïdal lent
+            let vib = 1.0 + vibratoDepth * sin(2 * .pi * vibratoRate * t)
+
+            // Harmoniques naturelles (ratios 1:2:3:4) — timbre organique de bol
+            let f = freq * vib
+            let h1 = sin(Float(2 * .pi * f       * t))
+            let h2 = sin(Float(2 * .pi * f * 2.0 * t))
+            let h3 = sin(Float(2 * .pi * f * 3.0 * t))
+            let h4 = sin(Float(2 * .pi * f * 4.0 * t))
+            let wave = h1 * 0.60 + h2 * 0.22 + h3 * 0.11 + h4 * 0.07
+
+            // Micro-bruit de texture (enlève le côté synthétique pur)
+            let texture = Float.random(in: -0.008...0.008)
+
+            data[i] = (wave + texture) * amp * env
         }
-        schedule(buffer)
+        play(buf)
     }
 
-    private func playNoise(duration: Double, amplitude: Float) {
+    /// Souffle : bruit rose filtré — chute de bulle
+    private func breathe(dur: Double, amp: Float) {
         guard !isMuted else { return }
-        guard let buffer = makeBuffer(frameCount: AVAudioFrameCount(sampleRate * duration)) else { return }
-        let data = buffer.floatChannelData![0]
-        for i in 0..<Int(buffer.frameLength) {
-            let t = Double(i) / sampleRate
-            let env = Float(exp(-t * 20.0))
-            data[i] = Float.random(in: -1...1) * amplitude * env
+        guard let buf = makeBuffer(frames: AVAudioFrameCount(sr * dur)) else { return }
+        let data = buf.floatChannelData![0]
+        var prev: Float = 0
+        for i in 0..<Int(buf.frameLength) {
+            let t = Double(i) / sr
+            let env = Float(exp(-t * 18.0))
+            // Bruit rose (filtre passe-bas one-pole) — plus doux que le bruit blanc
+            let white = Float.random(in: -1...1)
+            prev = prev * 0.96 + white * 0.04
+            data[i] = prev * amp * env
         }
-        schedule(buffer)
+        play(buf)
     }
 
-    private func makeBuffer(frameCount: AVAudioFrameCount) -> AVAudioPCMBuffer? {
-        let format = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1)!
-        guard let buffer = AVAudioPCMBuffer(pcmFormat: format, frameCapacity: frameCount) else { return nil }
-        buffer.frameLength = frameCount
-        return buffer
+    // MARK: - Infrastructure
+
+    private func makeBuffer(frames: AVAudioFrameCount) -> AVAudioPCMBuffer? {
+        let fmt = AVAudioFormat(standardFormatWithSampleRate: sr, channels: 1)!
+        guard let buf = AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: frames) else { return nil }
+        buf.frameLength = frames
+        return buf
     }
 
-    private func schedule(_ buffer: AVAudioPCMBuffer) {
-        let player = AVAudioPlayerNode()
-        engine.attach(player)
-        engine.connect(player, to: reverb, format: buffer.format)
-        activePlayers.append(player)
-
-        player.scheduleBuffer(buffer) { [weak self] in
+    private func play(_ buffer: AVAudioPCMBuffer) {
+        let node = AVAudioPlayerNode()
+        engine.attach(node)
+        engine.connect(node, to: reverb, format: buffer.format)
+        players.append(node)
+        node.scheduleBuffer(buffer) { [weak self] in
             DispatchQueue.main.async {
-                self?.engine.detach(player)
-                self?.activePlayers.removeAll { $0 === player }
+                self?.engine.detach(node)
+                self?.players.removeAll { $0 === node }
             }
         }
-        player.play()
+        node.play()
+    }
+
+    private func buildGraph() {
+        // EQ légère : couper les très hautes fréquences (>8 kHz) — plus doux
+        if let band = eq.bands.first {
+            band.filterType  = .lowPass
+            band.frequency   = 8000
+            band.bypass      = false
+        }
+        reverb.loadFactoryPreset(.largeChamber)
+        reverb.wetDryMix = 38
+
+        engine.attach(eq)
+        engine.attach(reverb)
+        engine.connect(reverb, to: eq, format: nil)
+        engine.connect(eq, to: engine.mainMixerNode, format: nil)
+
+        do { try engine.start() }
+        catch { print("[SoundManager] Engine : \(error)") }
+    }
+
+    private func configureSession() {
+        do {
+            let s = AVAudioSession.sharedInstance()
+            try s.setCategory(.ambient, mode: .default, options: .mixWithOthers)
+            try s.setActive(true)
+        } catch {
+            print("[SoundManager] Session : \(error)")
+        }
     }
 }
