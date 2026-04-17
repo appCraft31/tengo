@@ -2,10 +2,11 @@
 //  SoundManager.swift
 //  tenGO
 //
-//  Piano synthétique + système d'harmonie :
-//  - Chaque bulle touchée → note de piano (valeur 1–9 = note chromatique zen)
-//  - Chemin en construction → accord qui se construit note par note
-//  - Combo (éclatement) → accord complet joué ensemble
+//  Synthèse organique v3 :
+//  - Gouttes d'eau (chirp descendant) pour le lien entre bulles
+//  - Kalimba FM pour la fusion (récompense chaude et boisée)
+//  - Piano amélioré : extinction sélective des harmoniques + LP dynamique
+//  - Tambour de bois grave pour l'échec (non-punitif)
 //
 
 import AVFoundation
@@ -13,25 +14,17 @@ import AVFoundation
 final class SoundManager {
     static let shared = SoundManager()
 
-    private let engine  = AVAudioEngine()
+    private let engine = AVAudioEngine()
     private let reverb  = AVAudioUnitReverb()
     private let sr      = 44100.0
 
-    // Notes accumulées pendant le drag (fréquences Hz)
+    // Fréquences de la chaîne en cours (gamme pentatonique, position-based)
     private var pathFrequencies: [Double] = []
 
-    // Mapping valeur bulle (1–9) → fréquence piano, gamme pentatonique majeure zen
-    // Do–Ré–Mi–Sol–La sur deux octaves, centré dans le médium chaud du piano
-    private let noteMap: [Int: Double] = [
-        1: 261.6,  // C4
-        2: 293.7,  // D4
-        3: 329.6,  // E4
-        4: 392.0,  // G4
-        5: 440.0,  // A4
-        6: 523.3,  // C5
-        7: 587.3,  // D5
-        8: 659.3,  // E5
-        9: 784.0   // G5
+    // Pentatonique majeure ascendante — Do Ré Mi Sol La (×2 octaves)
+    private let pentatonic: [Double] = [
+        261.6, 293.7, 329.6, 392.0, 440.0,
+        523.3, 587.3, 659.3, 784.0, 880.0
     ]
 
     var isMuted: Bool {
@@ -46,139 +39,220 @@ final class SoundManager {
 
     // MARK: - Interface publique
 
-    /// Première bulle touchée — une note de piano seule
+    /// Première bulle touchée — goutte d'eau (note 0 de la pentatonique)
     func playSelect(value: Int) {
         guard !isMuted else { return }
-        let freq = noteMap[value] ?? 440.0
+        let freq = pentatonic[0]
         pathFrequencies = [freq]
-        piano(freq: freq, amp: 0.38, duration: 0.5)
+        waterDrop(freq: freq, amp: 0.30)
     }
 
-    /// Bulle ajoutée au chemin — joue la note + résonance très courte des précédentes
+    /// Bulle ajoutée — goutte suivante dans la gamme (ascendant)
     func playConnect(value: Int) {
         guard !isMuted else { return }
-        let freq = noteMap[value] ?? 440.0
+        let idx = min(pathFrequencies.count, pentatonic.count - 1)
+        let freq = pentatonic[idx]
         pathFrequencies.append(freq)
-        piano(freq: freq, amp: 0.32, duration: 0.45)
-        for f in pathFrequencies.dropLast() {
-            piano(freq: f, amp: 0.07, duration: 0.30)
-        }
+        waterDrop(freq: freq, amp: 0.27)
     }
 
-    /// Backtrack — bref ping de la note précédente
+    /// Backtrack — goutte légèrement plus basse
     func playBacktrack() {
         guard !isMuted else { return }
         if !pathFrequencies.isEmpty { pathFrequencies.removeLast() }
         if let freq = pathFrequencies.last {
-            piano(freq: freq, amp: 0.14, duration: 0.35)
+            waterDrop(freq: freq * 0.85, amp: 0.14)
         }
     }
 
-    /// Combo — strum rapide de l'accord puis réinitialise
+    /// Combo réussi — strum kalimba de l'accord + pop de bulle
     func playCombo() {
         guard !isMuted else { return }
         let chord = pathFrequencies
         pathFrequencies = []
-        let baseAmp: Float = min(0.30, 0.52 / Float(max(chord.count, 1)))
         for (i, freq) in chord.enumerated() {
-            let delay = Double(i) * 0.012   // 12 ms entre chaque note — strum net
+            DispatchQueue.main.asyncAfter(deadline: .now() + Double(i) * 0.011) {
+                self.kalimba(freq: freq, amp: min(0.32, 0.55 / Float(max(chord.count, 1))))
+            }
+        }
+        // Quinte sur la dernière note → sensation de résolution harmonique
+        if let last = chord.last {
+            let delay = Double(chord.count) * 0.011
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.piano(freq: freq, amp: baseAmp, duration: 0.9)
+                self.kalimba(freq: last * 1.498, amp: 0.16)
+                self.bubblePop(amp: 0.10)
             }
         }
     }
 
-    /// Annulation chemin — réinitialise sans son
-    func cancelPath() {
-        pathFrequencies = []
-    }
+    /// Annulation silencieuse
+    func cancelPath() { pathFrequencies = [] }
 
-    /// Victoire — arpège ascendant lumineux
+    /// Victoire — arpège de piano ascendant
     func playWin() {
         guard !isMuted else { return }
         let notes: [(Double, Double)] = [
-            (261.6, 0.00), (329.6, 0.20), (392.0, 0.40),
-            (523.3, 0.62), (659.3, 0.86), (784.0, 1.14)
+            (261.6, 0.00), (329.6, 0.18), (392.0, 0.36),
+            (523.3, 0.56), (659.3, 0.78), (784.0, 1.02)
         ]
         for (freq, delay) in notes {
             DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.piano(freq: freq, amp: 0.26, duration: 3.0)
+                self.piano(freq: freq, amp: 0.24, duration: 1.4)
             }
         }
     }
 
-    /// Défaite — accord doux qui descend
+    /// Défaite — tambour de bois grave, non-punitif
     func playLose() {
         guard !isMuted else { return }
-        let notes: [(Double, Double)] = [
-            (392.0, 0.00), (329.6, 0.28), (261.6, 0.56)
-        ]
-        for (freq, delay) in notes {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.piano(freq: freq, amp: 0.20, duration: 2.0)
-            }
+        woodDrum(amp: 0.38)
+    }
+
+    // MARK: - Goutte d'eau (chirp descendant + réverb)
+
+    private func waterDrop(freq: Double, amp: Float) {
+        let dur = 0.24
+        guard let buf = makeBuffer(frames: AVAudioFrameCount(sr * dur)) else { return }
+        let data = buf.floatChannelData![0]
+        let startFreq = freq * 2.0  // commence une octave au-dessus
+        let k = 28.0                // vitesse de descente
+        var phase = 0.0
+        for i in 0..<Int(buf.frameLength) {
+            let t = Double(i) / sr
+            // Fréquence qui descend exponentiellement vers la cible
+            let f_t = freq + (startFreq - freq) * exp(-t * k)
+            phase += 2 * .pi * f_t / sr
+            let env = Float(exp(-t * 15.0))
+            data[i] = Float(sin(phase)) * amp * env
         }
+        scheduleWet(buf)
     }
 
-    /// Chute des bulles — percussif discret
-    func playFall() {
-        guard !isMuted else { return }
-        plink(amp: 0.06)
-    }
-
-    // MARK: - Synthèse piano
+    // MARK: - Piano (win) : harmoniques sélectives + LP dynamique
 
     private func piano(freq: Double, amp: Float, duration: Double) {
         guard let buf = makeBuffer(frames: AVAudioFrameCount(sr * duration)) else { return }
         let data = buf.floatChannelData![0]
 
-        // Enveloppe piano : frappe percussive (10 ms) + décroissance rapide + queue lente
-        let attackTime = 0.010
-        let fastDecay  = 12.0   // décroissance rapide post-frappe
-        let slowDecay  =  1.8   // queue de résonance longue
+        let attackTime = 0.008
+        // Inharmonicité aléatoire — rien n'est jamais parfaitement fixe
+        let r4 = 4.0 + Double.random(in: -0.015...0.015)
+        let r5 = 5.0 + Double.random(in: -0.022...0.022)
+        // Vibrato subtil (~corde qui vibre physiquement)
+        let vRate = 2.3, vDepth = 0.0007
+
+        var lpState: Float = 0
+        // Filtre marteau HP (retire les basses du bruit)
+        var hpPrev: Float = 0, hpOut: Float = 0
 
         for i in 0..<Int(buf.frameLength) {
             let t = Double(i) / sr
+            let u = max(0.0, t - attackTime)
+            let attackFade: Float = t < attackTime ? Float(t / attackTime) : 1.0
 
-            // Enveloppe deux étages
-            let env: Float
-            if t < attackTime {
-                env = Float(t / attackTime)
-            } else {
-                let u = t - attackTime
-                let fast = exp(-u * fastDecay)
-                let slow = exp(-u * slowDecay) * 0.28
-                env = Float(fast + slow)
+            // Vibrato
+            let f = freq * (1.0 + vDepth * sin(2 * .pi * vRate * t))
+
+            // Extinction sélective — les hautes harmoniques s'éteignent bien plus vite
+            let e1 = Float(exp(-u * 3.0))   // fondamentale : lente
+            let e2 = Float(exp(-u * 4.8))   // octave
+            let e3 = Float(exp(-u * 8.4))   // tierce
+            let e4 = Float(exp(-u * 15.0))  // rapide
+            let e5 = Float(exp(-u * 26.0))  // quasi instantanée
+
+            let h1 = sin(Float(2 * .pi * f       * t)) * 0.55 * e1
+            let h2 = sin(Float(2 * .pi * f * 2.0 * t)) * 0.22 * e2
+            let h3 = sin(Float(2 * .pi * f * 3.0 * t)) * 0.13 * e3
+            let h4 = sin(Float(2 * .pi * f * r4  * t)) * 0.07 * e4
+            let h5 = sin(Float(2 * .pi * f * r5  * t)) * 0.03 * e5
+
+            // Marteau boisé : bruit filtré bande 500–2000 Hz, < 6 ms
+            var hammer: Float = 0
+            if t < 0.006 {
+                let fade = Float(1.0 - t / 0.006)
+                let white = Float.random(in: -1...1)
+                // HP one-pole (~500 Hz) : retire les basses
+                let alphaHP: Float = 0.930
+                hpOut = alphaHP * (hpOut + white - hpPrev)
+                hpPrev = white
+                hammer = hpOut * 0.13 * fade
             }
 
-            // Harmoniques piano (inharmonicité légère sur les partiels hauts)
-            let h1 = sin(Float(2 * .pi * freq       * t)) * 0.55
-            let h2 = sin(Float(2 * .pi * freq * 2.0 * t)) * 0.20
-            let h3 = sin(Float(2 * .pi * freq * 3.0 * t)) * 0.12
-            let h4 = sin(Float(2 * .pi * freq * 4.01 * t)) * 0.08  // légère inharmonicité
-            let h5 = sin(Float(2 * .pi * freq * 5.02 * t)) * 0.05
+            let raw = (h1 + h2 + h3 + h4 + h5 + hammer) * attackFade
 
-            // Bruit de marteau : bref burst au début uniquement
-            let hammer = t < 0.008 ? Float.random(in: -0.18...0.18) * Float(1 - t / 0.008) : 0
+            // LP dynamique : brillant au début → sourd en fin de note
+            let alphaLP = Float(0.12 + 0.82 * exp(-u * 6.0))
+            lpState = lpState * (1 - alphaLP) + raw * alphaLP
 
-            data[i] = (h1 + h2 + h3 + h4 + h5 + hammer) * amp * env
+            data[i] = lpState * amp
         }
-        schedule(buf)
+        scheduleWet(buf)
     }
 
-    /// Percussif discret pour la chute de bulle
-    private func plink(amp: Float) {
-        guard let buf = makeBuffer(frames: AVAudioFrameCount(sr * 0.15)) else { return }
+    // MARK: - Kalimba (FM synthesis) : tine chaleureuse et boisée
+
+    private func kalimba(freq: Double, amp: Float) {
+        let dur = 0.65
+        guard let buf = makeBuffer(frames: AVAudioFrameCount(sr * dur)) else { return }
+        let data = buf.floatChannelData![0]
+        let modFreq = freq * 3.5
+        let attackTime = 0.003
+
+        for i in 0..<Int(buf.frameLength) {
+            let t = Double(i) / sr
+            let u = max(0.0, t - attackTime)
+            let attackFade: Float = t < attackTime ? Float(t / attackTime) : 1.0
+
+            // Indice FM décroissant : commence métallique, devient pur et chaud
+            let modIdx = Float(3.8 * exp(-u * 12.0))
+            let mod = Float(sin(2 * .pi * modFreq * t))
+            let carrier = sin(Float(2 * .pi * freq * t) + modIdx * mod)
+
+            // Harmonique grave douce — chaleur de la caisse de résonance
+            let h2 = sin(Float(2 * .pi * freq * 2.0 * t)) * 0.14 * Float(exp(-u * 14.0))
+
+            // Enveloppe : attaque nette, résonance longue (tine métallique)
+            let env = Float(exp(-u * 7.0) * 0.65 + exp(-u * 1.8) * 0.35)
+
+            data[i] = (carrier + h2) * amp * env * attackFade
+        }
+        scheduleWet(buf)
+    }
+
+    // MARK: - Pop de bulle de savon
+
+    private func bubblePop(amp: Float) {
+        let dur = 0.07
+        guard let buf = makeBuffer(frames: AVAudioFrameCount(sr * dur)) else { return }
         let data = buf.floatChannelData![0]
         var lp: Float = 0
         for i in 0..<Int(buf.frameLength) {
             let t = Double(i) / sr
-            let env = Float(exp(-t * 25.0))
-            let white = Float.random(in: -1...1)
-            lp = lp * 0.92 + white * 0.08
+            let env = Float(exp(-t * 40.0))
+            lp = lp * 0.82 + Float.random(in: -1...1) * 0.18
             data[i] = lp * amp * env
         }
-        schedule(buf)
+        scheduleWet(buf)
+    }
+
+    // MARK: - Tambour de bois grave (défaite douce)
+
+    private func woodDrum(amp: Float) {
+        let dur = 0.45
+        guard let buf = makeBuffer(frames: AVAudioFrameCount(sr * dur)) else { return }
+        let data = buf.floatChannelData![0]
+        var membrane: Float = 0
+        for i in 0..<Int(buf.frameLength) {
+            let t = Double(i) / sr
+            let env = Float(exp(-t * 11.0))
+            // Corps de la frappe : sinusoïde grave (95 Hz)
+            let body = sin(Float(2 * .pi * 95.0 * t)) * 0.70
+            // Membrane : bruit rose très grave (passe-bas fort)
+            let white = Float.random(in: -1...1)
+            membrane = membrane * 0.975 + white * 0.025
+            data[i] = (body + membrane * 0.30) * amp * env
+        }
+        scheduleWet(buf)
     }
 
     // MARK: - Infrastructure
@@ -190,21 +264,19 @@ final class SoundManager {
         return buf
     }
 
-    private func schedule(_ buffer: AVAudioPCMBuffer) {
+    private func scheduleWet(_ buffer: AVAudioPCMBuffer) {
         let node = AVAudioPlayerNode()
         engine.attach(node)
         engine.connect(node, to: reverb, format: buffer.format)
         node.scheduleBuffer(buffer) { [weak self] in
-            DispatchQueue.main.async {
-                self?.engine.detach(node)
-            }
+            DispatchQueue.main.async { self?.engine.detach(node) }
         }
         node.play()
     }
 
     private func buildGraph() {
-        reverb.loadFactoryPreset(.mediumHall)
-        reverb.wetDryMix = 28
+        reverb.loadFactoryPreset(.largeChamber)
+        reverb.wetDryMix = 32
         engine.attach(reverb)
         engine.connect(reverb, to: engine.mainMixerNode, format: nil)
         do { try engine.start() }
