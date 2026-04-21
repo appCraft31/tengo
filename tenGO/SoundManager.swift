@@ -51,6 +51,47 @@ final class SoundManager {
     private init() {
         configureSession()
         buildGraph()
+        observeInterruptions()
+    }
+
+    private func observeInterruptions() {
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleInterruption(_:)),
+            name: AVAudioSession.interruptionNotification,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleRouteChange(_:)),
+            name: AVAudioSession.routeChangeNotification,
+            object: nil
+        )
+    }
+
+    @objc private func handleInterruption(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+
+        switch type {
+        case .began:
+            engine.pause()
+        case .ended:
+            try? AVAudioSession.sharedInstance().setActive(true)
+            do { try engine.start() }
+            catch { print("[SoundManager] restart : \(error)") }
+        @unknown default:
+            break
+        }
+    }
+
+    @objc private func handleRouteChange(_ notification: Notification) {
+        // Casque débranché → pause, rebranché → reprend si l'engine a bougé
+        if !engine.isRunning {
+            do { try engine.start() }
+            catch { print("[SoundManager] route restart : \(error)") }
+        }
     }
 
     // MARK: - Interface publique

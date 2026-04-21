@@ -20,12 +20,57 @@ class MenuScene: SKScene {
         UIColor(red: 0.76, green: 0.82, blue: 0.97, alpha: 1), // pervenche
     ]
 
+    private var soundButton: SKNode?
+
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
         setupBackground()
         setupUI()
+        setupSoundButton()
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
+    }
+
+    // MARK: - Sound toggle
+
+    private func setupSoundButton() {
+        let container = SKNode()
+        container.name = "soundBtn"
+        container.position = CGPoint(x: size.width / 2 - 50, y: size.height / 2 - 60)
+        container.zPosition = 10
+
+        let bg = SKShapeNode(circleOfRadius: 22)
+        bg.fillColor = UIColor(white: 1.0, alpha: 0.75)
+        bg.strokeColor = UIColor(white: 0.70, alpha: 0.35)
+        bg.lineWidth = 1
+        container.addChild(bg)
+
+        let icon = SKLabelNode(text: soundIcon())
+        icon.name = "soundIcon"
+        icon.fontName = "AvenirNext-Medium"
+        icon.fontSize = 22
+        icon.verticalAlignmentMode = .center
+        icon.horizontalAlignmentMode = .center
+        icon.fontColor = UIColor(white: 0.30, alpha: 1)
+        container.addChild(icon)
+
+        addChild(container)
+        soundButton = container
+    }
+
+    private func soundIcon() -> String {
+        return SoundManager.shared.isMuted ? "♪̸" : "♪"
+    }
+
+    private func toggleSound() {
+        SoundManager.shared.isMuted.toggle()
+        if let icon = soundButton?.childNode(withName: "soundIcon") as? SKLabelNode {
+            icon.text = soundIcon()
+        }
+        soundButton?.run(SKAction.sequence([
+            SKAction.scale(to: 0.85, duration: 0.08),
+            SKAction.scale(to: 1.0, duration: 0.12)
+        ]))
     }
 
     // MARK: - Fond animé
@@ -173,6 +218,9 @@ class MenuScene: SKScene {
         for node in nodes(at: point) {
             guard let name = node.parent?.name ?? node.name else { continue }
             switch name {
+            case "soundBtn":
+                toggleSound()
+                return
             case "newGame":
                 animateTap(node.parent ?? node)
                 run(SKAction.wait(forDuration: 0.12)) {

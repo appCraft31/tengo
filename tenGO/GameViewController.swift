@@ -2,13 +2,12 @@
 //  GameViewController.swift
 //  tenGO
 //
-//  Created by Nicolas on 17/04/2026.
-//
 
 import UIKit
 import SpriteKit
 import GameplayKit
 import GoogleMobileAds
+import UserMessagingPlatform
 
 class GameViewController: UIViewController {
 
@@ -31,18 +30,23 @@ class GameViewController: UIViewController {
         skView.showsFPS = false
         skView.showsNodeCount = false
 
-        MobileAds.shared.start { [weak self] _ in
-            DispatchQueue.main.async {
-                self?.setupBanner()
-            }
-        }
-
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(sceneDidChange(_:)),
             name: .tenGOSceneChanged,
             object: nil
         )
+
+        // Flow GDPR/UMP → ATT → AdMob → bannière
+        ConsentManager.shared.gatherConsent(from: self) { [weak self] in
+            guard ConsentInformation.shared.canRequestAds else {
+                print("[AdMob] Consentement refusé — pas de bannière")
+                return
+            }
+            MobileAds.shared.start { _ in
+                DispatchQueue.main.async { self?.setupBanner() }
+            }
+        }
     }
 
     // MARK: - Bannière AdMob
