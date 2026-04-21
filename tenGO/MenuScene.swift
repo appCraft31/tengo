@@ -20,76 +20,21 @@ class MenuScene: SKScene {
         UIColor(red: 0.76, green: 0.82, blue: 0.97, alpha: 1), // pervenche
     ]
 
-    private var soundButton: SKNode?
-    private var soundMuteBar: SKShapeNode?
+    private var settingsOverlay: SettingsOverlay?
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
         setupBackground()
         setupUI()
-        setupSoundButton(in: view)
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
     }
 
-    // MARK: - Sound toggle
-
-    private func setupSoundButton(in view: SKView) {
-        // Zone visible réelle après aspectFill + safe area (notch / Dynamic Island)
-        let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
-        let visibleW = view.bounds.width / scale
-        let visibleH = view.bounds.height / scale
-        let safeTop = view.safeAreaInsets.top / scale
-        let safeRight = view.safeAreaInsets.right / scale
-        let rightEdge = visibleW / 2 - safeRight
-        let topEdge = visibleH / 2 - safeTop
-
-        let container = SKNode()
-        container.name = "soundBtn"
-        container.position = CGPoint(x: rightEdge - 44, y: topEdge - 44)
-        container.zPosition = 10
-
-        let bg = SKShapeNode(circleOfRadius: 26)
-        bg.fillColor = UIColor(white: 1.0, alpha: 0.88)
-        bg.strokeColor = UIColor(white: 0.65, alpha: 0.45)
-        bg.lineWidth = 1.2
-        container.addChild(bg)
-
-        // Icône note de musique — toujours affichée
-        let icon = SKLabelNode(text: "♪")
-        icon.name = "soundIcon"
-        icon.fontName = "AvenirNext-Heavy"
-        icon.fontSize = 26
-        icon.verticalAlignmentMode = .center
-        icon.horizontalAlignmentMode = .center
-        icon.fontColor = UIColor(white: 0.28, alpha: 1)
-        icon.position = CGPoint(x: 0, y: 1)
-        container.addChild(icon)
-
-        // Barre diagonale pour l'état "muet" (dessinée au-dessus)
-        let path = CGMutablePath()
-        path.move(to: CGPoint(x: -16, y: 16))
-        path.addLine(to: CGPoint(x: 16, y: -16))
-        let muteBar = SKShapeNode(path: path)
-        muteBar.strokeColor = UIColor(red: 0.85, green: 0.35, blue: 0.30, alpha: 1)
-        muteBar.lineWidth = 3.5
-        muteBar.lineCap = .round
-        muteBar.zPosition = 2
-        muteBar.isHidden = !SoundManager.shared.isMuted
-        container.addChild(muteBar)
-
-        addChild(container)
-        soundButton = container
-        soundMuteBar = muteBar
-    }
-
-    private func toggleSound() {
-        SoundManager.shared.isMuted.toggle()
-        soundMuteBar?.isHidden = !SoundManager.shared.isMuted
-        soundButton?.run(SKAction.sequence([
-            SKAction.scale(to: 0.85, duration: 0.08),
-            SKAction.scale(to: 1.0, duration: 0.12)
-        ]))
+    private func presentSettings() {
+        guard settingsOverlay == nil else { return }
+        let overlay = SettingsOverlay(sceneSize: size)
+        overlay.present(in: self)
+        settingsOverlay = overlay
     }
 
     // MARK: - Fond animé
@@ -156,7 +101,10 @@ class MenuScene: SKScene {
 
         addMenuButton(text: "Classement", name: "classement",
                       width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
+        buttonY -= 80
 
+        addMenuButton(text: "Paramètres", name: "parametres",
+                      width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
     }
 
     private func addLogo(atY y: CGFloat) {
@@ -234,11 +182,19 @@ class MenuScene: SKScene {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
 
+        // Overlay prioritaire si présent
+        if let overlay = settingsOverlay, overlay.parent != nil {
+            overlay.handleTouch(at: point)
+            if overlay.parent == nil { settingsOverlay = nil }
+            return
+        }
+
         for node in nodes(at: point) {
             guard let name = node.parent?.name ?? node.name else { continue }
             switch name {
-            case "soundBtn":
-                toggleSound()
+            case "parametres":
+                animateTap(node.parent ?? node)
+                run(SKAction.wait(forDuration: 0.12)) { self.presentSettings() }
                 return
             case "newGame":
                 animateTap(node.parent ?? node)

@@ -59,6 +59,8 @@ class GameScene: SKScene {
     private var gameOverPanel: SKNode?
     private var scoreBubbleNode: SKNode!
     private var restartBubbleNode: SKNode!
+    private var settingsBubbleNode: SKNode!
+    private var settingsOverlay: SettingsOverlay?
 
     // MARK: - Stats partie
     private var combosCreated = 0
@@ -94,9 +96,50 @@ class GameScene: SKScene {
 
     override func didMove(to view: SKView) {
         repositionBottomRow(in: view)
+        setupSettingsButton(in: view)
         tapFeedback.prepare()
         successFeedback.prepare()
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
+    }
+
+    private func setupSettingsButton(in view: SKView) {
+        let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
+        let visibleW = view.bounds.width / scale
+        let visibleH = view.bounds.height / scale
+        let safeTop = view.safeAreaInsets.top / scale
+        let safeRight = view.safeAreaInsets.right / scale
+        let rightEdge = visibleW / 2 - safeRight
+        let topEdge = visibleH / 2 - safeTop
+
+        let container = SKNode()
+        container.name = "settingsBtn"
+        container.position = CGPoint(x: rightEdge - 44, y: topEdge - 44)
+        container.zPosition = 10
+
+        let bg = SKShapeNode(circleOfRadius: 26)
+        bg.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 1)
+        bg.strokeColor = UIColor(white: 0.70, alpha: 0.55)
+        bg.lineWidth = 1.2
+        container.addChild(bg)
+
+        let icon = SKLabelNode(text: "⚙")
+        icon.name = "settingsBtn"
+        icon.fontName = "AvenirNext-Medium"
+        icon.fontSize = 26
+        icon.verticalAlignmentMode = .center
+        icon.horizontalAlignmentMode = .center
+        icon.fontColor = UIColor(white: 0.45, alpha: 1)
+        container.addChild(icon)
+
+        addChild(container)
+        settingsBubbleNode = container
+    }
+
+    private func presentSettings() {
+        guard settingsOverlay == nil else { return }
+        let overlay = SettingsOverlay(sceneSize: size)
+        overlay.present(in: self)
+        settingsOverlay = overlay
     }
 
     private func repositionBottomRow(in view: SKView) {
@@ -310,6 +353,24 @@ class GameScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
+
+        // Overlay paramètres prioritaire si ouvert
+        if let overlay = settingsOverlay, overlay.parent != nil {
+            overlay.handleTouch(at: point)
+            if overlay.parent == nil { settingsOverlay = nil }
+            return
+        }
+
+        // Bouton paramètres en haut à droite
+        if let settingsBubble = settingsBubbleNode,
+           hypot(point.x - settingsBubble.position.x, point.y - settingsBubble.position.y) < 34 {
+            settingsBubble.run(SKAction.sequence([
+                SKAction.scale(to: 0.88, duration: 0.08),
+                SKAction.scale(to: 1.0, duration: 0.12)
+            ]))
+            presentSettings()
+            return
+        }
 
         // Bouton home — retour au menu
         if hypot(point.x - homeBubbleNode.position.x, point.y - homeBubbleNode.position.y) < 34 {
