@@ -84,7 +84,7 @@ class MenuScene: SKScene {
         // Titre — "TEN" + bulle colorée + "GO"
         addLogo(atY: centerY * 0.45)
 
-        let tagline = SKLabelNode(text: "Relie. Additionne. Libère.")
+        let tagline = SKLabelNode(text: String(localized: "menu.tagline"))
         tagline.fontName = "AvenirNext-Light"
         tagline.fontSize = 22
         tagline.fontColor = UIColor(white: 0.48, alpha: 1)
@@ -96,22 +96,22 @@ class MenuScene: SKScene {
         let hasSaved = GameState.exists
         var buttonY: CGFloat = 40
 
-        addMenuButton(text: "Nouvelle partie", name: "newGame",
+        addMenuButton(text: String(localized: "menu.new_game"), name: "newGame",
                       width: 270, height: 62, at: CGPoint(x: 0, y: buttonY),
                       accent: UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1))
         buttonY -= 86
 
         if hasSaved {
-            addMenuButton(text: "Continuer", name: "continuer",
+            addMenuButton(text: String(localized: "menu.continue"), name: "continuer",
                           width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
             buttonY -= 80
         }
 
-        addMenuButton(text: "Classement", name: "classement",
+        addMenuButton(text: String(localized: "menu.leaderboard"), name: "classement",
                       width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
         buttonY -= 80
 
-        addMenuButton(text: "Paramètres", name: "parametres",
+        addMenuButton(text: String(localized: "menu.settings"), name: "parametres",
                       width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
     }
 

@@ -129,7 +129,7 @@ final class SettingsOverlay: SKNode {
         card.addChild(bg)
 
         // Titre
-        let title = SKLabelNode(text: "Paramètres")
+        let title = SKLabelNode(text: String(localized: "settings.title"))
         title.fontName = "AvenirNext-Heavy"
         title.fontSize = 30
         title.fontColor = UIColor(white: 0.25, alpha: 1)
@@ -165,14 +165,14 @@ final class SettingsOverlay: SKNode {
         let rowStep: CGFloat = 58
 
         // Son (toggle)
-        let soundViews = addToggleRow(name: "row_sound", title: "Son", y: y)
+        let soundViews = addToggleRow(name: "row_sound", title: String(localized: "settings.sound"), y: y)
         soundToggleBg = soundViews.bg
         soundToggleKnob = soundViews.knob
         soundStatus = soundViews.status
         y -= rowStep
 
         // Retours haptiques
-        let hapticViews = addToggleRow(name: "row_haptic", title: "Retours haptiques", y: y)
+        let hapticViews = addToggleRow(name: "row_haptic", title: String(localized: "settings.haptics"), y: y)
         hapticToggleBg = hapticViews.bg
         hapticToggleKnob = hapticViews.knob
         hapticStatus = hapticViews.status
@@ -181,15 +181,15 @@ final class SettingsOverlay: SKNode {
         addSeparator(y: y + 8)
         y -= 10
 
-        addActionRow(name: "row_tutorial", title: "Revoir le tutoriel", y: y); y -= rowStep
-        addActionRow(name: "row_privacy", title: "Options de confidentialité", y: y); y -= rowStep
+        addActionRow(name: "row_tutorial", title: String(localized: "settings.replay_tutorial"), y: y); y -= rowStep
+        addActionRow(name: "row_privacy", title: String(localized: "settings.privacy_options"), y: y); y -= rowStep
 
         addSeparator(y: y + 8)
         y -= 10
 
-        addActionRow(name: "row_rate", title: "Noter l'application", y: y); y -= rowStep
-        addActionRow(name: "row_share", title: "Partager tenGO", y: y); y -= rowStep
-        addActionRow(name: "row_support", title: "Contacter le support", y: y); y -= rowStep
+        addActionRow(name: "row_rate", title: String(localized: "settings.rate_app"), y: y); y -= rowStep
+        addActionRow(name: "row_share", title: String(localized: "settings.share_tengo"), y: y); y -= rowStep
+        addActionRow(name: "row_support", title: String(localized: "settings.contact_support"), y: y); y -= rowStep
 
         // Footer version
         let footer = SKLabelNode(text: AppConfig.appVersion)
@@ -315,7 +315,7 @@ final class SettingsOverlay: SKNode {
             ? UIColor(white: 0.82, alpha: 1)
             : UIColor(red: 0.55, green: 0.82, blue: 0.65, alpha: 1)
         let knobX: CGFloat = muted ? -16 : 16
-        let text = muted ? "Muet" : "Activé"
+        let text = muted ? String(localized: "settings.toggle_off") : String(localized: "settings.toggle_on")
 
         if animated {
             soundToggleBg.run(SKAction.customAction(withDuration: 0.18) { [weak self] node, _ in
@@ -344,7 +344,7 @@ final class SettingsOverlay: SKNode {
             ? UIColor(red: 0.55, green: 0.82, blue: 0.65, alpha: 1)
             : UIColor(white: 0.82, alpha: 1)
         let knobX: CGFloat = enabled ? 16 : -16
-        let text = enabled ? "Activé" : "Muet"
+        let text = enabled ? String(localized: "settings.toggle_on") : String(localized: "settings.toggle_off")
 
         if animated {
             hapticToggleBg.run(SKAction.customAction(withDuration: 0.18) { [weak self] node, _ in
@@ -381,7 +381,7 @@ final class SettingsOverlay: SKNode {
     }
 
     private func openSupportMail() {
-        let subject = "Support tenGO"
+        let subject = String(localized: "settings.support_subject")
         let body = "\n\n---\n\(AppConfig.appVersion) • iOS \(UIDevice.current.systemVersion)"
         let enc = { (s: String) -> String in
             s.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? s

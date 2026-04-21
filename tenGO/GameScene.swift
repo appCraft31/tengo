@@ -292,7 +292,7 @@ class GameScene: SKScene {
         circle.lineWidth = 1.5
         bubble.addChild(circle)
 
-        let ptsLabel = SKLabelNode(text: "pts")
+        let ptsLabel = SKLabelNode(text: String(localized: "game.points_label"))
         ptsLabel.fontName = "AvenirNext-UltraLight"
         ptsLabel.fontSize = 13
         ptsLabel.fontColor = UIColor(white: 0.58, alpha: 1)
@@ -729,7 +729,9 @@ class GameScene: SKScene {
         panel.addChild(bg)
 
         // Titre
-        let titleText = isWinState ? "Parfait !" : "Fin de partie"
+        let titleText = isWinState
+            ? String(localized: "game_over.perfect_title")
+            : String(localized: "game_over.game_over_title")
         let title = SKLabelNode(text: titleText)
         title.fontName = "AvenirNext-Heavy"
         title.fontSize = 44
@@ -746,7 +748,8 @@ class GameScene: SKScene {
         panel.addChild(sep)
 
         // Score animé (count-up)
-        let scoreDisplay = SKLabelNode(text: "0 pts")
+        let ptsLabel = String(localized: "game.points_label")
+        let scoreDisplay = SKLabelNode(text: "0 \(ptsLabel)")
         scoreDisplay.fontName = "AvenirNext-Heavy"
         scoreDisplay.fontSize = 64
         scoreDisplay.fontColor = UIColor(white: 0.26, alpha: 1)
@@ -760,7 +763,7 @@ class GameScene: SKScene {
         let isNewRecord = scores.first == score && score > 0
 
         if isNewRecord {
-            let record = SKLabelNode(text: "★  Nouveau record !")
+            let record = SKLabelNode(text: String(localized: "game_over.new_record"))
             record.fontName = "AvenirNext-Bold"
             record.fontSize = 20
             record.fontColor = UIColor(red: 0.92, green: 0.65, blue: 0.20, alpha: 1)
@@ -768,7 +771,7 @@ class GameScene: SKScene {
             record.position = CGPoint(x: 0, y: 30)
             panel.addChild(record)
         } else if let best = scores.first {
-            let bestLabel = SKLabelNode(text: "Meilleur : \(best) pts")
+            let bestLabel = SKLabelNode(text: String(format: String(localized: "game_over.best_score"), best))
             bestLabel.fontName = "AvenirNext-UltraLight"
             bestLabel.fontSize = 19
             bestLabel.fontColor = UIColor(white: 0.38, alpha: 1)
@@ -778,7 +781,7 @@ class GameScene: SKScene {
         }
 
         // Stats
-        let statsLine1 = SKLabelNode(text: "Chaîne max · \(longestChain) bulles")
+        let statsLine1 = SKLabelNode(text: String(format: String(localized: "game_over.longest_chain"), longestChain))
         statsLine1.fontName = "AvenirNext-UltraLight"
         statsLine1.fontSize = 17
         statsLine1.fontColor = UIColor(white: 0.38, alpha: 1)
@@ -786,7 +789,7 @@ class GameScene: SKScene {
         statsLine1.position = CGPoint(x: 0, y: -12)
         panel.addChild(statsLine1)
 
-        let statsLine2 = SKLabelNode(text: "\(combosCreated) combinaisons créées")
+        let statsLine2 = SKLabelNode(text: String(format: String(localized: "game_over.combos_created"), combosCreated))
         statsLine2.fontName = "AvenirNext-UltraLight"
         statsLine2.fontSize = 17
         statsLine2.fontColor = UIColor(white: 0.38, alpha: 1)
@@ -813,7 +816,7 @@ class GameScene: SKScene {
         replayBg.lineWidth = 1
         replayBtn.addChild(replayBg)
 
-        let replayLabel = SKLabelNode(text: "Rejouer")
+        let replayLabel = SKLabelNode(text: String(localized: "game_over.replay"))
         replayLabel.fontName = "AvenirNext-Medium"
         replayLabel.fontSize = 24
         replayLabel.fontColor = UIColor(white: 0.26, alpha: 1)
@@ -832,7 +835,7 @@ class GameScene: SKScene {
         homeBg.lineWidth = 1
         homeBtn.addChild(homeBg)
 
-        let homeLabel = SKLabelNode(text: "Accueil")
+        let homeLabel = SKLabelNode(text: String(localized: "game_over.home"))
         homeLabel.fontName = "AvenirNext-UltraLight"
         homeLabel.fontSize = 19
         homeLabel.fontColor = UIColor(white: 0.42, alpha: 1)
@@ -847,16 +850,17 @@ class GameScene: SKScene {
     }
 
     private func animateScoreCountUp(label: SKLabelNode, target: Int) {
+        let pts = String(localized: "game.points_label")
         let steps = 24
         let duration = 0.55
         let stepDuration = duration / Double(steps)
         var actions: [SKAction] = []
         for i in 1...steps {
             let value = Int(Double(target) * Double(i) / Double(steps))
-            actions.append(SKAction.run { label.text = "\(value) pts" })
+            actions.append(SKAction.run { label.text = "\(value) \(pts)" })
             actions.append(SKAction.wait(forDuration: stepDuration))
         }
-        actions.append(SKAction.run { label.text = "\(target) pts" })
+        actions.append(SKAction.run { label.text = "\(target) \(pts)" })
         label.run(SKAction.sequence(actions))
     }
 

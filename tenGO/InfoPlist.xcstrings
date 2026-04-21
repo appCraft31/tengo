@@ -1,0 +1,21 @@
+{
+  "sourceLanguage" : "fr",
+  "strings" : {
+    "NSUserTrackingUsageDescription" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wir verwenden anonyme Daten, um relevante Anzeigen anzuzeigen." } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "We use anonymous data to show you relevant ads." } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Usamos datos anónimos para mostrar anuncios relevantes." } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Nous utilisons des données anonymes pour afficher des publicités pertinentes." } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Usiamo dati anonimi per mostrare annunci pertinenti." } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "関連性の高い広告を表示するために匿名データを使用します。" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "관련성 있는 광고를 표시하기 위해 익명 데이터를 사용합니다." } },
+        "nl" : { "stringUnit" : { "state" : "translated", "value" : "We gebruiken anonieme gegevens om relevante advertenties te tonen." } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Usamos dados anônimos para exibir anúncios relevantes." } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "我们使用匿名数据来展示相关广告。" } }
+      }
+    }
+  },
+  "version" : "1.0"
+}

@@ -75,7 +75,7 @@ class LeaderboardScene: SKScene {
         let bottomY = -size.height / 2
 
         // Titre
-        let title = SKLabelNode(text: "Classement")
+        let title = SKLabelNode(text: String(localized: "leaderboard.title"))
         title.fontName = "AvenirNext-Heavy"
         title.fontSize = 44
         title.fontColor = UIColor(white: 0.28, alpha: 1)
@@ -94,7 +94,7 @@ class LeaderboardScene: SKScene {
             emoji.position = CGPoint(x: 0, y: 60)
             addChild(emoji)
 
-            let empty = SKLabelNode(text: "Ton premier score t'attend.")
+            let empty = SKLabelNode(text: String(localized: "leaderboard.empty_title"))
             empty.fontName = "AvenirNext-Medium"
             empty.fontSize = 22
             empty.fontColor = UIColor(white: 0.32, alpha: 1)
@@ -102,7 +102,7 @@ class LeaderboardScene: SKScene {
             empty.position = CGPoint(x: 0, y: 0)
             addChild(empty)
 
-            let sub = SKLabelNode(text: "Lance une partie et reviens briller ici.")
+            let sub = SKLabelNode(text: String(localized: "leaderboard.empty_subtitle"))
             sub.fontName = "AvenirNext-UltraLight"
             sub.fontSize = 17
             sub.fontColor = UIColor(white: 0.55, alpha: 1)
@@ -147,7 +147,7 @@ class LeaderboardScene: SKScene {
         dot.zPosition = 1
         addChild(dot)
 
-        let ptsLabel = SKLabelNode(text: "pts")
+        let ptsLabel = SKLabelNode(text: String(localized: "game.points_label"))
         ptsLabel.fontName = "AvenirNext-UltraLight"
         ptsLabel.fontSize = 14
         ptsLabel.fontColor = UIColor(white: 0.58, alpha: 1)
@@ -194,7 +194,7 @@ class LeaderboardScene: SKScene {
             rankLabel.position = CGPoint(x: -pillW / 2 + 24, y: 0)
             pill.addChild(rankLabel)
 
-            let scoreLabel = SKLabelNode(text: "\(score) pts")
+            let scoreLabel = SKLabelNode(text: "\(score) \(String(localized: "game.points_label"))")
             scoreLabel.fontName = "AvenirNext-Medium"
             scoreLabel.fontSize = 20
             scoreLabel.fontColor = UIColor(white: 0.30, alpha: 1)

@@ -62,7 +62,7 @@ class TutorialScene: SKScene {
         let topY = size.height / 2
 
         // Titre
-        let title = SKLabelNode(text: "Comment jouer")
+        let title = SKLabelNode(text: String(localized: "tutorial.title"))
         title.fontName = "AvenirNext-Heavy"
         title.fontSize = 36
         title.fontColor = UIColor(white: 0.26, alpha: 1)
@@ -132,7 +132,7 @@ class TutorialScene: SKScene {
         prevBg.lineWidth = 1
         prev.addChild(prevBg)
 
-        let prevLabel = SKLabelNode(text: "‹ Précédent")
+        let prevLabel = SKLabelNode(text: String(localized: "tutorial.previous_button"))
         prevLabel.fontName = "AvenirNext-UltraLight"
         prevLabel.fontSize = 17
         prevLabel.fontColor = UIColor(white: 0.40, alpha: 1)
@@ -152,7 +152,7 @@ class TutorialScene: SKScene {
         nextBg.lineWidth = 1
         next.addChild(nextBg)
 
-        let nextLabel = SKLabelNode(text: "Suivant ›")
+        let nextLabel = SKLabelNode(text: String(localized: "tutorial.next_button"))
         nextLabel.name = "nextLabel"
         nextLabel.fontName = "AvenirNext-Medium"
         nextLabel.fontSize = 17
@@ -196,18 +196,18 @@ class TutorialScene: SKScene {
         let label = next.childNode(withName: "nextLabel") as? SKLabelNode
         let bg    = next.childNode(withName: "nextBg") as? SKShapeNode
         if currentStep == totalSteps - 1 {
-            label?.text = "Jouer !"
+            label?.text = String(localized: "tutorial.play_button")
             bg?.fillColor = UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1)
         } else {
-            label?.text = "Suivant ›"
+            label?.text = String(localized: "tutorial.next_button")
         }
     }
 
     // MARK: - Étape 0 : Relier des bulles
 
     private func buildStep0(in parent: SKNode) {
-        addStepTitle("Relie des bulles adjacentes", to: parent, y: 240)
-        addStepSubtitle("Glisse le doigt de bulle en bulle.\nLes diagonales sont autorisées.", to: parent, y: 178)
+        addStepTitle(String(localized: "tutorial.step0_title"), to: parent, y: 240)
+        addStepSubtitle(String(localized: "tutorial.step0_subtitle"), to: parent, y: 178)
 
         // Grille 3×4 démo
         let values = [[3, 7, 2], [4, 2, 6], [1, 5, 3], [8, 4, 5]]
@@ -266,8 +266,8 @@ class TutorialScene: SKScene {
     // MARK: - Étape 1 : La somme fait 10
 
     private func buildStep1(in parent: SKNode) {
-        addStepTitle("La somme doit faire exactement 10", to: parent, y: 240)
-        addStepSubtitle("Pas plus, pas moins.\nLe chemin peut avoir 2 à 9 bulles.", to: parent, y: 178)
+        addStepTitle(String(localized: "tutorial.step1_title"), to: parent, y: 240)
+        addStepSubtitle(String(localized: "tutorial.step1_subtitle"), to: parent, y: 178)
 
         // Exemples de combinaisons
         let examples: [(String, [Int], [Int])] = [
@@ -283,7 +283,7 @@ class TutorialScene: SKScene {
         }
 
         // Hint
-        let hint = SKLabelNode(text: "Reviens en arrière en repassant sur\nla dernière bulle sélectionnée.")
+        let hint = SKLabelNode(text: String(localized: "tutorial.step1_hint"))
         hint.fontName = "AvenirNext-UltraLight"
         hint.fontSize = 16
         hint.fontColor = UIColor(white: 0.50, alpha: 1)
@@ -297,13 +297,14 @@ class TutorialScene: SKScene {
     // MARK: - Étape 2 : Scoring
 
     private func buildStep2(in parent: SKNode) {
-        addStepTitle("Plus la chaîne est longue,\nplus tu scores !", to: parent, y: 252)
+        addStepTitle(String(localized: "tutorial.step2_title"), to: parent, y: 252)
 
+        let pts = String(localized: "game.points_label")
         let rows: [(String, String)] = [
-            ("2 bulles",  "10 pts"),
-            ("3 bulles",  "30 pts"),
-            ("4 bulles",  "100 pts"),
-            ("5+ bulles", "100 + 50 × extra"),
+            (String(localized: "tutorial.step2_2_bubbles"),     "10 \(pts)"),
+            (String(localized: "tutorial.step2_3_bubbles"),     "30 \(pts)"),
+            (String(localized: "tutorial.step2_4_bubbles"),     "100 \(pts)"),
+            (String(localized: "tutorial.step2_5plus_bubbles"), "100 + 50 × extra"),
         ]
         let rowH: CGFloat = 62
         var y: CGFloat = 110
@@ -323,7 +324,7 @@ class TutorialScene: SKScene {
         pcBg.lineWidth = 1
         pc.addChild(pcBg)
 
-        let pcLabel = SKLabelNode(text: "★  Grille vide — Bonus +1000 pts")
+        let pcLabel = SKLabelNode(text: String(localized: "tutorial.step2_perfect_clear"))
         pcLabel.fontName = "AvenirNext-Medium"
         pcLabel.fontSize = 16
         pcLabel.fontColor = UIColor(red: 0.75, green: 0.52, blue: 0.12, alpha: 1)

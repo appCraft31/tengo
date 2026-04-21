@@ -21,16 +21,15 @@ enum AppConfig {
     /// Email de contact du support
     static let supportEmail = "appcraft31@gmail.com"
 
-    /// Texte partagé lors d'un share
-    static let shareMessage = """
-    Découvre tenGO — un puzzle zen pour respirer.
-    \(appStoreURL)
-    """
+    /// Texte partagé lors d'un share (localisé)
+    static var shareMessage: String {
+        String(format: String(localized: "app.share_message"), appStoreURL)
+    }
 
-    /// Version affichée dans le menu paramètres
+    /// Version affichée dans le menu paramètres (localisée)
     static var appVersion: String {
         let v = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "1.0"
-        return "Version \(v)"
+        return String(format: String(localized: "app.version_label"), v)
     }
 
     // MARK: - UserDefaults keys
