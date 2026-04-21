@@ -35,7 +35,12 @@ final class SoundManager {
 
     // MARK: - Arpégiateur
 
-    private var noteQueue: [Double] = []
+    private struct QueuedNote {
+        let frequency: Double
+        let haptic: Bool   // true → vibration synchronisée sur cette note
+    }
+
+    private var noteQueue: [QueuedNote] = []
     private let queueLock = NSLock()
     private var arpTimer: DispatchSourceTimer?
     private static let arpInterval: TimeInterval = 0.150
@@ -96,16 +101,17 @@ final class SoundManager {
         pathStep = max(0, pathStep - 1)
     }
 
-    /// Combo — enfile l'accord + quinte finale dans l'arpégiateur
+    /// Combo — enfile l'accord + quinte finale, SANS haptic sur chaque note
+    /// (le `HapticManager.medium()` de GameScene marque déjà la validation)
     func playCombo() {
         guard !isMuted else { return }
         let count = min(pathStep + 1, currentScale.count)
         queueLock.lock()
         for i in 0..<count {
-            noteQueue.append(currentScale[i])
+            noteQueue.append(QueuedNote(frequency: currentScale[i], haptic: false))
         }
         if count > 0 {
-            noteQueue.append(currentScale[count - 1] * 1.498)  // quinte
+            noteQueue.append(QueuedNote(frequency: currentScale[count - 1] * 1.498, haptic: false))
         }
         queueLock.unlock()
         pathStep = 0
@@ -117,7 +123,9 @@ final class SoundManager {
         guard !isMuted else { return }
         let notes: [Double] = [261.6, 329.6, 392.0, 523.3, 659.3, 784.0]
         queueLock.lock()
-        noteQueue.append(contentsOf: notes)
+        for f in notes {
+            noteQueue.append(QueuedNote(frequency: f, haptic: false))
+        }
         queueLock.unlock()
     }
 
@@ -128,9 +136,9 @@ final class SoundManager {
 
     // MARK: - Queue FIFO
 
-    private func scheduleNote(frequency: Double) {
+    private func scheduleNote(frequency: Double, haptic: Bool = true) {
         queueLock.lock()
-        noteQueue.append(frequency)
+        noteQueue.append(QueuedNote(frequency: frequency, haptic: haptic))
         queueLock.unlock()
     }
 
@@ -152,17 +160,17 @@ final class SoundManager {
             queueLock.unlock()
             return
         }
-        let freq = noteQueue.removeFirst()
+        let note = noteQueue.removeFirst()
         queueLock.unlock()
-        triggerVoice(frequency: freq)
+        triggerVoice(frequency: note.frequency, haptic: note.haptic)
     }
 
     // MARK: - Allocation de voix (libre ou vol de voix)
 
-    private func triggerVoice(frequency: Double) {
+    private func triggerVoice(frequency: Double, haptic: Bool) {
         // Vibration synchronisée avec la note : le joueur sent la mélodie
         // dans son téléphone, pas son doigt sur l'écran.
-        HapticManager.light()
+        if haptic { HapticManager.light() }
 
         if let freeVoice = voices.first(where: { !$0.isActive }) {
             freeVoice.noteOn(frequency: frequency)
