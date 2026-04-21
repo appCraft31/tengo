@@ -35,16 +35,18 @@ class MenuScene: SKScene {
     // MARK: - Sound toggle
 
     private func setupSoundButton(in view: SKView) {
-        // Zone visible réelle après aspectFill (évite le crop sur iPhone étroits)
+        // Zone visible réelle après aspectFill + safe area (notch / Dynamic Island)
         let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
         let visibleW = view.bounds.width / scale
         let visibleH = view.bounds.height / scale
-        let rightEdge = visibleW / 2
-        let topEdge = visibleH / 2
+        let safeTop = view.safeAreaInsets.top / scale
+        let safeRight = view.safeAreaInsets.right / scale
+        let rightEdge = visibleW / 2 - safeRight
+        let topEdge = visibleH / 2 - safeTop
 
         let container = SKNode()
         container.name = "soundBtn"
-        container.position = CGPoint(x: rightEdge - 50, y: topEdge - 60)
+        container.position = CGPoint(x: rightEdge - 44, y: topEdge - 44)
         container.zPosition = 10
 
         let bg = SKShapeNode(circleOfRadius: 26)
