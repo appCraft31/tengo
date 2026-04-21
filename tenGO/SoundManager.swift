@@ -134,13 +134,36 @@ final class SoundManager {
         return max(0, min(raw, currentScale.count - 1))
     }
 
+    /// Victoire — mélodie ascendante générée dans la gamme courante.
+    /// 6 à 8 notes, sauts +1/+2 dans `currentScale`, terminée sur la note la plus aiguë.
     func playWin() {
         guard !isMuted else { return }
-        let notes: [Double] = [261.6, 329.6, 392.0, 523.3, 659.3, 784.0]
+        guard currentScale.count >= 2 else { return }
+
+        let noteCount = Int.random(in: 6...8)
+        let topIndex = currentScale.count - 1
+        // On réserve l'index du haut pour la note finale : intermédiaires clampés en-dessous
+        let intermediateCeiling = topIndex - 1
+
+        // Première note : parmi les graves (3 premiers index, borné sur la taille)
+        var index = Int.random(in: 0...min(2, intermediateCeiling))
+
         queueLock.lock()
-        for f in notes {
-            noteQueue.append(QueuedNote(frequency: f, haptic: false))
+
+        // Première note
+        noteQueue.append(QueuedNote(frequency: currentScale[index], haptic: false))
+
+        // Notes intermédiaires — sauts +1 ou +2 vers les aigus
+        let intermediateCount = noteCount - 2
+        for _ in 0..<intermediateCount {
+            let jump = Int.random(in: 1...2)
+            index = min(index + jump, intermediateCeiling)
+            noteQueue.append(QueuedNote(frequency: currentScale[index], haptic: false))
         }
+
+        // Résolution : la plus aiguë de la gamme
+        noteQueue.append(QueuedNote(frequency: currentScale[topIndex], haptic: false))
+
         queueLock.unlock()
     }
 
