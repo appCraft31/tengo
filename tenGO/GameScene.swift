@@ -136,7 +136,7 @@ class GameScene: SKScene {
     }
 
     private func presentSettings() {
-        guard settingsOverlay == nil else { return }
+        if settingsOverlay?.parent != nil { return }
         let overlay = SettingsOverlay(sceneSize: size)
         overlay.present(in: self)
         settingsOverlay = overlay
