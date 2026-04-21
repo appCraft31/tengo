@@ -122,15 +122,17 @@ class GameScene: SKScene {
         bg.lineWidth = 1.2
         container.addChild(bg)
 
-        let icon = SKLabelNode(text: "⋯")
-        icon.name = "settingsBtn"
-        icon.fontName = "AvenirNext-Heavy"
-        icon.fontSize = 36
-        icon.verticalAlignmentMode = .center
-        icon.horizontalAlignmentMode = .center
-        icon.fontColor = UIColor(white: 0.45, alpha: 1)
-        icon.position = CGPoint(x: 0, y: 4)
-        container.addChild(icon)
+        // Trois points dessinés manuellement pour un centrage parfait
+        let dotColor = UIColor(white: 0.45, alpha: 1)
+        let dotRadius: CGFloat = 3
+        let dotSpacing: CGFloat = 9
+        for i in -1...1 {
+            let dot = SKShapeNode(circleOfRadius: dotRadius)
+            dot.fillColor = dotColor
+            dot.strokeColor = .clear
+            dot.position = CGPoint(x: CGFloat(i) * dotSpacing, y: 0)
+            container.addChild(dot)
+        }
 
         addChild(container)
         settingsBubbleNode = container
