@@ -466,8 +466,9 @@ class GameScene: SKScene {
 
         currentPath.append(coord)
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
-        HapticManager.light()
         SoundManager.shared.playConnect(value: bubble.value)
+        // Note : le haptic est désormais déclenché par SoundManager
+        // au moment où la note sort réellement de l'arpégiateur.
         updateSumLabel()
         updatePathLine()
     }

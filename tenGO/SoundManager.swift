@@ -160,6 +160,10 @@ final class SoundManager {
     // MARK: - Allocation de voix (libre ou vol de voix)
 
     private func triggerVoice(frequency: Double) {
+        // Vibration synchronisée avec la note : le joueur sent la mélodie
+        // dans son téléphone, pas son doigt sur l'écran.
+        HapticManager.light()
+
         if let freeVoice = voices.first(where: { !$0.isActive }) {
             freeVoice.noteOn(frequency: frequency)
             return
