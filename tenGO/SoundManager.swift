@@ -6,10 +6,11 @@
 //
 //  Architecture :
 //   - 8 voix pré-allouées (AVAudioSourceNode), polyphonie sans allocation runtime
-//   - Oscillateur par voix : mélange sinus 70% + triangle 30%
+//   - Oscillateur par voix : mélange sinus 85% + triangle 15% (doux, peu d'harmoniques)
 //   - Enveloppe ADSR (0.05s / 0.2s / 30% / 2.0s) appliquée dans le render block
 //   - Arpégiateur : file FIFO dépilée toutes les 150 ms → pas d'empilement brutal
-//   - Chaîne d'effets : Voix → EQ passe-bas 1500 Hz → Reverb largeRoom 30% → Sortie
+//   - Chaîne d'effets : Voix → EQ passe-bas 1000 Hz → Reverb largeRoom 30% → Sortie
+//   - Sortie globale atténuée à 50 % pour un rendu feutré, non agressif
 //
 //  Règle d'or : aucune allocation dans les render blocks.
 //
@@ -256,12 +257,14 @@ final class SoundManager {
     private func buildGraph() {
         if let band = eq.bands.first {
             band.filterType = .lowPass
-            band.frequency = 1500
+            band.frequency = 1000
             band.bypass = false
         }
 
         reverb.loadFactoryPreset(.largeRoom)
         reverb.wetDryMix = 30
+
+        mixer.outputVolume = 0.5
 
         engine.attach(mixer)
         engine.attach(eq)
@@ -347,6 +350,13 @@ private final class Voice {
     private var phase: Double = 0           // phase normalisée [0, 1)
     private var phaseIncrement: Double = 0  // freq / sampleRate
     private var sampleIndex: Int = 0
+    // Niveau d'enveloppe courant : sert de point de départ à l'attaque suivante
+    // lors d'un vol de voix → interpolation lisse, pas de clic.
+    private var currentEnv: Float = 0
+    private var attackStartEnv: Float = 0
+    // Atténuation par voix : headroom pour éviter le clipping quand plusieurs
+    // voix se superposent (cascades de combo, mélodie de victoire).
+    private let voiceGain: Float = 0.6
 
     // Flags lus depuis le thread principal
     private(set) var isActive: Bool = false
@@ -377,7 +387,8 @@ private final class Voice {
 
     func noteOn(frequency: Double) {
         phaseIncrement = frequency / sampleRate
-        phase = 0
+        // phase conservée → oscillateur continu sur vol de voix (anti-clic)
+        attackStartEnv = currentEnv
         sampleIndex = 0
         stage = .attack
         startTime = DispatchTime.now().uptimeNanoseconds
@@ -405,7 +416,10 @@ private final class Voice {
         let env: Float
         switch stage {
         case .attack:
-            env = Float(sampleIndex) / Float(attackSamples)
+            // Interpolation depuis le niveau courant (0 pour une voix libre,
+            // valeur en cours pour une voix volée) → transition continue.
+            let progress = Float(sampleIndex) / Float(attackSamples)
+            env = attackStartEnv + progress * (1.0 - attackStartEnv)
             sampleIndex += 1
             if sampleIndex >= attackSamples { stage = .decay; sampleIndex = 0 }
 
@@ -427,6 +441,7 @@ private final class Voice {
             if sampleIndex >= releaseSamples {
                 stage = .idle
                 isActive = false
+                currentEnv = 0
                 return 0
             }
 
@@ -434,16 +449,18 @@ private final class Voice {
             return 0
         }
 
-        // --- Oscillateur : 70% sinus + 30% triangle ---
+        currentEnv = env
+
+        // --- Oscillateur : 85% sinus + 15% triangle ---
         // Sinus : sin(2π · phase)
         let sineVal = Float(sin(phase * 2.0 * .pi))
         // Triangle direct depuis la phase [0, 1) : 4·|phase − 0.5| − 1 ∈ [-1, 1]
         let triangleVal = Float(4.0 * abs(phase - 0.5) - 1.0)
-        let mixed: Float = sineVal * 0.7 + triangleVal * 0.3
+        let mixed: Float = sineVal * 0.85 + triangleVal * 0.15
 
         phase += phaseIncrement
         if phase >= 1.0 { phase -= 1.0 }
 
-        return mixed * env
+        return mixed * env * voiceGain
     }
 }
