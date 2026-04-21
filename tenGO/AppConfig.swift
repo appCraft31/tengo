@@ -19,7 +19,7 @@ enum AppConfig {
     static let appStoreReviewURL = "\(appStoreURL)?action=write-review"
 
     /// Email de contact du support
-    static let supportEmail = "support@tengo-app.com"
+    static let supportEmail = "appcraft31@gmail.com"
 
     /// Texte partagé lors d'un share
     static let shareMessage = """
