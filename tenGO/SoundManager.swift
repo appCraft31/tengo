@@ -80,21 +80,22 @@ final class SoundManager {
         buildGraph()
         startArpeggiator()
         observeInterruptions()
+        pickNewScale()  // gamme initiale (renouvelée après chaque combo)
     }
 
     // MARK: - Interface publique
 
-    /// Première bulle — pose la tonique de la nouvelle gamme tirée au sort
-    func playSelect(value: Int) {
+    /// Première bulle — la valeur détermine la note dans la gamme courante
+    /// (même bulle = même note, tant que la gamme n'a pas été renouvelée par un combo)
+    func playSelect(bubbleValue: Int) {
         guard !isMuted else { return }
-        pickNewScale()
-        let freq = currentScale[0]
+        let idx = noteIndex(for: bubbleValue)
+        let freq = currentScale[idx]
         pathNotes = [freq]
         scheduleNote(frequency: freq)
     }
 
-    /// Bulle suivante — la valeur 1–9 choisit l'index de la note dans la gamme
-    /// (1 → index 0, 2 → index 1 … 9 → index 8, clampé sur la taille réelle)
+    /// Bulle suivante — même logique que playSelect
     func playConnect(bubbleValue: Int) {
         guard !isMuted else { return }
         let idx = noteIndex(for: bubbleValue)
@@ -109,6 +110,7 @@ final class SoundManager {
 
     /// Combo — rejoue exactement la mélodie tracée par le joueur + quinte finale
     /// (SANS haptic sur chaque note : le medium de GameScene marque déjà la validation)
+    /// Renouvelle la gamme après validation → nouvelle ambiance pour le combo suivant.
     func playCombo() {
         guard !isMuted else { return }
         let melody = pathNotes
@@ -121,6 +123,7 @@ final class SoundManager {
         }
         queueLock.unlock()
         pathNotes = []
+        pickNewScale()  // nouvelle gamme pour la prochaine tentative
     }
 
     func cancelPath() { pathNotes = [] }

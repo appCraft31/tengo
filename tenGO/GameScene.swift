@@ -427,7 +427,7 @@ class GameScene: SKScene {
         currentPath = [coord]
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
         let selectValue = gridModel.cells[coord.row][coord.col]?.value ?? 1
-        SoundManager.shared.playSelect(value: selectValue)
+        SoundManager.shared.playSelect(bubbleValue: selectValue)
         updateSumLabel()
         updatePathLine()
     }
