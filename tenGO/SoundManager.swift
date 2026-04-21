@@ -48,7 +48,8 @@ final class SoundManager {
     // MARK: - Sélection dynamique de gamme
 
     private var currentScale: [Double] = []
-    private var pathStep: Int = 0
+    /// Mémorise les notes réellement jouées pendant le chemin (pour le combo)
+    private var pathNotes: [Double] = []
     private var lastScaleKey: Int = -1
 
     private let scales: [[Int]] = [
@@ -83,41 +84,52 @@ final class SoundManager {
 
     // MARK: - Interface publique
 
+    /// Première bulle — pose la tonique de la nouvelle gamme tirée au sort
     func playSelect(value: Int) {
         guard !isMuted else { return }
         pickNewScale()
-        pathStep = 0
-        scheduleNote(frequency: currentScale[0])
+        let freq = currentScale[0]
+        pathNotes = [freq]
+        scheduleNote(frequency: freq)
     }
 
-    func playConnect(value: Int) {
+    /// Bulle suivante — la valeur 1–9 choisit l'index de la note dans la gamme
+    /// (1 → index 0, 2 → index 1 … 9 → index 8, clampé sur la taille réelle)
+    func playConnect(bubbleValue: Int) {
         guard !isMuted else { return }
-        pathStep += 1
-        let idx = min(pathStep, currentScale.count - 1)
-        scheduleNote(frequency: currentScale[idx])
+        let idx = noteIndex(for: bubbleValue)
+        let freq = currentScale[idx]
+        pathNotes.append(freq)
+        scheduleNote(frequency: freq)
     }
 
     func playBacktrack() {
-        pathStep = max(0, pathStep - 1)
+        if !pathNotes.isEmpty { pathNotes.removeLast() }
     }
 
-    /// Combo — enfile l'accord + quinte finale, SANS haptic sur chaque note
-    /// (le `HapticManager.medium()` de GameScene marque déjà la validation)
+    /// Combo — rejoue exactement la mélodie tracée par le joueur + quinte finale
+    /// (SANS haptic sur chaque note : le medium de GameScene marque déjà la validation)
     func playCombo() {
         guard !isMuted else { return }
-        let count = min(pathStep + 1, currentScale.count)
+        let melody = pathNotes
         queueLock.lock()
-        for i in 0..<count {
-            noteQueue.append(QueuedNote(frequency: currentScale[i], haptic: false))
+        for freq in melody {
+            noteQueue.append(QueuedNote(frequency: freq, haptic: false))
         }
-        if count > 0 {
-            noteQueue.append(QueuedNote(frequency: currentScale[count - 1] * 1.498, haptic: false))
+        if let last = melody.last {
+            noteQueue.append(QueuedNote(frequency: last * 1.498, haptic: false))
         }
         queueLock.unlock()
-        pathStep = 0
+        pathNotes = []
     }
 
-    func cancelPath() { pathStep = 0 }
+    func cancelPath() { pathNotes = [] }
+
+    /// Mappe la valeur d'une bulle (1–9) sur un index sûr dans `currentScale`
+    private func noteIndex(for bubbleValue: Int) -> Int {
+        let raw = bubbleValue - 1
+        return max(0, min(raw, currentScale.count - 1))
+    }
 
     func playWin() {
         guard !isMuted else { return }
