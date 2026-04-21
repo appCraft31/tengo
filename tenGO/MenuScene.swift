@@ -21,52 +21,69 @@ class MenuScene: SKScene {
     ]
 
     private var soundButton: SKNode?
+    private var soundMuteBar: SKShapeNode?
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
         setupBackground()
         setupUI()
-        setupSoundButton()
+        setupSoundButton(in: view)
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
     }
 
     // MARK: - Sound toggle
 
-    private func setupSoundButton() {
+    private func setupSoundButton(in view: SKView) {
+        // Zone visible réelle après aspectFill (évite le crop sur iPhone étroits)
+        let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
+        let visibleW = view.bounds.width / scale
+        let visibleH = view.bounds.height / scale
+        let rightEdge = visibleW / 2
+        let topEdge = visibleH / 2
+
         let container = SKNode()
         container.name = "soundBtn"
-        container.position = CGPoint(x: size.width / 2 - 50, y: size.height / 2 - 60)
+        container.position = CGPoint(x: rightEdge - 50, y: topEdge - 60)
         container.zPosition = 10
 
-        let bg = SKShapeNode(circleOfRadius: 22)
-        bg.fillColor = UIColor(white: 1.0, alpha: 0.75)
-        bg.strokeColor = UIColor(white: 0.70, alpha: 0.35)
-        bg.lineWidth = 1
+        let bg = SKShapeNode(circleOfRadius: 26)
+        bg.fillColor = UIColor(white: 1.0, alpha: 0.88)
+        bg.strokeColor = UIColor(white: 0.65, alpha: 0.45)
+        bg.lineWidth = 1.2
         container.addChild(bg)
 
-        let icon = SKLabelNode(text: soundIcon())
+        // Icône note de musique — toujours affichée
+        let icon = SKLabelNode(text: "♪")
         icon.name = "soundIcon"
-        icon.fontName = "AvenirNext-Medium"
-        icon.fontSize = 22
+        icon.fontName = "AvenirNext-Heavy"
+        icon.fontSize = 26
         icon.verticalAlignmentMode = .center
         icon.horizontalAlignmentMode = .center
-        icon.fontColor = UIColor(white: 0.30, alpha: 1)
+        icon.fontColor = UIColor(white: 0.28, alpha: 1)
+        icon.position = CGPoint(x: 0, y: 1)
         container.addChild(icon)
+
+        // Barre diagonale pour l'état "muet" (dessinée au-dessus)
+        let path = CGMutablePath()
+        path.move(to: CGPoint(x: -16, y: 16))
+        path.addLine(to: CGPoint(x: 16, y: -16))
+        let muteBar = SKShapeNode(path: path)
+        muteBar.strokeColor = UIColor(red: 0.85, green: 0.35, blue: 0.30, alpha: 1)
+        muteBar.lineWidth = 3.5
+        muteBar.lineCap = .round
+        muteBar.zPosition = 2
+        muteBar.isHidden = !SoundManager.shared.isMuted
+        container.addChild(muteBar)
 
         addChild(container)
         soundButton = container
-    }
-
-    private func soundIcon() -> String {
-        return SoundManager.shared.isMuted ? "♪̸" : "♪"
+        soundMuteBar = muteBar
     }
 
     private func toggleSound() {
         SoundManager.shared.isMuted.toggle()
-        if let icon = soundButton?.childNode(withName: "soundIcon") as? SKLabelNode {
-            icon.text = soundIcon()
-        }
+        soundMuteBar?.isHidden = !SoundManager.shared.isMuted
         soundButton?.run(SKAction.sequence([
             SKAction.scale(to: 0.85, duration: 0.08),
             SKAction.scale(to: 1.0, duration: 0.12)
