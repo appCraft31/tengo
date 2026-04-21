@@ -2,24 +2,54 @@
 //  SettingsOverlay.swift
 //  tenGO
 //
-//  Popup de paramètres réutilisable (menu + écran de jeu).
-//  Contient actuellement le toggle son, extensible à d'autres options.
+//  Popup paramètres complet :
+//    - Son (toggle)          - Retours haptiques (toggle)
+//    - Revoir le tutoriel    - Options de confidentialité
+//    - Noter l'application   - Partager tenGO
+//    - Contacter le support
 //
 
 import SpriteKit
 import UIKit
+import StoreKit
+import MessageUI
 
 final class SettingsOverlay: SKNode {
 
-    private let sceneSize: CGSize
-    private var toggleBg: SKShapeNode!
-    private var toggleKnob: SKShapeNode!
-    private var toggleLabel: SKLabelNode!
-    private var dimNode: SKSpriteNode!
-    private var card: SKNode!
+    // MARK: - Actions gérées par la scène appelante
 
-    init(sceneSize: CGSize) {
+    enum Action {
+        case replayTutorial
+    }
+
+    var onAction: ((Action) -> Void)?
+
+    // MARK: - Dépendances
+
+    private weak var presenter: UIViewController?
+    private let sceneSize: CGSize
+
+    // MARK: - UI
+
+    private var card: SKNode!
+    private var dimNode: SKSpriteNode!
+
+    private var soundToggleBg: SKShapeNode!
+    private var soundToggleKnob: SKShapeNode!
+    private var soundStatus: SKLabelNode!
+
+    private var hapticToggleBg: SKShapeNode!
+    private var hapticToggleKnob: SKShapeNode!
+    private var hapticStatus: SKLabelNode!
+
+    private static let cardW: CGFloat = 490
+    private static let cardH: CGFloat = 680
+
+    // MARK: - Init
+
+    init(sceneSize: CGSize, presenter: UIViewController?) {
         self.sceneSize = sceneSize
+        self.presenter = presenter
         super.init()
         zPosition = 100
         buildUI()
@@ -27,9 +57,8 @@ final class SettingsOverlay: SKNode {
 
     required init?(coder: NSCoder) { fatalError() }
 
-    // MARK: - API publique
+    // MARK: - API
 
-    /// Présente avec fade-in
     func present(in parent: SKNode) {
         alpha = 0
         parent.addChild(self)
@@ -38,25 +67,37 @@ final class SettingsOverlay: SKNode {
         card.run(SKAction.scale(to: 1.0, duration: 0.22))
     }
 
-    /// Renvoie true si le touch est consommé
     @discardableResult
     func handleTouch(at scenePoint: CGPoint) -> Bool {
-        let localPoint = convert(scenePoint, from: parent!)
-        for node in nodes(at: localPoint) {
-            switch node.name {
+        let local = convert(scenePoint, from: parent!)
+        for node in nodes(at: local) {
+            let name = node.name ?? node.parent?.name ?? ""
+            switch name {
             case "closeBtn", "closeBg":
+                dismiss(); return true
+            case "row_sound", "row_sound_toggle":
+                toggleSound(); return true
+            case "row_haptic", "row_haptic_toggle":
+                toggleHaptic(); return true
+            case "row_tutorial":
+                animateRow(named: "row_tutorial")
                 dismiss()
+                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) { [weak self] in
+                    self?.onAction?(.replayTutorial)
+                }
                 return true
-            case "soundToggle", "toggleBg", "toggleKnob":
-                toggleSound()
-                return true
+            case "row_privacy":
+                animateRow(named: "row_privacy"); presentPrivacyOptions(); return true
+            case "row_rate":
+                animateRow(named: "row_rate"); requestReview(); return true
+            case "row_share":
+                animateRow(named: "row_share"); presentShareSheet(); return true
+            case "row_support":
+                animateRow(named: "row_support"); openSupportMail(); return true
             default: continue
             }
         }
-        // Tap sur le dim (hors carte) ferme aussi
-        if dimNode.contains(localPoint) {
-            dismiss()
-        }
+        if dimNode.contains(local) { dismiss() }
         return true
     }
 
@@ -67,24 +108,21 @@ final class SettingsOverlay: SKNode {
         ]))
     }
 
-    // MARK: - Construction
+    // MARK: - Build UI
 
     private func buildUI() {
-        // Fond assombrissant plein écran (×2 pour couvrir aspectFill)
         dimNode = SKSpriteNode(color: UIColor(white: 0, alpha: 0.55),
                                size: CGSize(width: sceneSize.width * 2.5,
                                             height: sceneSize.height * 2.5))
         dimNode.zPosition = 0
         addChild(dimNode)
 
-        // Carte centrale
         card = SKNode()
         card.zPosition = 1
         addChild(card)
 
-        let cardW: CGFloat = 460
-        let cardH: CGFloat = 340
-        let bg = SKShapeNode(rectOf: CGSize(width: cardW, height: cardH), cornerRadius: 28)
+        let bg = SKShapeNode(rectOf: CGSize(width: Self.cardW, height: Self.cardH),
+                             cornerRadius: 28)
         bg.fillColor = UIColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1)
         bg.strokeColor = UIColor(white: 0.70, alpha: 0.25)
         bg.lineWidth = 1
@@ -96,13 +134,13 @@ final class SettingsOverlay: SKNode {
         title.fontSize = 30
         title.fontColor = UIColor(white: 0.25, alpha: 1)
         title.verticalAlignmentMode = .center
-        title.position = CGPoint(x: 0, y: cardH / 2 - 50)
+        title.position = CGPoint(x: 0, y: Self.cardH / 2 - 48)
         card.addChild(title)
 
-        // Bouton fermer (×) en haut à droite
+        // Close button
         let closeNode = SKNode()
         closeNode.name = "closeBtn"
-        closeNode.position = CGPoint(x: cardW / 2 - 32, y: cardH / 2 - 32)
+        closeNode.position = CGPoint(x: Self.cardW / 2 - 32, y: Self.cardH / 2 - 32)
         card.addChild(closeNode)
 
         let closeBg = SKShapeNode(circleOfRadius: 18)
@@ -121,83 +159,244 @@ final class SettingsOverlay: SKNode {
         closeIcon.position = CGPoint(x: 0, y: 1)
         closeNode.addChild(closeIcon)
 
-        // Ligne "Son"
-        let rowY: CGFloat = 10
+        // --- Rows
+        // Y de la première ligne (sous le titre)
+        var y: CGFloat = Self.cardH / 2 - 110
+        let rowStep: CGFloat = 58
 
-        let soundLabel = SKLabelNode(text: "Son")
-        soundLabel.fontName = "AvenirNext-Medium"
-        soundLabel.fontSize = 24
-        soundLabel.fontColor = UIColor(white: 0.30, alpha: 1)
-        soundLabel.verticalAlignmentMode = .center
-        soundLabel.horizontalAlignmentMode = .left
-        soundLabel.position = CGPoint(x: -cardW / 2 + 40, y: rowY)
-        card.addChild(soundLabel)
+        // Son (toggle)
+        let soundViews = addToggleRow(name: "row_sound", title: "Son", y: y)
+        soundToggleBg = soundViews.bg
+        soundToggleKnob = soundViews.knob
+        soundStatus = soundViews.status
+        y -= rowStep
 
-        // Toggle pill
-        let toggleContainer = SKNode()
-        toggleContainer.name = "soundToggle"
-        toggleContainer.position = CGPoint(x: cardW / 2 - 80, y: rowY)
-        card.addChild(toggleContainer)
+        // Retours haptiques
+        let hapticViews = addToggleRow(name: "row_haptic", title: "Retours haptiques", y: y)
+        hapticToggleBg = hapticViews.bg
+        hapticToggleKnob = hapticViews.knob
+        hapticStatus = hapticViews.status
+        y -= rowStep
 
-        toggleBg = SKShapeNode(rectOf: CGSize(width: 72, height: 36), cornerRadius: 18)
-        toggleBg.name = "toggleBg"
-        toggleBg.lineWidth = 0
-        toggleContainer.addChild(toggleBg)
+        addSeparator(y: y + 8)
+        y -= 10
 
-        toggleKnob = SKShapeNode(circleOfRadius: 14)
-        toggleKnob.name = "toggleKnob"
-        toggleKnob.fillColor = .white
-        toggleKnob.strokeColor = UIColor(white: 0.85, alpha: 1)
-        toggleKnob.lineWidth = 1
-        toggleContainer.addChild(toggleKnob)
+        addActionRow(name: "row_tutorial", title: "Revoir le tutoriel", y: y); y -= rowStep
+        addActionRow(name: "row_privacy", title: "Options de confidentialité", y: y); y -= rowStep
 
-        // Label statut ("Activé" / "Muet") sous le toggle
-        toggleLabel = SKLabelNode(text: "")
-        toggleLabel.fontName = "AvenirNext-Regular"
-        toggleLabel.fontSize = 13
-        toggleLabel.fontColor = UIColor(white: 0.55, alpha: 1)
-        toggleLabel.verticalAlignmentMode = .center
-        toggleLabel.horizontalAlignmentMode = .center
-        toggleLabel.position = CGPoint(x: cardW / 2 - 80, y: rowY - 32)
-        card.addChild(toggleLabel)
+        addSeparator(y: y + 8)
+        y -= 10
 
-        // Note de bas de carte
-        let footer = SKLabelNode(text: "Version 1.0")
+        addActionRow(name: "row_rate", title: "Noter l'application", y: y); y -= rowStep
+        addActionRow(name: "row_share", title: "Partager tenGO", y: y); y -= rowStep
+        addActionRow(name: "row_support", title: "Contacter le support", y: y); y -= rowStep
+
+        // Footer version
+        let footer = SKLabelNode(text: AppConfig.appVersion)
         footer.fontName = "AvenirNext-Regular"
         footer.fontSize = 13
         footer.fontColor = UIColor(white: 0.55, alpha: 1)
         footer.verticalAlignmentMode = .center
-        footer.position = CGPoint(x: 0, y: -cardH / 2 + 30)
+        footer.position = CGPoint(x: 0, y: -Self.cardH / 2 + 24)
         card.addChild(footer)
 
-        updateToggleVisual(animated: false)
+        updateSoundVisual(animated: false)
+        updateHapticVisual(animated: false)
+    }
+
+    // MARK: - Row builders
+
+    @discardableResult
+    private func addToggleRow(name: String, title: String, y: CGFloat)
+    -> (bg: SKShapeNode, knob: SKShapeNode, status: SKLabelNode) {
+
+        // Hitbox invisible couvrant toute la ligne (pour tap facile)
+        let hit = SKShapeNode(rectOf: CGSize(width: Self.cardW - 40, height: 48))
+        hit.name = name
+        hit.fillColor = .clear
+        hit.strokeColor = .clear
+        hit.position = CGPoint(x: 0, y: y)
+        card.addChild(hit)
+
+        let label = SKLabelNode(text: title)
+        label.fontName = "AvenirNext-Medium"
+        label.fontSize = 21
+        label.fontColor = UIColor(white: 0.30, alpha: 1)
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .left
+        label.position = CGPoint(x: -Self.cardW / 2 + 36, y: y + 2)
+        card.addChild(label)
+
+        let container = SKNode()
+        container.name = "\(name)_toggle"
+        container.position = CGPoint(x: Self.cardW / 2 - 72, y: y)
+        card.addChild(container)
+
+        let bg = SKShapeNode(rectOf: CGSize(width: 64, height: 32), cornerRadius: 16)
+        bg.name = "\(name)_toggle"
+        bg.lineWidth = 0
+        container.addChild(bg)
+
+        let knob = SKShapeNode(circleOfRadius: 12)
+        knob.name = "\(name)_toggle"
+        knob.fillColor = .white
+        knob.strokeColor = UIColor(white: 0.85, alpha: 1)
+        knob.lineWidth = 1
+        container.addChild(knob)
+
+        let status = SKLabelNode(text: "")
+        status.fontName = "AvenirNext-Regular"
+        status.fontSize = 12
+        status.fontColor = UIColor(white: 0.55, alpha: 1)
+        status.verticalAlignmentMode = .center
+        status.horizontalAlignmentMode = .center
+        status.position = CGPoint(x: Self.cardW / 2 - 72, y: y - 26)
+        card.addChild(status)
+
+        return (bg, knob, status)
+    }
+
+    private func addActionRow(name: String, title: String, y: CGFloat) {
+        let hit = SKShapeNode(rectOf: CGSize(width: Self.cardW - 40, height: 48))
+        hit.name = name
+        hit.fillColor = .clear
+        hit.strokeColor = .clear
+        hit.position = CGPoint(x: 0, y: y)
+        card.addChild(hit)
+
+        let label = SKLabelNode(text: title)
+        label.name = name
+        label.fontName = "AvenirNext-Medium"
+        label.fontSize = 21
+        label.fontColor = UIColor(white: 0.30, alpha: 1)
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .left
+        label.position = CGPoint(x: -Self.cardW / 2 + 36, y: y + 2)
+        card.addChild(label)
+
+        let chevron = SKLabelNode(text: "›")
+        chevron.name = name
+        chevron.fontName = "AvenirNext-Medium"
+        chevron.fontSize = 28
+        chevron.fontColor = UIColor(white: 0.55, alpha: 1)
+        chevron.verticalAlignmentMode = .center
+        chevron.horizontalAlignmentMode = .right
+        chevron.position = CGPoint(x: Self.cardW / 2 - 36, y: y + 2)
+        card.addChild(chevron)
+    }
+
+    private func addSeparator(y: CGFloat) {
+        let w = Self.cardW - 72
+        let line = SKShapeNode(rectOf: CGSize(width: w, height: 1))
+        line.fillColor = UIColor(white: 0.85, alpha: 1)
+        line.strokeColor = .clear
+        line.position = CGPoint(x: 0, y: y)
+        card.addChild(line)
+    }
+
+    private func animateRow(named name: String) {
+        guard let node = card.childNode(withName: name) else { return }
+        node.run(SKAction.sequence([
+            SKAction.fadeAlpha(to: 0.4, duration: 0.08),
+            SKAction.fadeAlpha(to: 1.0, duration: 0.18)
+        ]))
     }
 
     // MARK: - Toggle son
 
     private func toggleSound() {
         SoundManager.shared.isMuted.toggle()
-        updateToggleVisual(animated: true)
+        updateSoundVisual(animated: true)
     }
 
-    private func updateToggleVisual(animated: Bool) {
+    private func updateSoundVisual(animated: Bool) {
         let muted = SoundManager.shared.isMuted
         let bgColor = muted
             ? UIColor(white: 0.82, alpha: 1)
             : UIColor(red: 0.55, green: 0.82, blue: 0.65, alpha: 1)
-        let knobX: CGFloat = muted ? -18 : 18
+        let knobX: CGFloat = muted ? -16 : 16
         let text = muted ? "Muet" : "Activé"
 
         if animated {
-            toggleBg.run(SKAction.customAction(withDuration: 0.18) { [weak self] node, _ in
+            soundToggleBg.run(SKAction.customAction(withDuration: 0.18) { [weak self] node, _ in
                 (node as? SKShapeNode)?.fillColor = bgColor
-                self?.toggleLabel.text = text
+                self?.soundStatus.text = text
             })
-            toggleKnob.run(SKAction.moveTo(x: knobX, duration: 0.18))
+            soundToggleKnob.run(SKAction.moveTo(x: knobX, duration: 0.18))
         } else {
-            toggleBg.fillColor = bgColor
-            toggleKnob.position = CGPoint(x: knobX, y: 0)
-            toggleLabel.text = text
+            soundToggleBg.fillColor = bgColor
+            soundToggleKnob.position = CGPoint(x: knobX, y: 0)
+            soundStatus.text = text
+        }
+    }
+
+    // MARK: - Toggle haptique
+
+    private func toggleHaptic() {
+        HapticManager.isEnabled.toggle()
+        if HapticManager.isEnabled { HapticManager.light() }  // feedback immédiat
+        updateHapticVisual(animated: true)
+    }
+
+    private func updateHapticVisual(animated: Bool) {
+        let enabled = HapticManager.isEnabled
+        let bgColor = enabled
+            ? UIColor(red: 0.55, green: 0.82, blue: 0.65, alpha: 1)
+            : UIColor(white: 0.82, alpha: 1)
+        let knobX: CGFloat = enabled ? 16 : -16
+        let text = enabled ? "Activé" : "Muet"
+
+        if animated {
+            hapticToggleBg.run(SKAction.customAction(withDuration: 0.18) { [weak self] node, _ in
+                (node as? SKShapeNode)?.fillColor = bgColor
+                self?.hapticStatus.text = text
+            })
+            hapticToggleKnob.run(SKAction.moveTo(x: knobX, duration: 0.18))
+        } else {
+            hapticToggleBg.fillColor = bgColor
+            hapticToggleKnob.position = CGPoint(x: knobX, y: 0)
+            hapticStatus.text = text
+        }
+    }
+
+    // MARK: - Actions UIKit
+
+    private func requestReview() {
+        guard let scene = presenter?.view.window?.windowScene else { return }
+        if #available(iOS 14.0, *) {
+            SKStoreReviewController.requestReview(in: scene)
+        } else {
+            SKStoreReviewController.requestReview()
+        }
+    }
+
+    private func presentShareSheet() {
+        guard let vc = presenter else { return }
+        let items: [Any] = [AppConfig.shareMessage]
+        let sheet = UIActivityViewController(activityItems: items, applicationActivities: nil)
+        sheet.popoverPresentationController?.sourceView = vc.view
+        sheet.popoverPresentationController?.sourceRect = CGRect(
+            x: vc.view.bounds.midX, y: vc.view.bounds.midY, width: 0, height: 0)
+        vc.present(sheet, animated: true)
+    }
+
+    private func openSupportMail() {
+        let subject = "Support tenGO"
+        let body = "\n\n---\n\(AppConfig.appVersion) • iOS \(UIDevice.current.systemVersion)"
+        let enc = { (s: String) -> String in
+            s.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? s
+        }
+        let url = URL(string: "mailto:\(AppConfig.supportEmail)?subject=\(enc(subject))&body=\(enc(body))")
+        guard let url = url else { return }
+        UIApplication.shared.open(url, options: [:], completionHandler: nil)
+    }
+
+    private func presentPrivacyOptions() {
+        guard let vc = presenter else { return }
+        ConsentManager.shared.presentPrivacyOptions(from: vc) { error in
+            if let error = error {
+                print("[Privacy] \(error.localizedDescription)")
+            }
         }
     }
 }

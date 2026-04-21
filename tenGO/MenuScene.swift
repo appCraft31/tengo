@@ -31,9 +31,16 @@ class MenuScene: SKScene {
     }
 
     private func presentSettings() {
-        // Si l'overlay précédent n'est plus dans la hiérarchie, on peut en recréer un
         if settingsOverlay?.parent != nil { return }
-        let overlay = SettingsOverlay(sceneSize: size)
+        let presenter = view?.window?.rootViewController
+        let overlay = SettingsOverlay(sceneSize: size, presenter: presenter)
+        overlay.onAction = { [weak self] action in
+            guard let self = self else { return }
+            switch action {
+            case .replayTutorial:
+                self.navigateToTutorial()
+            }
+        }
         overlay.present(in: self)
         settingsOverlay = overlay
     }

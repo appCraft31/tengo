@@ -68,8 +68,7 @@ class GameScene: SKScene {
     private var isWinState = false
 
     // MARK: - Haptics
-    private let tapFeedback    = UIImpactFeedbackGenerator(style: .light)
-    private let successFeedback = UIImpactFeedbackGenerator(style: .medium)
+    // Haptics via HapticManager (toggle dans les paramètres)
 
     // MARK: - UI nodes
 
@@ -97,8 +96,7 @@ class GameScene: SKScene {
     override func didMove(to view: SKView) {
         repositionBottomRow(in: view)
         setupSettingsButton(in: view)
-        tapFeedback.prepare()
-        successFeedback.prepare()
+        HapticManager.prepare()
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
@@ -140,7 +138,18 @@ class GameScene: SKScene {
 
     private func presentSettings() {
         if settingsOverlay?.parent != nil { return }
-        let overlay = SettingsOverlay(sceneSize: size)
+        let presenter = view?.window?.rootViewController
+        let overlay = SettingsOverlay(sceneSize: size, presenter: presenter)
+        overlay.onAction = { [weak self] action in
+            guard let self = self else { return }
+            switch action {
+            case .replayTutorial:
+                // Depuis le jeu : on sauvegarde l'état et on bascule au tuto
+                let tutorial = TutorialScene(size: self.size)
+                tutorial.scaleMode = .aspectFill
+                self.view?.presentScene(tutorial, transition: SKTransition.fade(withDuration: 0.3))
+            }
+        }
         overlay.present(in: self)
         settingsOverlay = overlay
     }
@@ -457,7 +466,7 @@ class GameScene: SKScene {
 
         currentPath.append(coord)
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
-        tapFeedback.impactOccurred()
+        HapticManager.light()
         SoundManager.shared.playConnect(value: bubble.value)
         updateSumLabel()
         updatePathLine()
@@ -466,7 +475,7 @@ class GameScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard !isAnimating, !currentPath.isEmpty else { return }
         if gridModel.pathSum(currentPath) == 10 {
-            successFeedback.impactOccurred()
+            HapticManager.medium()
             commitPath()
         } else {
             cancelPath()
