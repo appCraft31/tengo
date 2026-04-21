@@ -2,96 +2,78 @@
 //  SoundManager.swift
 //  tenGO
 //
-//  Synthèse par modélisation physique (Karplus-Strong) :
-//  simule une corde pincée en utilisant une ligne de retard avec
-//  filtre passe-bas. Produit un timbre naturellement organique —
-//  harpe / kora / kalimba — impossible à obtenir avec des sinus.
+//  Synthèse temps réel — Piano électrique doux (type Rhodes).
+//
+//  Architecture :
+//   - 8 voix pré-allouées (AVAudioSourceNode), polyphonie sans allocation runtime
+//   - Oscillateur par voix : mélange sinus 70% + triangle 30%
+//   - Enveloppe ADSR (0.05s / 0.2s / 30% / 2.0s) appliquée dans le render block
+//   - Arpégiateur : file FIFO dépilée toutes les 150 ms → pas d'empilement brutal
+//   - Chaîne d'effets : Voix → EQ passe-bas 1500 Hz → Reverb largeRoom 30% → Sortie
+//
+//  Règle d'or : aucune allocation dans les render blocks.
 //
 
 import AVFoundation
+import Foundation
 
 final class SoundManager {
     static let shared = SoundManager()
 
+    // MARK: - Moteur audio et chaîne d'effets
+
     private let engine = AVAudioEngine()
+    private let mixer  = AVAudioMixerNode()
+    private let eq     = AVAudioUnitEQ(numberOfBands: 1)
     private let reverb = AVAudioUnitReverb()
-    private let sr     = 44100.0
+    private let sampleRate: Double = 44100
 
-    private var pathFrequencies: [Double] = []
+    // MARK: - Pool de voix
+
+    private var voices: [Voice] = []
+    private static let voiceCount = 8
+
+    // MARK: - Arpégiateur
+
+    private var noteQueue: [Double] = []
+    private let queueLock = NSLock()
+    private var arpTimer: DispatchSourceTimer?
+    private static let arpInterval: TimeInterval = 0.150
+
+    // MARK: - Sélection dynamique de gamme
+
     private var currentScale: [Double] = []
+    private var pathStep: Int = 0
+    private var lastScaleKey: Int = -1
 
-    // Demi-tons depuis la tonique, gammes zen (toutes harmonieusement stables)
     private let scales: [[Int]] = [
-        [0, 2, 4, 7, 9],    // Pentatonique majeure — brillante
-        [0, 3, 5, 7, 10],   // Pentatonique mineure — contemplative
-        [0, 2, 3, 7, 8],    // Hirajoshi (Japon) — méditative
-        [0, 2, 3, 7, 9],    // Kumoi (Japon) — sereine
-        [0, 1, 5, 7, 10],   // In Sen (Japon) — mystérieuse
-        [0, 2, 4, 7, 11]    // Hemitonic pentatonic — douce lumineuse
+        [0, 2, 4, 7, 9],    // Pentatonique majeure
+        [0, 3, 5, 7, 10],   // Pentatonique mineure
+        [0, 2, 3, 7, 8],    // Hirajoshi
+        [0, 2, 3, 7, 9],    // Kumoi
+        [0, 1, 5, 7, 10],   // In Sen
+        [0, 2, 4, 7, 11]    // Hemitonic pentatonic
     ]
 
-    // Toniques disponibles (Hz) — registre confortable, chaleur médium
     private let roots: [Double] = [
-        196.0,  // G3
-        220.0,  // A3
-        233.1,  // A#3
-        246.9,  // B3
-        261.6,  // C4
-        277.2,  // C#4
-        293.7,  // D4
-        311.1,  // D#4
-        329.6   // E4
+        196.0, 220.0, 233.1, 246.9, 261.6, 277.2, 293.7, 311.1, 329.6
     ]
+
+    // MARK: - État
 
     var isMuted: Bool {
         get { UserDefaults.standard.bool(forKey: "tenGO_soundMuted") }
         set { UserDefaults.standard.set(newValue, forKey: "tenGO_soundMuted") }
     }
 
+    // MARK: - Init
+
     private init() {
         configureSession()
+        setupVoices()
         buildGraph()
+        startArpeggiator()
         observeInterruptions()
-    }
-
-    private func observeInterruptions() {
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleInterruption(_:)),
-            name: AVAudioSession.interruptionNotification,
-            object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(handleRouteChange(_:)),
-            name: AVAudioSession.routeChangeNotification,
-            object: nil
-        )
-    }
-
-    @objc private func handleInterruption(_ notification: Notification) {
-        guard let info = notification.userInfo,
-              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
-              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
-
-        switch type {
-        case .began:
-            engine.pause()
-        case .ended:
-            try? AVAudioSession.sharedInstance().setActive(true)
-            do { try engine.start() }
-            catch { print("[SoundManager] restart : \(error)") }
-        @unknown default:
-            break
-        }
-    }
-
-    @objc private func handleRouteChange(_ notification: Notification) {
-        // Casque débranché → pause, rebranché → reprend si l'engine a bougé
-        if !engine.isRunning {
-            do { try engine.start() }
-            catch { print("[SoundManager] route restart : \(error)") }
-        }
     }
 
     // MARK: - Interface publique
@@ -99,71 +81,110 @@ final class SoundManager {
     func playSelect(value: Int) {
         guard !isMuted else { return }
         pickNewScale()
-        let freq = currentScale[0]
-        pathFrequencies = [freq]
-        pluck(freq: freq, amp: 0.38, duration: 0.9, damping: 0.994, brightness: 0.55)
+        pathStep = 0
+        scheduleNote(frequency: currentScale[0])
     }
 
     func playConnect(value: Int) {
         guard !isMuted else { return }
-        let idx = min(pathFrequencies.count, currentScale.count - 1)
-        let freq = currentScale[idx]
-        pathFrequencies.append(freq)
-        pluck(freq: freq, amp: 0.35, duration: 0.8, damping: 0.993, brightness: 0.50)
+        pathStep += 1
+        let idx = min(pathStep, currentScale.count - 1)
+        scheduleNote(frequency: currentScale[idx])
     }
 
     func playBacktrack() {
-        guard !isMuted else { return }
-        if !pathFrequencies.isEmpty { pathFrequencies.removeLast() }
-        if let freq = pathFrequencies.last {
-            pluck(freq: freq * 0.85, amp: 0.18, duration: 0.5, damping: 0.988, brightness: 0.40)
-        }
+        pathStep = max(0, pathStep - 1)
     }
 
-    /// Combo — strum de toutes les notes avec quinte finale
+    /// Combo — enfile l'accord + quinte finale dans l'arpégiateur
     func playCombo() {
         guard !isMuted else { return }
-        let chord = pathFrequencies
-        pathFrequencies = []
-        let baseAmp: Float = min(0.38, 0.58 / Float(max(chord.count, 1)))
-        for (i, freq) in chord.enumerated() {
-            let delay = Double(i) * 0.014
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.pluck(freq: freq, amp: baseAmp,
-                           duration: 1.6, damping: 0.997, brightness: 0.60)
-            }
+        let count = min(pathStep + 1, currentScale.count)
+        queueLock.lock()
+        for i in 0..<count {
+            noteQueue.append(currentScale[i])
         }
-        // Quinte finale pour la résolution harmonique
-        if let last = chord.last {
-            let delay = Double(chord.count) * 0.014 + 0.010
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.pluck(freq: last * 1.498, amp: 0.22,
-                           duration: 1.8, damping: 0.997, brightness: 0.55)
-            }
+        if count > 0 {
+            noteQueue.append(currentScale[count - 1] * 1.498)  // quinte
+        }
+        queueLock.unlock()
+        pathStep = 0
+    }
+
+    func cancelPath() { pathStep = 0 }
+
+    func playWin() {
+        guard !isMuted else { return }
+        let notes: [Double] = [261.6, 329.6, 392.0, 523.3, 659.3, 784.0]
+        queueLock.lock()
+        noteQueue.append(contentsOf: notes)
+        queueLock.unlock()
+    }
+
+    func playLose() {
+        guard !isMuted else { return }
+        scheduleNote(frequency: 98.0)
+    }
+
+    // MARK: - Queue FIFO
+
+    private func scheduleNote(frequency: Double) {
+        queueLock.lock()
+        noteQueue.append(frequency)
+        queueLock.unlock()
+    }
+
+    // MARK: - Arpégiateur (tick 150 ms)
+
+    private func startArpeggiator() {
+        let timer = DispatchSource.makeTimerSource(queue: .main)
+        timer.schedule(deadline: .now() + SoundManager.arpInterval,
+                       repeating: SoundManager.arpInterval,
+                       leeway: .milliseconds(10))
+        timer.setEventHandler { [weak self] in self?.arpeggiatorTick() }
+        timer.resume()
+        self.arpTimer = timer
+    }
+
+    private func arpeggiatorTick() {
+        queueLock.lock()
+        guard !noteQueue.isEmpty else {
+            queueLock.unlock()
+            return
+        }
+        let freq = noteQueue.removeFirst()
+        queueLock.unlock()
+        triggerVoice(frequency: freq)
+    }
+
+    // MARK: - Allocation de voix (libre ou vol de voix)
+
+    private func triggerVoice(frequency: Double) {
+        if let freeVoice = voices.first(where: { !$0.isActive }) {
+            freeVoice.noteOn(frequency: frequency)
+            return
+        }
+        if let oldest = voices.min(by: { $0.startTime < $1.startTime }) {
+            oldest.noteOn(frequency: frequency)
         }
     }
 
-    func cancelPath() { pathFrequencies = [] }
+    // MARK: - Sélection aléatoire de gamme
 
-    // MARK: - Sélection dynamique de gamme
-
-    private var lastScaleKey: Int = -1
-
-    /// Tire une tonique et une gamme au hasard ; évite de rejouer la même
     private func pickNewScale() {
         var key: Int
         repeat {
             let r = Int.random(in: 0..<roots.count)
             let s = Int.random(in: 0..<scales.count)
             key = r * 100 + s
-        } while key == lastScaleKey && roots.count * scales.count > 1
+        } while key == lastScaleKey
         lastScaleKey = key
 
         let root = roots[key / 100]
         let offsets = scales[key % 100]
 
-        // Construit 2 octaves : donne 10 notes pour un chemin long
         var notes: [Double] = []
+        notes.reserveCapacity(offsets.count * 2)
         for octave in 0..<2 {
             for offset in offsets {
                 let semitones = Double(octave * 12 + offset)
@@ -173,117 +194,40 @@ final class SoundManager {
         currentScale = notes
     }
 
-    func playWin() {
-        guard !isMuted else { return }
-        let notes: [(Double, Double)] = [
-            (261.6, 0.00), (329.6, 0.18), (392.0, 0.36),
-            (523.3, 0.56), (659.3, 0.78), (784.0, 1.02)
-        ]
-        for (freq, delay) in notes {
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) {
-                self.pluck(freq: freq, amp: 0.28,
-                           duration: 1.8, damping: 0.996, brightness: 0.55)
-            }
+    // MARK: - Configuration moteur + session
+
+    private func setupVoices() {
+        voices.reserveCapacity(SoundManager.voiceCount)
+        for _ in 0..<SoundManager.voiceCount {
+            voices.append(Voice(sampleRate: sampleRate))
         }
-    }
-
-    func playLose() {
-        guard !isMuted else { return }
-        // Frappe de bois grave : Karplus-Strong à basse fréquence + forte friction
-        pluck(freq: 98.0, amp: 0.45, duration: 0.55,
-              damping: 0.975, brightness: 0.18)
-    }
-
-    // MARK: - Karplus-Strong : modélisation physique d'une corde
-
-    /// Simule une corde pincée (ou une lame de kalimba).
-    ///
-    /// - freq       : hauteur cible (Hz)
-    /// - amp        : amplitude de sortie
-    /// - duration   : durée max du son (s)
-    /// - damping    : facteur de feedback (0.99 court, 0.998 long sustain)
-    /// - brightness : proportion de bruit vs impulse à l'excitation (0 = pur, 1 = bruit)
-    private func pluck(freq: Double, amp: Float, duration: Double,
-                       damping: Float, brightness: Float) {
-        guard let buf = makeBuffer(frames: AVAudioFrameCount(sr * duration)) else { return }
-        let data = buf.floatChannelData![0]
-
-        // Taille de la ligne de retard = période en échantillons
-        let period = max(2, Int(sr / freq))
-        var delayLine = [Float](repeating: 0, count: period)
-
-        // Excitation : mélange d'impulse (frappe) et de bruit (brillance)
-        // Le bruit rose crée le "bruit de pince" / de marteau naturellement
-        var pink: Float = 0
-        for i in 0..<period {
-            let white = Float.random(in: -1...1)
-            pink = pink * 0.96 + white * 0.04     // filtre rose one-pole
-            // Fenêtre douce pour éviter les clics : attaque + decay sur la période
-            let window = sin(Float.pi * Float(i) / Float(period - 1))
-            let impulse: Float = i < period / 4 ? 0.8 : 0.0
-            delayLine[i] = (pink * 12.0 * brightness + impulse * (1 - brightness)) * window
-        }
-
-        // Normalisation pour éviter la saturation initiale
-        let peak = delayLine.map { abs($0) }.max() ?? 1
-        if peak > 0 { for i in 0..<period { delayLine[i] /= peak } }
-
-        // Variables du filtre LP one-pole pour amortissement dynamique
-        var lpPrev: Float = 0
-        var readIdx = 0
-
-        // Le facteur d'amortissement évolue légèrement → corde qui "se détend"
-        let baseDamping = damping
-        let dampingVar: Float = 0.001
-
-        for i in 0..<Int(buf.frameLength) {
-            let t = Float(Double(i) / sr)
-            let output = delayLine[readIdx]
-
-            // Filtre moyenneur (atténue les hautes fréquences chaque cycle)
-            let next = (readIdx + 1) % period
-            let averaged = (delayLine[readIdx] + delayLine[next]) * 0.5
-
-            // Amortissement variable (micro-fluctuation organique)
-            let dynDamping = baseDamping - dampingVar * sin(2 * .pi * 0.7 * t)
-
-            // Filtre passe-bas supplémentaire sur la sortie de la boucle → son devient plus doux
-            lpPrev = lpPrev * 0.20 + averaged * 0.80
-            delayLine[readIdx] = lpPrev * dynDamping
-
-            readIdx = next
-            data[i] = output * amp
-        }
-
-        scheduleWet(buf)
-    }
-
-    // MARK: - Infrastructure
-
-    private func makeBuffer(frames: AVAudioFrameCount) -> AVAudioPCMBuffer? {
-        let fmt = AVAudioFormat(standardFormatWithSampleRate: sr, channels: 1)!
-        guard let buf = AVAudioPCMBuffer(pcmFormat: fmt, frameCapacity: frames) else { return nil }
-        buf.frameLength = frames
-        return buf
-    }
-
-    private func scheduleWet(_ buffer: AVAudioPCMBuffer) {
-        let node = AVAudioPlayerNode()
-        engine.attach(node)
-        engine.connect(node, to: reverb, format: buffer.format)
-        node.scheduleBuffer(buffer) { [weak self] in
-            DispatchQueue.main.async { self?.engine.detach(node) }
-        }
-        node.play()
     }
 
     private func buildGraph() {
-        reverb.loadFactoryPreset(.largeChamber)
-        reverb.wetDryMix = 28
+        if let band = eq.bands.first {
+            band.filterType = .lowPass
+            band.frequency = 1500
+            band.bypass = false
+        }
+
+        reverb.loadFactoryPreset(.largeRoom)
+        reverb.wetDryMix = 30
+
+        engine.attach(mixer)
+        engine.attach(eq)
         engine.attach(reverb)
+
+        for voice in voices {
+            engine.attach(voice.sourceNode)
+            engine.connect(voice.sourceNode, to: mixer, format: voice.format)
+        }
+
+        engine.connect(mixer,  to: eq,                   format: nil)
+        engine.connect(eq,     to: reverb,               format: nil)
         engine.connect(reverb, to: engine.mainMixerNode, format: nil)
+
         do { try engine.start() }
-        catch { print("[SoundManager] \(error)") }
+        catch { print("[SoundManager] engine start : \(error)") }
     }
 
     private func configureSession() {
@@ -291,6 +235,165 @@ final class SoundManager {
             let s = AVAudioSession.sharedInstance()
             try s.setCategory(.ambient, mode: .default, options: .mixWithOthers)
             try s.setActive(true)
-        } catch { print("[SoundManager] Session : \(error)") }
+        } catch { print("[SoundManager] session : \(error)") }
+    }
+
+    // MARK: - Interruptions audio
+
+    private func observeInterruptions() {
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleInterruption(_:)),
+            name: AVAudioSession.interruptionNotification, object: nil)
+        NotificationCenter.default.addObserver(
+            self, selector: #selector(handleRouteChange(_:)),
+            name: AVAudioSession.routeChangeNotification, object: nil)
+    }
+
+    @objc private func handleInterruption(_ notification: Notification) {
+        guard let info = notification.userInfo,
+              let typeValue = info[AVAudioSessionInterruptionTypeKey] as? UInt,
+              let type = AVAudioSession.InterruptionType(rawValue: typeValue) else { return }
+        switch type {
+        case .began: engine.pause()
+        case .ended:
+            try? AVAudioSession.sharedInstance().setActive(true)
+            do { try engine.start() }
+            catch { print("[SoundManager] restart : \(error)") }
+        @unknown default: break
+        }
+    }
+
+    @objc private func handleRouteChange(_ notification: Notification) {
+        if !engine.isRunning {
+            do { try engine.start() }
+            catch { print("[SoundManager] route restart : \(error)") }
+        }
+    }
+}
+
+// MARK: - Voice : une voix polyphonique (oscillateur + ADSR)
+
+/// Chaque voix possède son propre `AVAudioSourceNode`.
+/// L'état audio est modifié depuis le thread audio (render block).
+/// `noteOn` est appelé depuis le thread principal ; les écritures sur
+/// Double/Int/Bool sont atomiques sur iOS 64-bit → pas besoin de verrou.
+private final class Voice {
+
+    private enum Stage: Int { case idle, attack, decay, sustain, release }
+
+    let format: AVAudioFormat
+
+    /// Créé en `lazy` pour pouvoir capturer `self` dans le render block
+    lazy var sourceNode: AVAudioSourceNode = {
+        AVAudioSourceNode(format: format) { [unowned self] _, _, frameCount, ablPointer -> OSStatus in
+            let abl = UnsafeMutableAudioBufferListPointer(ablPointer)
+            self.render(frameCount: Int(frameCount), abl: abl)
+            return noErr
+        }
+    }()
+
+    // État audio-thread
+    private var stage: Stage = .idle
+    private var phase: Double = 0           // phase normalisée [0, 1)
+    private var phaseIncrement: Double = 0  // freq / sampleRate
+    private var sampleIndex: Int = 0
+
+    // Flags lus depuis le thread principal
+    private(set) var isActive: Bool = false
+    private(set) var startTime: UInt64 = 0  // pour voice stealing
+
+    // Constantes ADSR (en échantillons)
+    private let sampleRate: Double
+    private let attackSamples: Int
+    private let decaySamples: Int
+    private let sustainHoldSamples: Int
+    private let releaseSamples: Int
+    private let sustainLevel: Float = 0.3
+
+    init(sampleRate: Double) {
+        self.sampleRate = sampleRate
+        self.attackSamples      = Int(0.05 * sampleRate)  // 0.05 s
+        self.decaySamples       = Int(0.20 * sampleRate)  // 0.20 s
+        self.sustainHoldSamples = Int(0.25 * sampleRate)  // maintien avant release auto
+        self.releaseSamples     = Int(2.00 * sampleRate)  // 2.00 s
+
+        guard let fmt = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else {
+            fatalError("Cannot create AVAudioFormat")
+        }
+        self.format = fmt
+    }
+
+    // MARK: - Déclenchement (thread principal)
+
+    func noteOn(frequency: Double) {
+        phaseIncrement = frequency / sampleRate
+        phase = 0
+        sampleIndex = 0
+        stage = .attack
+        startTime = DispatchTime.now().uptimeNanoseconds
+        isActive = true
+    }
+
+    // MARK: - Render block (thread audio — AUCUNE allocation)
+
+    private func render(frameCount: Int, abl: UnsafeMutableAudioBufferListPointer) {
+        let bufferCount = abl.count
+        for frame in 0..<frameCount {
+            let sample = nextSample()
+            for i in 0..<bufferCount {
+                guard let ptr = abl[i].mData?.assumingMemoryBound(to: Float.self) else { continue }
+                ptr[frame] = sample
+            }
+        }
+    }
+
+    /// Génère l'échantillon suivant — appelé ~44100 fois/seconde par voix active
+    private func nextSample() -> Float {
+        if stage == .idle { return 0 }
+
+        // --- Enveloppe ADSR ---
+        let env: Float
+        switch stage {
+        case .attack:
+            env = Float(sampleIndex) / Float(attackSamples)
+            sampleIndex += 1
+            if sampleIndex >= attackSamples { stage = .decay; sampleIndex = 0 }
+
+        case .decay:
+            let progress = Float(sampleIndex) / Float(decaySamples)
+            env = 1.0 - progress * (1.0 - sustainLevel)
+            sampleIndex += 1
+            if sampleIndex >= decaySamples { stage = .sustain; sampleIndex = 0 }
+
+        case .sustain:
+            env = sustainLevel
+            sampleIndex += 1
+            if sampleIndex >= sustainHoldSamples { stage = .release; sampleIndex = 0 }
+
+        case .release:
+            let progress = Float(sampleIndex) / Float(releaseSamples)
+            env = sustainLevel * (1.0 - progress)
+            sampleIndex += 1
+            if sampleIndex >= releaseSamples {
+                stage = .idle
+                isActive = false
+                return 0
+            }
+
+        case .idle:
+            return 0
+        }
+
+        // --- Oscillateur : 70% sinus + 30% triangle ---
+        // Sinus : sin(2π · phase)
+        let sineVal = Float(sin(phase * 2.0 * .pi))
+        // Triangle direct depuis la phase [0, 1) : 4·|phase − 0.5| − 1 ∈ [-1, 1]
+        let triangleVal = Float(4.0 * abs(phase - 0.5) - 1.0)
+        let mixed: Float = sineVal * 0.7 + triangleVal * 0.3
+
+        phase += phaseIncrement
+        if phase >= 1.0 { phase -= 1.0 }
+
+        return mixed * env
     }
 }
