@@ -122,13 +122,14 @@ class GameScene: SKScene {
         bg.lineWidth = 1.2
         container.addChild(bg)
 
-        let icon = SKLabelNode(text: "⚙")
+        let icon = SKLabelNode(text: "⋯")
         icon.name = "settingsBtn"
-        icon.fontName = "AvenirNext-Medium"
-        icon.fontSize = 26
+        icon.fontName = "AvenirNext-Heavy"
+        icon.fontSize = 36
         icon.verticalAlignmentMode = .center
         icon.horizontalAlignmentMode = .center
         icon.fontColor = UIColor(white: 0.45, alpha: 1)
+        icon.position = CGPoint(x: 0, y: 4)
         container.addChild(icon)
 
         addChild(container)
