@@ -12,6 +12,7 @@ import UserMessagingPlatform
 class GameViewController: UIViewController {
 
     private var bannerView: BannerView?
+    private var consentGathered = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -36,6 +37,13 @@ class GameViewController: UIViewController {
             name: .tenGOSceneChanged,
             object: nil
         )
+
+    }
+
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard !consentGathered else { return }
+        consentGathered = true
 
         // Flow GDPR/UMP → ATT → AdMob → bannière
         ConsentManager.shared.gatherConsent(from: self) { [weak self] in

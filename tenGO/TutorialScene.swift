@@ -3,6 +3,7 @@
 //  tenGO
 //
 
+import UIKit
 import SpriteKit
 
 class TutorialScene: SKScene {
@@ -23,8 +24,11 @@ class TutorialScene: SKScene {
     private let totalSteps = 3
     private var stepContainer: SKNode?
     private var dotsNodes: [SKShapeNode] = []
+    private var visibleHeight: CGFloat = 1334
 
     override func didMove(to view: SKView) {
+        let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
+        visibleHeight = view.bounds.height / scale
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
         setupBackground()
@@ -59,7 +63,7 @@ class TutorialScene: SKScene {
     // MARK: - Chrome fixe (titre, dots, boutons)
 
     private func setupChrome() {
-        let topY = size.height / 2
+        let topY = visibleHeight / 2
 
         // Titre
         let title = SKLabelNode(text: String(localized: "tutorial.title"))
@@ -90,10 +94,10 @@ class TutorialScene: SKScene {
         closeNode.addChild(closeLabel)
 
         // Dots de progression
-        setupDots(atY: -size.height / 2 + 180)
+        setupDots(atY: -visibleHeight / 2 + 180)
 
         // Boutons navigation
-        setupNavButtons(atY: -size.height / 2 + 110)
+        setupNavButtons(atY: -visibleHeight / 2 + 110)
     }
 
     private func setupDots(atY y: CGFloat) {
