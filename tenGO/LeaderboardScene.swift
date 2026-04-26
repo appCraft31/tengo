@@ -71,8 +71,14 @@ class LeaderboardScene: SKScene {
     // MARK: - UI
 
     private func setupUI() {
+        guard let view = view else { return }
         let topY = size.height / 2
-        let bottomY = -size.height / 2
+
+        // Même logique que TutorialScene : avec aspectFill l'iPad rogne le haut/bas.
+        let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
+        let visibleHalfH = view.bounds.height / scale / 2
+        let safeBottomInset = view.safeAreaInsets.bottom / scale
+        let bottomY = -visibleHalfH + safeBottomInset
 
         // Titre
         let title = SKLabelNode(text: String(localized: "leaderboard.title"))
