@@ -59,7 +59,16 @@ class TutorialScene: SKScene {
     // MARK: - Chrome fixe (titre, dots, boutons)
 
     private func setupChrome() {
+        guard let view = view else { return }
         let topY = size.height / 2
+
+        // Avec aspectFill, la scène est rognée si le ratio de l'écran diffère de celui
+        // de la scène (ex. iPad). On calcule le bas réellement visible pour y ancrer
+        // les boutons, quel que soit l'appareil.
+        let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
+        let visibleHalfH = view.bounds.height / scale / 2
+        let safeBottomInset = view.safeAreaInsets.bottom / scale
+        let bottomY = -visibleHalfH + safeBottomInset
 
         // Titre
         let title = SKLabelNode(text: String(localized: "tutorial.title"))
@@ -90,10 +99,10 @@ class TutorialScene: SKScene {
         closeNode.addChild(closeLabel)
 
         // Dots de progression
-        setupDots(atY: -size.height / 2 + 180)
+        setupDots(atY: bottomY + 180)
 
         // Boutons navigation
-        setupNavButtons(atY: -size.height / 2 + 110)
+        setupNavButtons(atY: bottomY + 110)
     }
 
     private func setupDots(atY y: CGFloat) {
