@@ -12,6 +12,7 @@ import UserMessagingPlatform
 class GameViewController: UIViewController {
 
     private var bannerView: BannerView?
+    private var consentRequested = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -36,8 +37,15 @@ class GameViewController: UIViewController {
             name: .tenGOSceneChanged,
             object: nil
         )
+    }
 
-        // Flow GDPR/UMP → ATT → AdMob → bannière
+    override func viewDidAppear(_ animated: Bool) {
+        super.viewDidAppear(animated)
+        guard !consentRequested else { return }
+        consentRequested = true
+
+        // La fenêtre doit être visible avant de demander ATT (iOS 17+ ignore les
+        // popups système déclenchées trop tôt dans le cycle de vie).
         ConsentManager.shared.gatherConsent(from: self) { [weak self] in
             guard ConsentInformation.shared.canRequestAds else {
                 print("[AdMob] Consentement refusé — pas de bannière")
