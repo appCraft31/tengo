@@ -57,7 +57,11 @@ final class ConsentManager {
             DispatchQueue.main.async { completion() }
         }
         if #available(iOS 14.5, *) {
-            ATTrackingManager.requestTrackingAuthorization { _ in done() }
+            // requestTrackingAuthorization doit impérativement être appelé depuis
+            // le main thread — les callbacks UMP (Google) ne le garantissent pas.
+            DispatchQueue.main.async {
+                ATTrackingManager.requestTrackingAuthorization { _ in done() }
+            }
         } else {
             done()
         }

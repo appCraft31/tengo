@@ -44,15 +44,18 @@ class GameViewController: UIViewController {
         guard !consentGathered else { return }
         consentGathered = true
 
-        // La fenêtre doit être visible avant de demander ATT (iOS 17+ ignore les
-        // popups système déclenchées trop tôt dans le cycle de vie).
-        ConsentManager.shared.gatherConsent(from: self) { [weak self] in
-            guard ConsentInformation.shared.canRequestAds else {
-                print("[AdMob] Consentement refusé — pas de bannière")
-                return
-            }
-            MobileAds.shared.start { _ in
-                DispatchQueue.main.async { self?.setupBanner() }
+        // Délai court pour laisser le windowScene se stabiliser (critique sur iPad) :
+        // requestTrackingAuthorization est ignoré si la fenêtre n'est pas encore active.
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            guard let self else { return }
+            ConsentManager.shared.gatherConsent(from: self) { [weak self] in
+                guard ConsentInformation.shared.canRequestAds else {
+                    print("[AdMob] Consentement refusé — pas de bannière")
+                    return
+                }
+                MobileAds.shared.start { _ in
+                    DispatchQueue.main.async { self?.setupBanner() }
+                }
             }
         }
     }
