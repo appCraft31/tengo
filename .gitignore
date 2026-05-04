@@ -1,0 +1,22 @@
+# Xcode
+build/
+*.ipa
+*.dSYM.zip
+*.dSYM
+DerivedData/
+*.xcuserstate
+xcuserdata/
+
+# CocoaPods
+Pods/
+
+# Bundler
+vendor/bundle/
+.bundle/
+
+# Fastlane
+fastlane/.env*
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/
+fastlane/test_output/
