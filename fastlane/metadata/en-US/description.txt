@@ -1,0 +1,48 @@
+TEN·GO — The zen puzzle to breathe
+
+TEN·GO is a minimalist puzzle designed for calm. No timer. No stress.
+Just you, a grid of soft-colored bubbles, and the simplest rule in the world:
+find the sum of 10.
+
+Connect neighboring bubbles whose numbers add up to exactly 10. They dissolve in a
+harmonic wave, the bubbles above fall gently, and the grid breathes again.
+Keep going until everything is free.
+
+An experience designed for serenity
+
+Every detail is calibrated to soothe you:
+• A pastel palette inspired by watercolors
+• Floating background bubbles, like a visual breath
+• A soft electric piano synthesized in real time: each bubble is a note, each
+  path a melody
+• 54 possible soundscapes across 6 zen scales — major and minor pentatonic,
+  Hirajoshi, Kumoi, In Sen, hemitonic — never the same twice in a row
+• Even when playing fast, notes cascade gently without aggressive stacking
+• Vibrations synchronized with the music: the phone pulses to the rhythm of your
+  notes, not your finger
+• No notifications, no urgent reminders
+
+A game that adapts to your pace
+
+Five minutes to unwind between appointments, or an hour to let yourself be absorbed
+by the silence. No blocked levels, no energy to recharge, no life system. Just the
+simple pleasure of connecting, adding, releasing.
+
+Clear mechanics
+
+• Slide your finger over neighboring bubbles (rows, columns, diagonals)
+• The sum must be exactly 10 — no more, no less
+• The longer the chain, the more points it's worth
+• Clear the entire grid for a perfect bonus
+
+Crafted with care
+
+TEN·GO is a handcrafted project, designed with precision: minimalist interface,
+fluid animations, portrait mode for a natural one-handed grip — on the subway, in
+bed, by the fire. Sound, vibrations and tutorial can be adjusted in one tap from
+the settings menu.
+
+Available in 10 languages
+
+French, English, Spanish, German, Italian, Portuguese (Brazil), Japanese, Simplified
+Chinese, Korean, Dutch.

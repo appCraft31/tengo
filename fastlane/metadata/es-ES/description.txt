@@ -1,0 +1,39 @@
+TEN·GO — El puzzle zen para respirar
+
+TEN·GO es un puzzle minimalista diseñado para la calma. Sin cronómetro. Sin estrés.
+Solo tú, una cuadrícula de burbujas de colores suaves y la regla más simple del mundo:
+encuentra la suma de 10.
+
+Conecta burbujas vecinas cuyos números sumen exactamente 10. Se disuelven en una ola armónica, las burbujas de arriba caen suavemente y la cuadrícula vuelve a respirar.
+Continúa hasta liberarlo todo.
+
+Una experiencia diseñada para la serenidad
+
+Cada detalle está calibrado para tranquilizarte:
+• Una paleta pastel inspirada en acuarelas
+• Burbujas flotantes en el fondo, como una respiración visual
+• Un suave piano eléctrico sintetizado en tiempo real: cada burbuja es una nota, cada camino una melodía
+• 54 ambientes sonoros posibles en 6 escalas zen — pentatónicas mayor y menor,
+  Hirajoshi, Kumoi, In Sen, hemitónica — nunca la misma dos veces seguidas
+• Incluso jugando rápido, las notas caen en cascada sin acumulación agresiva
+• Vibraciones sincronizadas con la música: el teléfono pulsa al ritmo de tus notas, no de tu dedo
+• Sin notificaciones, sin recordatorios urgentes
+
+Un juego que se adapta a tu ritmo
+
+Cinco minutos para desconectar entre citas, o una hora para dejarte absorber por el silencio. Sin niveles bloqueados, sin energía que recargar, sin sistema de vidas. Solo el simple placer de conectar, sumar, liberar.
+
+Mecánica clara
+
+• Desliza el dedo sobre burbujas vecinas (filas, columnas, diagonales)
+• La suma debe ser exactamente 10 — ni más, ni menos
+• Cuanto más larga la cadena, más puntos vale
+• Vacía toda la cuadrícula para un bonus perfecto
+
+Cuidado en los detalles
+
+TEN·GO es un proyecto artesanal, diseñado con exigencia: interfaz minimalista, animaciones fluidas, modo retrato para un uso natural con una sola mano — en el metro, en la cama, junto al fuego. Sonido, vibraciones y tutorial se ajustan con un gesto desde el menú de ajustes.
+
+Disponible en 10 idiomas
+
+Francés, inglés, español, alemán, italiano, portugués (Brasil), japonés, chino simplificado, coreano, neerlandés.
