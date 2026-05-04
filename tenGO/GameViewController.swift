@@ -6,6 +6,7 @@
 import UIKit
 import SpriteKit
 import GameplayKit
+import GameKit
 import GoogleMobileAds
 import UserMessagingPlatform
 
@@ -37,12 +38,20 @@ class GameViewController: UIViewController {
             name: .tenGOSceneChanged,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(showGameCenter),
+            name: .tenGOShowGameCenter,
+            object: nil
+        )
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         guard !consentGathered else { return }
         consentGathered = true
+
+        GameCenterManager.shared.authenticate(from: self)
 
         // Délai court pour laisser le windowScene se stabiliser (critique sur iPad) :
         // requestTrackingAuthorization est ignoré si la fenêtre n'est pas encore active.
@@ -81,6 +90,10 @@ class GameViewController: UIViewController {
 
         banner.load(Request())
         bannerView = banner
+    }
+
+    @objc private func showGameCenter() {
+        GameCenterManager.shared.showLeaderboard(from: self)
     }
 
     @objc private func sceneDidChange(_ notification: Notification) {

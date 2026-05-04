@@ -4,6 +4,7 @@
 //
 
 import SpriteKit
+import GameKit
 
 class LeaderboardScene: SKScene {
 
@@ -125,6 +126,11 @@ class LeaderboardScene: SKScene {
 
         // Bouton retour — style bulle jeu
         addBackButton(atY: bottomY + 90)
+
+        // Bouton classement mondial Game Center
+        if GKLocalPlayer.local.isAuthenticated {
+            addWorldLeaderboardButton(atY: bottomY + 190)
+        }
     }
 
     // Grande bulle pour le #1
@@ -211,6 +217,29 @@ class LeaderboardScene: SKScene {
         }
     }
 
+    private func addWorldLeaderboardButton(atY y: CGFloat) {
+        let btn = SKNode()
+        btn.name = "worldLeaderboard"
+        btn.position = CGPoint(x: 0, y: y)
+        addChild(btn)
+
+        let pillW: CGFloat = 260
+        let pillH: CGFloat = 52
+        let bg = SKShapeNode(rectOf: CGSize(width: pillW, height: pillH), cornerRadius: pillH / 2)
+        bg.fillColor = UIColor(red: 0.72, green: 0.88, blue: 0.98, alpha: 1)
+        bg.strokeColor = UIColor(white: 0.60, alpha: 0.35)
+        bg.lineWidth = 1
+        btn.addChild(bg)
+
+        let label = SKLabelNode(text: String(localized: "leaderboard.world_button"))
+        label.fontName = "AvenirNext-Medium"
+        label.fontSize = 18
+        label.fontColor = UIColor(white: 0.25, alpha: 1)
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .center
+        btn.addChild(label)
+    }
+
     private func addBackButton(atY y: CGFloat) {
         let back = SKNode()
         back.name = "back"
@@ -242,6 +271,10 @@ class LeaderboardScene: SKScene {
                 let menu = MenuScene(size: size)
                 menu.scaleMode = .aspectFill
                 view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.28))
+                return
+            }
+            if node.name == "worldLeaderboard" || node.parent?.name == "worldLeaderboard" {
+                NotificationCenter.default.post(name: .tenGOShowGameCenter, object: nil)
                 return
             }
         }
