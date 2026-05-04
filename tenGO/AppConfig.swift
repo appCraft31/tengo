@@ -32,6 +32,12 @@ enum AppConfig {
         return String(format: String(localized: "app.version_label"), v)
     }
 
+    // MARK: - Game Center
+
+    /// Identifiant du classement Game Center — à créer dans App Store Connect
+    /// (Fonctionnalités → Game Center → Classements)
+    static let gameCenterLeaderboardID = "com.tengo.leaderboard.global"
+
     // MARK: - UserDefaults keys
 
     enum UserDefaultsKey {

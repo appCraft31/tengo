@@ -211,6 +211,21 @@
         "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "排行榜" } }
       }
     },
+    "leaderboard.world_button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "de" : { "stringUnit" : { "state" : "translated", "value" : "Weltrangliste" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "World Leaderboard" } },
+        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ranking mundial" } },
+        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Classement mondial" } },
+        "it" : { "stringUnit" : { "state" : "translated", "value" : "Classifica mondiale" } },
+        "ja" : { "stringUnit" : { "state" : "translated", "value" : "世界ランキング" } },
+        "ko" : { "stringUnit" : { "state" : "translated", "value" : "세계 순위" } },
+        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Wereldranglijst" } },
+        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ranking mundial" } },
+        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "全球排行榜" } }
+      }
+    },
     "menu.continue" : {
       "extractionState" : "manual",
       "localizations" : {

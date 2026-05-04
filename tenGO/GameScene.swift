@@ -657,6 +657,7 @@ class GameScene: SKScene {
         updateScoreLabel()
         showScorePopup(points: bonus, at: CGPoint(x: 0, y: 50))
         GameState.addScore(score)
+        GameCenterManager.shared.submitScore(score)
         GameState.clear()
         run(SKAction.wait(forDuration: 0.5)) { [weak self] in
             self?.showGameOverPanel()
@@ -685,6 +686,7 @@ class GameScene: SKScene {
                     }
                 }
                 GameState.addScore(self.score)
+                GameCenterManager.shared.submitScore(self.score)
                 GameState.clear()
             },
             SKAction.wait(forDuration: 0.5),
