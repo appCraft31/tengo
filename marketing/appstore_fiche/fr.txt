@@ -1,3 +1,16 @@
+LANGUE : Français
+================================================================================
+
+NOM (30 car. max)
+Ten Go - Puzzle Cerveau
+
+SOUS-TITRE (30 car. max)
+Calcul mental & défi cognitif
+
+TEXTE PROMOTIONNEL (170 car. max)
+Reliez les bulles dont la somme fait 10. Chaîne plus longue = plus de points. Piano en temps réel et vibrations récompensent chaque coup. Entraînez votre cerveau.
+
+DESCRIPTION (4000 car. max)
 TEN·GO — Le casse-tête qui entraîne votre cerveau
 
 TEN·GO est un puzzle minimaliste construit autour de la stratégie et du calcul mental.
@@ -39,3 +52,6 @@ Disponible dans 10 langues
 
 Français, anglais, espagnol, allemand, italien, portugais (Brésil), japonais, chinois
 simplifié, coréen, néerlandais.
+
+MOTS-CLÉS (100 car. max, séparés par des virgules)
+cerveau,entraînement,calcul,mental,chiffres,logique,casse-tête,stratégie,concentration,cognitif,chaîne,hors-ligne

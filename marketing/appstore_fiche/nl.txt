@@ -1,3 +1,16 @@
+TAAL: Nederlands
+================================================================================
+
+NAAM (max. 30 tekens)
+Ten Go - Denk Getal Puzzel
+
+ONDERTITEL (max. 30 tekens)
+Mentaal rekenen & breinspel
+
+PROMOTIETEKST (max. 170 tekens)
+Verbind bellen waarvan de som 10 is. Langere ketens = hogere score. Real-time piano en haptiek belonen elke zet. Train je brein, schakel voor schakel.
+
+BESCHRIJVING (max. 4000 tekens)
 TEN·GO — De breinpuzzel die je verstand scherpt
 
 TEN·GO is een minimalistische puzzel gebouwd rond strategie en hoofdrekenen.
@@ -37,3 +50,6 @@ Geluid, trillingen en tutorial zijn met één gebaar aan te passen via het inste
 Beschikbaar in 10 talen
 
 Frans, Engels, Spaans, Duits, Italiaans, Portugees (Brazilië), Japans, Vereenvoudigd Chinees, Koreaans, Nederlands.
+
+TREFWOORDEN (max. 100 tekens, kommagescheiden)
+brein,training,rekenen,mentaal,getallen,logica,puzzel,strategie,focus,cognitief,ketting,offline

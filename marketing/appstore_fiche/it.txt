@@ -1,3 +1,16 @@
+LINGUA: Italiano
+================================================================================
+
+NOME (max. 30 caratteri)
+Ten Go - Puzzle Mentale
+
+SOTTOTITOLO (max. 30 caratteri)
+Calcolo mentale & strategia
+
+TESTO PROMOZIONALE (max. 170 caratteri)
+Collega bolle la cui somma fa 10. Catene più lunghe = punteggio più alto. Pianoforte in tempo reale e vibrazione premiano ogni mossa. Allena la mente, catena dopo catena.
+
+DESCRIZIONE (max. 4000 caratteri)
 TEN·GO — Il rompicapo mentale che affina la tua mente
 
 TEN·GO è un puzzle minimalista costruito intorno alla strategia e al calcolo mentale.
@@ -36,3 +49,6 @@ Suono, vibrazioni e tutorial si regolano con un gesto dal menu impostazioni.
 Disponibile in 10 lingue
 
 Francese, inglese, spagnolo, tedesco, italiano, portoghese (Brasile), giapponese, cinese semplificato, coreano, olandese.
+
+PAROLE CHIAVE (max. 100 caratteri, separate da virgole)
+cervello,allenamento,calcolo,mentale,numeri,logica,rompicapo,strategia,concentrazione,cognitivo,catena,offline

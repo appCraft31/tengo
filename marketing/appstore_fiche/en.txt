@@ -1,3 +1,16 @@
+LANGUAGE: English
+================================================================================
+
+NAME (30 chars max)
+Ten Go - Brain Number Puzzle
+
+SUBTITLE (30 chars max)
+Mental math & brain training
+
+PROMOTIONAL TEXT (170 chars max)
+Connect bubbles that add up to 10. Build longer chains to score higher. Real-time piano and haptics reward every move. Train your brain, one chain at a time.
+
+DESCRIPTION (4000 chars max)
 TEN·GO — The brain puzzle that sharpens your mind
 
 TEN·GO is a minimalist puzzle built around strategy and calculation.
@@ -39,3 +52,6 @@ Available in 10 languages
 
 French, English, Spanish, German, Italian, Portuguese (Brazil), Japanese, Simplified
 Chinese, Korean, Dutch.
+
+KEYWORDS (100 chars max, comma-separated)
+brain,training,mental,math,numbers,logic,puzzle,strategy,focus,cognitive,chain,offline

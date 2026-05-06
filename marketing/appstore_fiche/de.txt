@@ -1,3 +1,16 @@
+SPRACHE: Deutsch
+================================================================================
+
+NAME (max. 30 Zeichen)
+Ten Go - Zahlen Denkspiel
+
+UNTERTITEL (max. 30 Zeichen)
+Kopfrechnen & Gehirntraining
+
+WERBETEXT (max. 170 Zeichen)
+Verbinde Blasen, deren Summe 10 ergibt. Längere Ketten = höherer Score. Echtzeit-Klavier und Haptik belohnen jeden Zug. Trainiere deinen Kopf, Kette für Kette.
+
+BESCHREIBUNG (max. 4000 Zeichen)
 TEN·GO — Das Gehirnpuzzle, das deinen Geist schärft
 
 TEN·GO ist ein minimalistisches Puzzle, das auf Strategie und Kopfrechnen aufbaut.
@@ -37,3 +50,6 @@ Ton, Vibrationen und Tutorial lassen sich mit einer Geste über das Einstellungs
 Verfügbar in 10 Sprachen
 
 Französisch, Englisch, Spanisch, Deutsch, Italienisch, Portugiesisch (Brasilien), Japanisch, Vereinfachtes Chinesisch, Koreanisch, Niederländisch.
+
+SCHLÜSSELWÖRTER (max. 100 Zeichen, kommagetrennt)
+gehirn,training,kopfrechnen,zahlen,logik,rätsel,strategie,fokus,kognitiv,kette,offline,denken

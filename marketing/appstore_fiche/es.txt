@@ -1,3 +1,16 @@
+IDIOMA: Español
+================================================================================
+
+NOMBRE (máx. 30 caracteres)
+Ten Go - Puzzle Mental
+
+SUBTÍTULO (máx. 30 caracteres)
+Cálculo mental & estrategia
+
+TEXTO PROMOCIONAL (máx. 170 caracteres)
+Conecta burbujas cuya suma sea 10. Cadenas más largas = más puntos. Piano en tiempo real y vibración recompensan cada movimiento. Entrena tu mente, un eslabón a la vez.
+
+DESCRIPCIÓN (máx. 4000 caracteres)
 TEN·GO — El puzle cerebral que agudiza tu mente
 
 TEN·GO es un puzle minimalista construido alrededor de la estrategia y el cálculo mental.
@@ -36,3 +49,6 @@ Sonido, vibraciones y tutorial se ajustan con un gesto desde el menú de ajustes
 Disponible en 10 idiomas
 
 Francés, inglés, español, alemán, italiano, portugués (Brasil), japonés, chino simplificado, coreano, neerlandés.
+
+PALABRAS CLAVE (máx. 100 caracteres, separadas por comas)
+cerebro,entrenamiento,cálculo,mental,números,lógica,puzzle,estrategia,concentración,cognitivo,cadena,offline
