@@ -1,1 +1,1 @@
-cerveau,entraînement,calcul,mental,chiffres,logique,casse-tête,stratégie,concentration,cognitif,chaîne,hors-ligne
+cerveau,calcul,chiffres,logique,casse-tête,stratégie,concentration,cognitif,chaîne,hors-ligne

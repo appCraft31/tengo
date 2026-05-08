@@ -955,12 +955,15 @@ class GameScene: SKScene {
     // MARK: - Navigation
 
     private func goBackToMenu() {
-        // Sauvegarder si la partie n'est pas terminée
         if !gridModel.isGridEmpty() && !isAnimating {
             GameState.save(gridModel: gridModel, score: score)
         }
-        let menu = MenuScene(size: size)
-        menu.scaleMode = .aspectFill
-        view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.3))
+        let rootVC = view?.window?.rootViewController
+        InterstitialAdManager.shared.showIfReady(from: rootVC ?? UIViewController()) { [weak self] in
+            guard let self else { return }
+            let menu = MenuScene(size: self.size)
+            menu.scaleMode = .aspectFill
+            self.view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.3))
+        }
     }
 }

@@ -15,6 +15,7 @@ vendor/bundle/
 .bundle/
 
 # Fastlane
+fastlane/*.p8
 fastlane/.env*
 fastlane/report.xml
 fastlane/Preview.html
