@@ -1,39 +1,32 @@
-TEN·GO — Das Gehirnpuzzle, das deinen Geist schärft
+TEN·GO — Das Zen-Puzzle, das deinen Verstand weckt
 
-TEN·GO ist ein minimalistisches Puzzle, das auf Strategie und Kopfrechnen aufbaut.
-Ein Gitter. Eine Regel: Verbinde Blasen, die zusammen 10 ergeben.
-Je länger die Kette, desto höher der Score.
+Ein Raster. Eine Regel: Verbinde Blasen, deren Summe 10 ergibt.
+Je länger die Kette, desto höher die Punktzahl.
 
-Plane deine Züge. Denke weiter voraus. Meistere das Gitter.
+Vorausdenken. Tiefer denken. Das Raster meistern.
 
-Klang und Haptik, die dein Denken belohnen
+DAS KLAVIER, DAS DEINE STRATEGIE WIRD
+Jede Blase ist eine Note. Jede Kette wird eine einzigartige Melodie. Dein Telefon vibriert im Takt der Musik. Du spielst nicht nur mit den Augen — deine Finger werden zur Partitur.
 
-Jede richtige Kette wird mit einer Note beantwortet — deine Strategie wird zur Melodie:
-• Ein sanftes E-Piano, in Echtzeit synthetisiert: jede Blase ist eine Note, jeder Pfad eine musikalische Phrase
-• 54 mögliche Klangwelten in 6 Tonleitern — Dur- und Moll-Pentatonik,
-  Hirajoshi, Kumoi, In Sen, hemitonal — nie zweimal hintereinander dieselbe
-• Vibrationen synchronisiert mit der Musik: das Telefon antwortet auf deine Noten,
-  nicht nur auf deinen Finger
-• Eine Pastellpalette, die das Gitter auf einen Blick scharf und lesbar hält
+SPIELE IN DEINEM TEMPO
+• Kein Timer
+• Keine gesperrten Level
+• Keine Energie zum Aufladen
+• Keine Verbindung erforderlich
 
-Klare Mechanik, tiefe Strategie
+Fünf Minuten zwischen Meetings oder eine Stunde tiefe Konzentration — TEN·GO passt sich an.
 
-• Gleite mit dem Finger über benachbarte Blasen (Zeilen, Spalten, Diagonalen)
-• Die Summe muss genau 10 ergeben — nicht mehr, nicht weniger
-• Je länger die Kette, desto mehr Punkte
-• Leere das gesamte Gitter für einen perfekten Bonus
+KRISTALLKLARES GAMEPLAY
+• Wische über benachbarte Blasen
+• Die Summe muss genau 10 ergeben
+• Längere Ketten bringen mehr Punkte
+• Räume das ganze Raster für einen perfekten Bonus
 
-Spiel in deinem Tempo
+WARUM DU ES LIEBEN WIRST
+• Beruhigende Pastellfarben, augenschonend
+• Flüssige Animationen, natürlicher Hochformat-Modus
+• Integriertes Tutorial — starte in 30 Sekunden
+• Sound, Vibrationen und Tutorial mit einer Geste anpassbar
+• Globale Bestenliste über Game Center
 
-Kein Timer. Keine blockierten Level. Keine aufzuladende Energie.
-Fünf Minuten zwischen Terminen oder eine Stunde tiefe Konzentration — TEN·GO passt sich an.
-Nur die Befriedigung des Verbindens, Berechnens, Beherrschens.
-
-Sorgfältig gestaltet
-
-Minimalistisches Interface, flüssige Animationen, Hochformat für eine natürliche Einhandbedienung.
-Ton, Vibrationen und Tutorial lassen sich mit einer Geste über das Einstellungsmenü anpassen.
-
-Verfügbar in 10 Sprachen
-
-Französisch, Englisch, Spanisch, Deutsch, Italienisch, Portugiesisch (Brasilien), Japanisch, Vereinfachtes Chinesisch, Koreanisch, Niederländisch.
+Verfügbar in 15 Sprachen.

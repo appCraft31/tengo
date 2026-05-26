@@ -1,1 +1,1 @@
-gehirn,training,kopfrechnen,zahlen,logik,rätsel,strategie,fokus,kognitiv,kette,offline,denken
+zen,relax,2048,sudoku,merge,minimalistisch,entspannung,piano,asmr,offline,denksport

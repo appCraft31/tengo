@@ -399,7 +399,13 @@ class GameScene: SKScene {
                         SKAction.scale(to: 0.93, duration: 0.07),
                         SKAction.scale(to: 1.0, duration: 0.1)
                     ]))
-                    run(SKAction.wait(forDuration: 0.12)) { [weak self] in self?.resetGame() }
+                    run(SKAction.wait(forDuration: 0.12)) { [weak self] in
+                        guard let self else { return }
+                        let rootVC = self.view?.window?.rootViewController ?? UIViewController()
+                        InterstitialAdManager.shared.maybeShow(trigger: .replay, from: rootVC) { [weak self] in
+                            self?.resetGame()
+                        }
+                    }
                     return
                 }
                 if name == "homePanelBtn" {
@@ -651,6 +657,7 @@ class GameScene: SKScene {
 
     private func triggerWin() {
         SoundManager.shared.playWin()
+        InterstitialAdManager.shared.markGameCompleted()
         isWinState = true
         let bonus = 1000
         score += bonus
@@ -666,6 +673,7 @@ class GameScene: SKScene {
 
     private func triggerLose() {
         SoundManager.shared.playLose()
+        InterstitialAdManager.shared.markGameCompleted()
         isWinState = false
         let shake = SKAction.sequence([
             SKAction.moveBy(x: 8,  y: 0, duration: 0.05),
@@ -850,6 +858,16 @@ class GameScene: SKScene {
             SKAction.fadeIn(withDuration: 0.38),
             SKAction.scale(to: 1.0, duration: 0.38)
         ]))
+
+        // Interstitielle automatique (1 game over sur 3, dès la 2e partie de la session)
+        run(SKAction.sequence([
+            SKAction.wait(forDuration: 1.5),
+            SKAction.run { [weak self] in
+                guard let self, self.gameOverPanel != nil else { return }
+                let rootVC = self.view?.window?.rootViewController ?? UIViewController()
+                InterstitialAdManager.shared.maybeShow(trigger: .gameOverAuto, from: rootVC) { }
+            }
+        ]))
     }
 
     private func animateScoreCountUp(label: SKLabelNode, target: Int) {
@@ -955,12 +973,15 @@ class GameScene: SKScene {
     // MARK: - Navigation
 
     private func goBackToMenu() {
-        // Sauvegarder si la partie n'est pas terminée
         if !gridModel.isGridEmpty() && !isAnimating {
             GameState.save(gridModel: gridModel, score: score)
         }
-        let menu = MenuScene(size: size)
-        menu.scaleMode = .aspectFill
-        view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.3))
+        let rootVC = view?.window?.rootViewController ?? UIViewController()
+        InterstitialAdManager.shared.maybeShow(trigger: .home, from: rootVC) { [weak self] in
+            guard let self else { return }
+            let menu = MenuScene(size: self.size)
+            menu.scaleMode = .aspectFill
+            self.view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.3))
+        }
     }
 }

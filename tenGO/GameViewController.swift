@@ -63,7 +63,10 @@ class GameViewController: UIViewController {
                     return
                 }
                 MobileAds.shared.start { _ in
-                    DispatchQueue.main.async { self?.setupBanner() }
+                    DispatchQueue.main.async {
+                        self?.setupBanner()
+                        InterstitialAdManager.shared.loadAd()
+                    }
                 }
             }
         }

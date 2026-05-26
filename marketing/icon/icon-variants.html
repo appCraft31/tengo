@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<title>tenGO — Icônes</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "AvenirNext-Medium", sans-serif;
+    background: #f4f1ec;
+    padding: 60px 40px;
+    color: #333;
+  }
+  h1 {
+    font-size: 22px; font-weight: 900; margin-bottom: 8px;
+    text-align: center; letter-spacing: -0.5px;
+  }
+  .sub {
+    text-align: center; color: #777; font-size: 14px; margin-bottom: 60px;
+  }
+  .row {
+    display: flex; justify-content: center; gap: 60px;
+    flex-wrap: wrap; margin-bottom: 80px;
+  }
+  .variant {
+    display: flex; flex-direction: column; align-items: center;
+  }
+  .label {
+    margin-top: 18px; font-size: 13px; font-weight: 700;
+    color: #444; letter-spacing: 0.5px; text-transform: uppercase;
+  }
+  .desc {
+    margin-top: 6px; font-size: 12px; color: #888; max-width: 200px;
+    text-align: center; line-height: 1.4;
+  }
+  .sizes {
+    display: flex; align-items: flex-end; gap: 12px; margin-top: 20px;
+  }
+  .size-preview {
+    background: #e8e4dd;
+    padding: 8px;
+    border-radius: 4px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+  }
+  .size-label {
+    font-size: 9px; color: #999; font-weight: 600;
+  }
+
+  /* ─── Base icône (style commun) ─── */
+  .icon {
+    border-radius: 22.37%; /* iOS rounded squircle */
+    overflow: hidden;
+    position: relative;
+    box-shadow:
+      0 12px 30px rgba(0, 0, 0, 0.12),
+      0 4px 12px rgba(0, 0, 0, 0.06);
+  }
+  .icon-256 { width: 256px; height: 256px; }
+  .icon-120 { width: 120px; height: 120px; }
+  .icon-60  { width: 60px;  height: 60px; }
+
+  /* ─── Variante 1 : "Bold 10" — coral saturé + chiffre blanc géant ─── */
+  .v1 {
+    background: linear-gradient(135deg, #ff8a7a 0%, #ff6b8a 100%);
+  }
+  .v1 .ten {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: -apple-system, "AvenirNext-Heavy", sans-serif;
+    font-weight: 900;
+    line-height: 0.85;
+    letter-spacing: -8%;
+  }
+  .v1.icon-256 .ten { font-size: 180px; }
+  .v1.icon-120 .ten { font-size: 84px; }
+  .v1.icon-60  .ten { font-size: 42px; }
+
+  .v1 .dot1, .v1 .dot2 {
+    position: absolute; border-radius: 50%; background: rgba(255,255,255,0.28);
+  }
+  .v1.icon-256 .dot1 { width: 28px; height: 28px; top: 26px; left: 26px; }
+  .v1.icon-256 .dot2 { width: 18px; height: 18px; bottom: 30px; right: 32px; }
+  .v1.icon-120 .dot1 { width: 13px; height: 13px; top: 12px; left: 12px; }
+  .v1.icon-120 .dot2 { width: 8px;  height: 8px;  bottom: 14px; right: 15px; }
+  .v1.icon-60  .dot1 { width: 7px;  height: 7px;  top: 6px;  left: 6px;  }
+  .v1.icon-60  .dot2 { width: 4px;  height: 4px;  bottom: 7px; right: 8px; }
+
+  /* ─── Variante 2 : "Chain" — 3 bulles connectées, fond crème ─── */
+  .v2 {
+    background: linear-gradient(135deg, #faf5ed 0%, #f4ebda 100%);
+  }
+  .v2 svg {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+  }
+
+  /* ─── Variante 3 : "Single Bubble" — bulle XXL avec 10 dedans, fond crème ─── */
+  .v3 {
+    background: linear-gradient(135deg, #faf5ed 0%, #f4ebda 100%);
+  }
+  .v3 .main-bubble {
+    position: absolute;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ff8a7a 0%, #ff6b8a 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: -apple-system, "AvenirNext-Heavy", sans-serif;
+    font-weight: 900;
+    line-height: 1;
+    box-shadow: 0 8px 16px rgba(255, 100, 130, 0.3);
+  }
+  .v3.icon-256 .main-bubble { width: 175px; height: 175px; top: 55px; left: 40px; font-size: 110px; }
+  .v3.icon-120 .main-bubble { width: 82px;  height: 82px;  top: 26px; left: 19px; font-size: 52px; }
+  .v3.icon-60  .main-bubble { width: 41px;  height: 41px;  top: 13px; left: 9px;  font-size: 26px; }
+
+  .v3 .small {
+    position: absolute; border-radius: 50%;
+  }
+  .v3 .small.peach    { background: rgba(252, 214, 179, 0.95); }
+  .v3 .small.mint     { background: rgba(199, 240, 209, 0.95); }
+  .v3 .small.lavender { background: rgba(209, 199, 247, 0.95); }
+  .v3 .small.sky      { background: rgba(184, 224, 250, 0.95); }
+
+  .v3.icon-256 .small.peach    { width: 45px; height: 45px; top: 30px;  right: 32px; }
+  .v3.icon-256 .small.mint     { width: 38px; height: 38px; bottom: 50px; right: 24px; }
+  .v3.icon-256 .small.lavender { width: 32px; height: 32px; bottom: 30px; right: 75px; }
+  .v3.icon-256 .small.sky      { width: 26px; height: 26px; top: 95px; right: 72px; }
+
+  .v3.icon-120 .small.peach    { width: 21px; height: 21px; top: 14px;  right: 15px; }
+  .v3.icon-120 .small.mint     { width: 18px; height: 18px; bottom: 24px; right: 11px; }
+  .v3.icon-120 .small.lavender { width: 15px; height: 15px; bottom: 14px; right: 35px; }
+  .v3.icon-120 .small.sky      { width: 12px; height: 12px; top: 45px; right: 34px; }
+
+  .v3.icon-60 .small.peach    { width: 11px; height: 11px; top: 7px;  right: 8px; }
+  .v3.icon-60 .small.mint     { width: 9px;  height: 9px;  bottom: 12px; right: 6px; }
+  .v3.icon-60 .small.lavender { width: 7px;  height: 7px;  bottom: 7px;  right: 18px; }
+  .v3.icon-60 .small.sky      { width: 6px;  height: 6px;  top: 22px; right: 17px; }
+</style>
+</head>
+<body>
+
+<h1>TEN·GO — 3 variantes d'icône</h1>
+<p class="sub">Affichées en 256 / 120 / 60 px (taille réelle dans App Store search)</p>
+
+<!-- ════════════ Variante 1 ════════════ -->
+<div class="row">
+  <div class="variant">
+    <div class="sizes">
+      <div class="size-preview">
+        <div class="icon icon-256 v1">
+          <div class="dot1"></div>
+          <div class="ten">10</div>
+          <div class="dot2"></div>
+        </div>
+        <div class="size-label">256 PX</div>
+      </div>
+      <div class="size-preview">
+        <div class="icon icon-120 v1">
+          <div class="dot1"></div>
+          <div class="ten">10</div>
+          <div class="dot2"></div>
+        </div>
+        <div class="size-label">120 PX</div>
+      </div>
+      <div class="size-preview">
+        <div class="icon icon-60 v1">
+          <div class="dot1"></div>
+          <div class="ten">10</div>
+          <div class="dot2"></div>
+        </div>
+        <div class="size-label">60 PX</div>
+      </div>
+    </div>
+    <div class="label">VARIANTE 1 — BOLD 10</div>
+    <div class="desc">Gradient coral saturé, "10" blanc XXL. Maximum de contraste et lisibilité à toute taille.</div>
+  </div>
+</div>
+
+<!-- ════════════ Variante 2 ════════════ -->
+<div class="row">
+  <div class="variant">
+    <div class="sizes">
+      <!-- 256 px -->
+      <div class="size-preview">
+        <div class="icon icon-256 v2">
+          <svg viewBox="0 0 256 256">
+            <defs>
+              <linearGradient id="g256" x1="0%" y1="0%" x2="100%" y2="100%">
+                <stop offset="0%" stop-color="#ff8a7a"/>
+                <stop offset="100%" stop-color="#ff6b8a"/>
+              </linearGradient>
+            </defs>
+            <!-- ligne de chaîne -->
+            <path d="M 60 80 Q 128 130 196 100 T 196 200" stroke="rgba(120,120,120,0.25)" stroke-width="6" stroke-linecap="round" fill="none" stroke-dasharray="0"/>
+            <!-- bulles -->
+            <circle cx="60" cy="80" r="34" fill="rgba(184,224,250,0.95)"/>
+            <text x="60" y="92" text-anchor="middle" fill="#444" font-family="-apple-system, AvenirNext-Heavy" font-weight="900" font-size="32">3</text>
+
+            <circle cx="128" cy="128" r="44" fill="#ff7a8a"/>
+            <text x="128" y="146" text-anchor="middle" fill="white" font-family="-apple-system, AvenirNext-Heavy" font-weight="900" font-size="50">10</text>
+
+            <circle cx="196" cy="200" r="30" fill="rgba(199,240,209,0.95)"/>
+            <text x="196" y="211" text-anchor="middle" fill="#444" font-family="-apple-system, AvenirNext-Heavy" font-weight="900" font-size="28">7</text>
+          </svg>
+        </div>
+        <div class="size-label">256 PX</div>
+      </div>
+      <!-- 120 px -->
+      <div class="size-preview">
+        <div class="icon icon-120 v2">
+          <svg viewBox="0 0 256 256">
+            <path d="M 60 80 Q 128 130 196 100 T 196 200" stroke="rgba(120,120,120,0.25)" stroke-width="6" stroke-linecap="round" fill="none"/>
+            <circle cx="60" cy="80" r="34" fill="rgba(184,224,250,0.95)"/>
+            <text x="60" y="92" text-anchor="middle" fill="#444" font-family="-apple-system, AvenirNext-Heavy" font-weight="900" font-size="32">3</text>
+            <circle cx="128" cy="128" r="44" fill="#ff7a8a"/>
+            <text x="128" y="146" text-anchor="middle" fill="white" font-family="-apple-system, AvenirNext-Heavy" font-weight="900" font-size="50">10</text>
+            <circle cx="196" cy="200" r="30" fill="rgba(199,240,209,0.95)"/>
+            <text x="196" y="211" text-anchor="middle" fill="#444" font-family="-apple-system, AvenirNext-Heavy" font-weight="900" font-size="28">7</text>
+          </svg>
+        </div>
+        <div class="size-label">120 PX</div>
+      </div>
+      <!-- 60 px -->
+      <div class="size-preview">
+        <div class="icon icon-60 v2">
+          <svg viewBox="0 0 256 256">
+            <path d="M 60 80 Q 128 130 196 100 T 196 200" stroke="rgba(120,120,120,0.25)" stroke-width="6" stroke-linecap="round" fill="none"/>
+            <circle cx="60" cy="80" r="34" fill="rgba(184,224,250,0.95)"/>
+            <text x="60" y="92" text-anchor="middle" fill="#444" font-family="-apple-system, AvenirNext-Heavy" font-weight="900" font-size="32">3</text>
+            <circle cx="128" cy="128" r="44" fill="#ff7a8a"/>
+            <text x="128" y="146" text-anchor="middle" fill="white" font-family="-apple-system, AvenirNext-Heavy" font-weight="900" font-size="50">10</text>
+            <circle cx="196" cy="200" r="30" fill="rgba(199,240,209,0.95)"/>
+            <text x="196" y="211" text-anchor="middle" fill="#444" font-family="-apple-system, AvenirNext-Heavy" font-weight="900" font-size="28">7</text>
+          </svg>
+        </div>
+        <div class="size-label">60 PX</div>
+      </div>
+    </div>
+    <div class="label">VARIANTE 2 — CHAIN</div>
+    <div class="desc">3 bulles reliées (3 → 10 ← 7). Raconte le gameplay en un coup d'œil. Fond crème cohérent avec le jeu.</div>
+  </div>
+</div>
+
+<!-- ════════════ Variante 3 ════════════ -->
+<div class="row">
+  <div class="variant">
+    <div class="sizes">
+      <div class="size-preview">
+        <div class="icon icon-256 v3">
+          <div class="main-bubble">10</div>
+          <div class="small peach"></div>
+          <div class="small mint"></div>
+          <div class="small lavender"></div>
+          <div class="small sky"></div>
+        </div>
+        <div class="size-label">256 PX</div>
+      </div>
+      <div class="size-preview">
+        <div class="icon icon-120 v3">
+          <div class="main-bubble">10</div>
+          <div class="small peach"></div>
+          <div class="small mint"></div>
+          <div class="small lavender"></div>
+          <div class="small sky"></div>
+        </div>
+        <div class="size-label">120 PX</div>
+      </div>
+      <div class="size-preview">
+        <div class="icon icon-60 v3">
+          <div class="main-bubble">10</div>
+          <div class="small peach"></div>
+          <div class="small mint"></div>
+          <div class="small lavender"></div>
+          <div class="small sky"></div>
+        </div>
+        <div class="size-label">60 PX</div>
+      </div>
+    </div>
+    <div class="label">VARIANTE 3 — BUBBLE + GANG</div>
+    <div class="desc">Grande bulle "10" coral entourée de petites bulles pastel. Lisible, compatible avec l'identité actuelle.</div>
+  </div>
+</div>
+
+</body>
+</html>
