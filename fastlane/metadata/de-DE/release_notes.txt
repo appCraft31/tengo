@@ -1,1 +1,1 @@
-Allgemeine Verbesserungen und Optimierungen des Spielerlebnisses.
+Stabilitäts- und Performance-Verbesserungen.

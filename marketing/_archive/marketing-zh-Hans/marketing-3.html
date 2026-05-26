@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html lang="zh-Hans">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>tenGO</title>
+<style>
+  :root {
+    --bg:         rgb(247, 242, 235);
+    --coral:      rgb(250, 184, 173);
+    --peach:      rgb(252, 214, 179);
+    --butter:     rgb(252, 242, 184);
+    --mint:       rgb(199, 240, 209);
+    --sky:        rgb(184, 224, 250);
+    --lavender:   rgb(209, 199, 247);
+    --pink:       rgb(250, 199, 224);
+    --sage:       rgb(204, 232, 204);
+    --periwinkle: rgb(194, 209, 247);
+    --text-dark:  rgb(71, 71, 71);
+    --text-muted: rgb(140, 140, 140);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html, body {
+    min-height: 100vh;
+    background: var(--bg);
+    font-family: -apple-system, BlinkMacSystemFont, "AvenirNext-Medium", "Avenir Next", sans-serif;
+    color: var(--text-dark);
+    overflow-x: hidden;
+  }
+
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px 40px;
+    position: relative;
+    min-height: 100vh;
+    gap: 50px;
+  }
+
+  /* Bulles de fond animées (DA du jeu) */
+  .bg-bubbles {
+    position: fixed;
+    inset: 0;
+    overflow: hidden;
+    z-index: 0;
+    pointer-events: none;
+  }
+  .bg-bubble {
+    position: absolute;
+    border-radius: 50%;
+    animation: float 10s ease-in-out infinite alternate;
+  }
+  @keyframes float {
+    from { transform: translateY(-18px); }
+    to   { transform: translateY(18px); }
+  }
+  .bg-bubble:nth-child(1) { top:  6%; left:  8%; width: 180px; height: 180px; background: var(--coral);      opacity: 0.18; animation-duration:  7.2s; }
+  .bg-bubble:nth-child(2) { top: 18%; right: 10%; width: 130px; height: 130px; background: var(--sky);        opacity: 0.18; animation-duration:  9.5s; }
+  .bg-bubble:nth-child(3) { bottom: 12%; left:  5%; width: 220px; height: 220px; background: var(--pink);     opacity: 0.18; animation-duration: 11.0s; }
+  .bg-bubble:nth-child(4) { bottom: 22%; right: 12%; width: 150px; height: 150px; background: var(--peach);   opacity: 0.18; animation-duration:  8.3s; }
+  .bg-bubble:nth-child(5) { top:  2%; right: 30%; width: 200px; height: 200px; background: var(--mint);       opacity: 0.18; animation-duration: 10.1s; }
+  .bg-bubble:nth-child(6) { bottom: 4%; right: 35%; width: 110px; height: 110px; background: var(--butter);   opacity: 0.18; animation-duration: 12.4s; }
+  .bg-bubble:nth-child(7) { top: 40%; left:  2%; width: 100px; height: 100px; background: var(--periwinkle);  opacity: 0.18; animation-duration:  7.6s; }
+
+  /* Accroche courte — un seul titre */
+  .headline {
+    position: relative;
+    z-index: 1;
+    font-family: -apple-system, "AvenirNext-Heavy", sans-serif;
+    font-weight: 900;
+    font-size: 56px;
+    letter-spacing: -1px;
+    color: var(--text-dark);
+    text-align: center;
+  }
+  .headline .dot {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--mint);
+    transform: translateY(-4px);
+    margin: 0 2px;
+  }
+
+  /* -------- iPhone mockup -------- */
+  .phone {
+    width: 360px;
+    height: 740px;
+    background: #1a1a1a;
+    border-radius: 58px;
+    padding: 14px;
+    flex-shrink: 0;
+    box-shadow:
+      0 40px 80px rgba(30, 30, 30, 0.18),
+      0 20px 40px rgba(30, 30, 30, 0.12),
+      0 0 0 2px rgba(255, 255, 255, 0.04) inset;
+    position: relative;
+    z-index: 1;
+  }
+
+  .phone-screen {
+    width: 100%;
+    height: 100%;
+    background: var(--bg);
+    border-radius: 44px;
+    overflow: hidden;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* Dynamic island */
+  .phone-screen::before {
+    content: '';
+    position: absolute;
+    top: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100px;
+    height: 28px;
+    background: #0a0a0a;
+    border-radius: 14px;
+    z-index: 10;
+  }
+
+  /* Bulles de fond dans le téléphone */
+  .phone-bg { position: absolute; inset: 0; overflow: hidden; pointer-events: none; }
+  .phone-bg-bubble { position: absolute; border-radius: 50%; opacity: 0.16; }
+  .phone-bg-bubble.pb1 { top:  4%; left:  5%; width: 80px; height: 80px; background: var(--mint); }
+  .phone-bg-bubble.pb2 { top: 10%; right: 6%; width: 60px; height: 60px; background: var(--sky); }
+  .phone-bg-bubble.pb3 { bottom:10%; left:  8%; width: 70px; height: 70px; background: var(--lavender); }
+  .phone-bg-bubble.pb4 { bottom: 4%; right: 14%; width: 90px; height: 90px; background: var(--coral); }
+
+  /* Logo du jeu dans le mockup */
+  .game-logo {
+    position: relative;
+    text-align: center;
+    margin-top: 60px;
+    z-index: 2;
+  }
+  .game-logo-title {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: "AvenirNext-Heavy", sans-serif;
+    font-weight: 900;
+    font-size: 36px;
+    color: var(--text-dark);
+    letter-spacing: -0.5px;
+  }
+  .game-logo-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: var(--pink);
+  }
+
+  /* Grille de jeu */
+  .grid {
+    position: relative;
+    flex: 1;
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    grid-template-rows: repeat(9, 1fr);
+    gap: 5px;
+    padding: 20px 18px;
+    margin-top: 12px;
+    z-index: 2;
+  }
+  .cell {
+    aspect-ratio: 1;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: "AvenirNext-Medium", sans-serif;
+    font-weight: 500;
+    font-size: 16px;
+    color: var(--text-dark);
+    position: relative;
+  }
+  .cell.selected {
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.9), 0 0 12px rgba(0, 0, 0, 0.08);
+    transform: scale(1.08);
+    z-index: 3;
+  }
+  .cell.empty { visibility: hidden; }
+
+  /* Barre du bas */
+  .game-footer {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    padding: 16px 0 30px;
+    z-index: 2;
+  }
+  .circle-btn {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: rgba(245, 235, 225, 1);
+    border: 1px solid rgba(180, 180, 180, 0.35);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; color: rgb(115, 115, 115);
+  }
+  .score-btn {
+    width: 64px; height: 64px;
+    border-radius: 50%;
+    background: rgba(245, 235, 225, 1);
+    border: 1px solid rgba(180, 180, 180, 0.35);
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    color: var(--text-dark);
+  }
+  .score-btn .label { font-size: 10px; color: var(--text-muted); }
+  .score-btn .value { font-size: 20px; font-weight: 500; margin-top: 2px; }
+
+  @media (max-width: 480px) {
+    .headline { font-size: 40px; }
+    .phone { width: 300px; height: 620px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-bubbles">
+  <div class="bg-bubble"></div><div class="bg-bubble"></div><div class="bg-bubble"></div>
+  <div class="bg-bubble"></div><div class="bg-bubble"></div><div class="bg-bubble"></div>
+  <div class="bg-bubble"></div>
+</div>
+
+<!-- Accroche courte — personnalisable par screen -->
+<h1 class="headline">呼吸<span class="dot"></span></h1>
+
+<!-- Screen 2 : chemin 3+7=10 (ligne 2) + quelques bulles déjà popées -->
+<script>
+  window.__path = [16, 17];
+  window.__score = 40;
+  window.__holes = [3, 4, 5, 12];
+</script>
+
+<!-- iPhone mockup avec l'écran de jeu -->
+<div class="phone">
+  <div class="phone-screen">
+    <div class="phone-bg">
+      <div class="phone-bg-bubble pb1"></div>
+      <div class="phone-bg-bubble pb2"></div>
+      <div class="phone-bg-bubble pb3"></div>
+      <div class="phone-bg-bubble pb4"></div>
+    </div>
+
+    <div class="game-logo">
+      <div class="game-logo-title">
+        <span>TEN</span>
+        <span class="game-logo-dot"></span>
+        <span>GO</span>
+      </div>
+    </div>
+
+    <div class="grid" id="grid"></div>
+
+    <div class="game-footer">
+      <div class="circle-btn">⌂</div>
+      <div class="score-btn">
+        <div class="label">分</div>
+        <div class="value" id="score">0</div>
+      </div>
+      <div class="circle-btn">↺</div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const palette = [
+    'var(--coral)', 'var(--peach)', 'var(--butter)', 'var(--mint)',
+    'var(--sky)', 'var(--lavender)', 'var(--pink)', 'var(--sage)', 'var(--periwinkle)'
+  ];
+
+  const values = [
+    [5,4,3,5,2,6,3],
+    [9,7,6,7,5,7,4],
+    [9,4,3,7,9,7,2],
+    [6,8,3,9,4,3,2],
+    [7,3,5,4,7,6,2],
+    [5,7,5,3,7,8,2],
+    [8,7,6,5,2,8,3],
+    [9,5,8,4,7,6,3],
+    [4,3,1,7,1,8,3]
+  ];
+
+  const holes = new Set(window.__holes || []);
+  const grid = document.getElementById('grid');
+  for (let r = 0; r < 9; r++) {
+    for (let c = 0; c < 7; c++) {
+      const idx = r * 7 + c;
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (holes.has(idx)) {
+        cell.classList.add('empty');
+      } else {
+        const val = values[r][c];
+        const colorIdx = (val * 3 + r + c) % palette.length;
+        cell.style.background = palette[colorIdx];
+        cell.textContent = val;
+      }
+      grid.appendChild(cell);
+    }
+  }
+
+  (window.__path || []).forEach(i => grid.children[i].classList.add('selected'));
+  document.getElementById('score').textContent = window.__score ?? 0;
+
+  requestAnimationFrame(() => {
+    const path = window.__path || [];
+    if (path.length < 2) return;
+    const gridRect = grid.getBoundingClientRect();
+    const svgNS = 'http://www.w3.org/2000/svg';
+    const svg = document.createElementNS(svgNS, 'svg');
+    svg.style.cssText = 'position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:2;';
+    const pts = path.map(i => {
+      const r = grid.children[i].getBoundingClientRect();
+      return `${r.left - gridRect.left + r.width / 2},${r.top - gridRect.top + r.height / 2}`;
+    }).join(' ');
+    const line = document.createElementNS(svgNS, 'polyline');
+    line.setAttribute('points', pts);
+    line.setAttribute('fill', 'none');
+    line.setAttribute('stroke', 'rgba(255,255,255,0.85)');
+    line.setAttribute('stroke-width', '6');
+    line.setAttribute('stroke-linecap', 'round');
+    line.setAttribute('stroke-linejoin', 'round');
+    svg.appendChild(line);
+    grid.appendChild(svg);
+  });
+</script>
+
+</body>
+</html>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body {
+    width: 1024px; height: 1024px;
+    overflow: hidden;
+  }
+  .icon {
+    width: 1024px;
+    height: 1024px;
+    background: linear-gradient(135deg, #ff8a7a 0%, #ff6b8a 100%);
+    position: relative;
+  }
+  .ten {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-family: -apple-system, "AvenirNext-Heavy", "Avenir Next", sans-serif;
+    font-weight: 900;
+    font-size: 720px;
+    line-height: 0.85;
+    letter-spacing: -8%;
+  }
+  .dot1, .dot2 {
+    position: absolute;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.28);
+  }
+  .dot1 { width: 112px; height: 112px; top: 104px; left: 104px; }
+  .dot2 { width: 72px;  height: 72px;  bottom: 120px; right: 128px; }
+</style>
+</head>
+<body>
+<div class="icon">
+  <div class="dot1"></div>
+  <div class="ten">10</div>
+  <div class="dot2"></div>
+</div>
+</body>
+</html>

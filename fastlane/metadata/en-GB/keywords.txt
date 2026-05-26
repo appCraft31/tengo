@@ -1,1 +1,1 @@
-brain,training,mental,math,numbers,logic,puzzle,strategy,focus,cognitive,chain,offline
+zen,relax,2048,sudoku,merge,minimalist,calming,piano,asmr,offline,brain,satisfying

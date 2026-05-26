@@ -1,1 +1,1 @@
-cerebro,cálculo,números,lógica,puzzle,estrategia,concentración,cognitivo,cadena,offline
+zen,relax,2048,sudoku,merge,minimalista,calma,piano,asmr,offline,cerebro,lógica

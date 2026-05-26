@@ -1,1 +1,1 @@
-brein,training,rekenen,mentaal,getallen,logica,puzzel,strategie,focus,cognitief,ketting,offline
+zen,relax,2048,sudoku,merge,minimalistisch,kalm,piano,asmr,offline,brein,logica
