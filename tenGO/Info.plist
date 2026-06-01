@@ -28,9 +28,9 @@
 	<key>CFBundlePackageType</key>
 	<string>$(PRODUCT_BUNDLE_PACKAGE_TYPE)</string>
 	<key>CFBundleShortVersionString</key>
-	<string>1.5</string>
+	<string>1.6</string>
 	<key>CFBundleVersion</key>
-	<string>65</string>
+	<string>66</string>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-4352408747876735~9718003723</string>
 	<key>NSAppTransportSecurity</key>
