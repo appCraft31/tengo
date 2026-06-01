@@ -416,6 +416,15 @@ class GameScene: SKScene {
                     }
                     return
                 }
+                if name == "dailyLeaderboardBtn" {
+                    node.parent?.run(SKAction.sequence([
+                        SKAction.scale(to: 0.93, duration: 0.07),
+                        SKAction.scale(to: 1.0, duration: 0.1)
+                    ]))
+                    NotificationCenter.default.post(name: .tenGOShowGameCenter, object: nil,
+                                                    userInfo: ["leaderboardID": AppConfig.gameCenterDailyLeaderboardID])
+                    return
+                }
                 if name == "homePanelBtn" {
                     run(SKAction.wait(forDuration: 0.08)) { [weak self] in self?.goBackToMenu() }
                     return
@@ -885,12 +894,31 @@ class GameScene: SKScene {
             replayLabel.fontColor = UIColor(white: 0.26, alpha: 1)
             replayLabel.verticalAlignmentMode = .center
             replayBtn.addChild(replayLabel)
+        } else {
+            // Mode Défi : à la place du rejeu, accès au classement du jour.
+            let lbBtn = SKNode()
+            lbBtn.name = "dailyLeaderboardBtn"
+            lbBtn.position = CGPoint(x: 0, y: -140)
+            panel.addChild(lbBtn)
+
+            let lbBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
+            lbBg.fillColor = UIColor(red: 0.86, green: 0.82, blue: 0.97, alpha: 1) // lavande (défi)
+            lbBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+            lbBg.lineWidth = 1
+            lbBtn.addChild(lbBg)
+
+            let lbLabel = SKLabelNode(text: String(localized: "game_over.daily_leaderboard", defaultValue: "Classement du jour"))
+            lbLabel.fontName = "AvenirNext-Medium"
+            lbLabel.fontSize = 22
+            lbLabel.fontColor = UIColor(white: 0.26, alpha: 1)
+            lbLabel.verticalAlignmentMode = .center
+            lbBtn.addChild(lbLabel)
         }
 
-        // Bouton Accueil — action principale en mode Défi (remonte si pas de Rejouer).
+        // Bouton Accueil.
         let homeBtn = SKNode()
         homeBtn.name = "homePanelBtn"
-        homeBtn.position = CGPoint(x: 0, y: mode == .daily ? -150 : -204)
+        homeBtn.position = CGPoint(x: 0, y: -204)
         panel.addChild(homeBtn)
 
         let homeBg = SKShapeNode(rectOf: CGSize(width: 200, height: 52), cornerRadius: 26)

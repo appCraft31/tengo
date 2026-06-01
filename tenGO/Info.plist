@@ -31,6 +31,17 @@
 	<string>1.6</string>
 	<key>CFBundleVersion</key>
 	<string>66</string>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLName</key>
+			<string>AppCraft31.tenGO</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>tengo</string>
+			</array>
+		</dict>
+	</array>
 	<key>GADApplicationIdentifier</key>
 	<string>ca-app-pub-4352408747876735~9718003723</string>
 	<key>NSAppTransportSecurity</key>

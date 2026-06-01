@@ -62,10 +62,10 @@ final class GameCenterManager: NSObject {
         }
     }
 
-    func showLeaderboard(from viewController: UIViewController) {
+    func showLeaderboard(_ leaderboardID: String = AppConfig.gameCenterLeaderboardID, from viewController: UIViewController) {
         guard GKLocalPlayer.local.isAuthenticated else { return }
         let gcVC = GKGameCenterViewController(
-            leaderboardID: AppConfig.gameCenterLeaderboardID,
+            leaderboardID: leaderboardID,
             playerScope: .global,
             timeScope: .allTime
         )
