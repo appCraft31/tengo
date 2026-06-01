@@ -135,18 +135,34 @@ class MenuScene: SKScene {
     }
 
     /// Indicateur de série de jours consécutifs (rétention douce, sans pression).
+    /// Pastille arrondie sauge, cohérente avec les boutons du menu.
     private func addStreakChip(atY y: CGFloat) {
         let streak = StreakManager.shared.current
         guard streak >= 1 else { return }
 
-        let chip = SKLabelNode(text: "🌿 \(streak)")
-        chip.fontName = "AvenirNext-Medium"
-        chip.fontSize = 20
-        chip.fontColor = UIColor(white: 0.42, alpha: 1)
-        chip.verticalAlignmentMode = .center
-        chip.horizontalAlignmentMode = .center
-        chip.position = CGPoint(x: 0, y: y)
-        addChild(chip)
+        let container = SKNode()
+        container.position = CGPoint(x: 0, y: y)
+
+        let label = SKLabelNode(text: "🪙 \(streak)")
+        label.fontName = "AvenirNext-Medium"
+        label.fontSize = 19
+        label.fontColor = UIColor(white: 0.40, alpha: 1)
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .center
+        label.position = .zero
+        label.zPosition = 1
+
+        let height: CGFloat = 40
+        let width = max(label.frame.width + 44, 66)
+        let bg = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: height / 2)
+        bg.fillColor = UIColor(red: 0.85, green: 0.93, blue: 0.86, alpha: 1) // sauge douce
+        bg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+        bg.lineWidth = 1
+        bg.zPosition = 0
+
+        container.addChild(bg)
+        container.addChild(label)
+        addChild(container)
     }
 
     private func addLogo(atY y: CGFloat) {
