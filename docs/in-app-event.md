@@ -1,7 +1,12 @@
 # Événement intégré App Store — tenGO
 
 Type recommandé : **Défi (Challenge)** — centré sur le Défi du jour.
-Visuel : `~/Desktop/tenGO_event_card.png` (1920×1080). Lien profond : voir plus bas.
+
+Deux visuels requis (1920×1080), pour la **langue principale** (fr-FR) :
+- **Fiche de l'événement** (découverte) : `~/Desktop/tenGO_event_card.png`
+- **Page de détails** (image/vidéo) : `~/Desktop/tenGO_event_detail.png`
+
+Lien profond : voir plus bas.
 
 > Limites Apple : Nom ≤ 30 caractères · Brève description ≤ 50 · Description longue ≤ 120.
 > Pas d'emoji (refusés, comme pour les notes de version).
@@ -25,7 +30,7 @@ Visuel : `~/Desktop/tenGO_event_card.png` (1920×1080). Lien profond : voir plus
 1. Mes apps → tenGO → **Événements intégrés** → ＋
 2. Badge : **Défi (Challenge)**. Nom de référence (interne) : « Défi du jour ».
 3. Renseigner Nom / Brève / Longue par langue (tableau ci-dessus).
-4. **Visuel** : importer `tenGO_event_card.png` (1920×1080).
+4. **Visuels** (langue principale) : importer `tenGO_event_card.png` dans **Fiche de l'événement**, et `tenGO_event_detail.png` dans le média de la **page de détails** (jusqu'à 3 images ou 1 vidéo).
 5. **Dates** : début / fin + fuseau + date de publication.
 6. **Lien profond** (voir ci-dessous).
 7. Soumettre l'événement pour revue (séparée de l'app, ~24-48 h).
