@@ -7,24 +7,14 @@ import SpriteKit
 
 class MenuScene: SKScene {
 
-    // Couleurs pastel du jeu (valeurs 1–9)
-    private let bubbleColors: [UIColor] = [
-        UIColor(red: 0.98, green: 0.72, blue: 0.68, alpha: 1), // corail
-        UIColor(red: 0.99, green: 0.84, blue: 0.70, alpha: 1), // pêche
-        UIColor(red: 0.99, green: 0.95, blue: 0.72, alpha: 1), // jaune beurre
-        UIColor(red: 0.78, green: 0.94, blue: 0.82, alpha: 1), // menthe
-        UIColor(red: 0.72, green: 0.88, blue: 0.98, alpha: 1), // ciel
-        UIColor(red: 0.82, green: 0.78, blue: 0.97, alpha: 1), // lavande
-        UIColor(red: 0.98, green: 0.78, blue: 0.88, alpha: 1), // rose
-        UIColor(red: 0.80, green: 0.91, blue: 0.80, alpha: 1), // sauge
-        UIColor(red: 0.76, green: 0.82, blue: 0.97, alpha: 1), // pervenche
-    ]
+    // Palette du thème actif (valeurs 1–9) pour les bulles décoratives du fond.
+    private var bubbleColors: [UIColor] { ThemeManager.shared.active.bubbles }
 
     private var settingsOverlay: SettingsOverlay?
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
-        backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
+        backgroundColor = ThemeManager.shared.active.background
         setupBackground()
         setupUI()
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
@@ -87,12 +77,12 @@ class MenuScene: SKScene {
         let tagline = SKLabelNode(text: String(localized: "menu.tagline"))
         tagline.fontName = "AvenirNext-Light"
         tagline.fontSize = 22
-        tagline.fontColor = UIColor(white: 0.48, alpha: 1)
+        tagline.fontColor = ThemeManager.shared.active.logo.withAlphaComponent(0.6)
         tagline.verticalAlignmentMode = .center
         tagline.position = CGPoint(x: 0, y: centerY * 0.45 - 62)
         addChild(tagline)
 
-        addStreakChip(atY: centerY * 0.78)
+        addCoinChip(atY: centerY * 0.78)
 
         // Boutons
         let hasSaved = GameState.exists
@@ -100,7 +90,7 @@ class MenuScene: SKScene {
 
         addMenuButton(text: String(localized: "menu.new_game"), name: "newGame",
                       width: 270, height: 62, at: CGPoint(x: 0, y: buttonY),
-                      accent: UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1))
+                      accent: ThemeManager.shared.active.accent)
         buttonY -= 86
 
         // Défi du jour — grille unique partagée par tous, une seule fois par jour.
@@ -124,6 +114,10 @@ class MenuScene: SKScene {
         }
         buttonY -= 82
 
+        addMenuButton(text: String(localized: "menu.shop", defaultValue: "Boutique"), name: "boutique",
+                      width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
+        buttonY -= 80
+
         if hasSaved {
             addMenuButton(text: String(localized: "menu.continue"), name: "continuer",
                           width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
@@ -138,23 +132,20 @@ class MenuScene: SKScene {
                       width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
     }
 
-    /// Indicateur de série de jours consécutifs (rétention douce, sans pression).
-    /// Pastille arrondie sauge + pièce vectorielle, dans la DA pastel du jeu.
-    private func addStreakChip(atY y: CGFloat) {
-        let streak = StreakManager.shared.current
-        guard streak >= 1 else { return }
-
+    /// Solde de pièces dépensables (monnaie de la boutique).
+    /// Pastille dorée + pièce vectorielle.
+    private func addCoinChip(atY y: CGFloat) {
         let container = SKNode()
         container.position = CGPoint(x: 0, y: y)
 
         let coinR: CGFloat = 9
-        let coin = makeCoinNode(radius: coinR)
+        let coin = CoinIcon.make(radius: coinR)
         coin.zPosition = 1
 
-        let number = SKLabelNode(text: "\(streak)")
+        let number = SKLabelNode(text: "\(CoinManager.shared.balance)")
         number.fontName = "AvenirNext-Medium"
         number.fontSize = 19
-        number.fontColor = UIColor(white: 0.40, alpha: 1)
+        number.fontColor = UIColor(white: 0.35, alpha: 1)
         number.verticalAlignmentMode = .center
         number.horizontalAlignmentMode = .left
         number.zPosition = 1
@@ -162,11 +153,11 @@ class MenuScene: SKScene {
         let gap: CGFloat = 7
         let contentW = coinR * 2 + gap + number.frame.width
         let height: CGFloat = 40
-        let width = max(contentW + 40, 66)
+        let width = max(contentW + 40, 70)
 
         let bg = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: height / 2)
-        bg.fillColor = UIColor(red: 0.85, green: 0.93, blue: 0.86, alpha: 1) // sauge douce
-        bg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+        bg.fillColor = UIColor(red: 0.98, green: 0.92, blue: 0.74, alpha: 0.95) // doux doré
+        bg.strokeColor = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 0.35)
         bg.lineWidth = 1
         bg.zPosition = 0
 
@@ -180,41 +171,12 @@ class MenuScene: SKScene {
         addChild(container)
     }
 
-    /// Pièce vectorielle pastel : disque or doux, liseré ambré et reflet discret.
-    private func makeCoinNode(radius r: CGFloat) -> SKNode {
-        let coin = SKNode()
-        let gold = UIColor(red: 0.98, green: 0.84, blue: 0.46, alpha: 1)
-        let amber = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 1)
-
-        let disc = SKShapeNode(circleOfRadius: r)
-        disc.fillColor = gold
-        disc.strokeColor = amber
-        disc.lineWidth = 1.3
-        coin.addChild(disc)
-
-        // Liseré intérieur (rappelle le relief d'une pièce)
-        let rim = SKShapeNode(circleOfRadius: r - 2.8)
-        rim.fillColor = .clear
-        rim.strokeColor = amber.withAlphaComponent(0.5)
-        rim.lineWidth = 1
-        coin.addChild(rim)
-
-        // Petit reflet pastel en haut à gauche
-        let glint = SKShapeNode(circleOfRadius: r * 0.28)
-        glint.fillColor = UIColor(white: 1.0, alpha: 0.55)
-        glint.strokeColor = .clear
-        glint.position = CGPoint(x: -r * 0.32, y: r * 0.32)
-        coin.addChild(glint)
-
-        return coin
-    }
-
     private func addLogo(atY y: CGFloat) {
         // "TEN" à gauche
         let ten = SKLabelNode(text: "TEN")
         ten.fontName = "AvenirNext-Heavy"
         ten.fontSize = 72
-        ten.fontColor = UIColor(white: 0.28, alpha: 1)
+        ten.fontColor = ThemeManager.shared.active.logo
         ten.verticalAlignmentMode = .center
         ten.horizontalAlignmentMode = .right
         ten.position = CGPoint(x: -18, y: y)
@@ -233,7 +195,7 @@ class MenuScene: SKScene {
         let go = SKLabelNode(text: "GO")
         go.fontName = "AvenirNext-Heavy"
         go.fontSize = 72
-        go.fontColor = UIColor(white: 0.28, alpha: 1)
+        go.fontColor = ThemeManager.shared.active.logo
         go.verticalAlignmentMode = .center
         go.horizontalAlignmentMode = .left
         go.position = CGPoint(x: 18, y: y)
@@ -325,6 +287,12 @@ class MenuScene: SKScene {
                     self.navigateToGame(savedState: GameState.load())
                 }
                 return
+            case "boutique":
+                animateTap(node.parent ?? node)
+                run(SKAction.wait(forDuration: 0.12)) {
+                    self.navigateToBoutique()
+                }
+                return
             case "classement":
                 animateTap(node.parent ?? node)
                 run(SKAction.wait(forDuration: 0.12)) {
@@ -356,6 +324,12 @@ class MenuScene: SKScene {
         let scene = GameScene(size: size, daily: today)
         scene.scaleMode = .aspectFill
         view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+    }
+
+    private func navigateToBoutique() {
+        let scene = BoutiqueScene(size: size)
+        scene.scaleMode = .aspectFill
+        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
     }
 
     private func navigateToLeaderboard() {

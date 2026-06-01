@@ -58,5 +58,13 @@ enum AppConfig {
         static let notifGamesPlayed = "tenGO_notifGamesPlayed"
         /// L'autorisation de notifications a déjà été demandée.
         static let notifRequested = "tenGO_notifRequested"
+        /// Solde de pièces (monnaie de la boutique).
+        static let coinsBalance = "tenGO_coins"
+        /// Plus haut palier de série déjà récompensé en pièces (anti-farm).
+        static let streakRewardedMilestone = "tenGO_streakRewardedMilestone"
+        /// Thèmes possédés (liste d'identifiants) ; le thème par défaut est toujours possédé.
+        static let ownedThemes = "tenGO_ownedThemes"
+        /// Identifiant du thème actif.
+        static let activeTheme = "tenGO_activeTheme"
     }
 }

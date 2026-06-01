@@ -17,26 +17,15 @@ class BubbleNode: SKNode {
 
     static let bubbleRadius: CGFloat = 39
 
-    // Pastel color per digit value (index 0 unused)
-    private static let colors: [UIColor] = [
-        .clear,
-        UIColor(red: 1.00, green: 0.62, blue: 0.62, alpha: 1), // 1 coral
-        UIColor(red: 1.00, green: 0.78, blue: 0.62, alpha: 1), // 2 peach
-        UIColor(red: 1.00, green: 0.96, blue: 0.62, alpha: 1), // 3 butter
-        UIColor(red: 0.67, green: 0.95, blue: 0.75, alpha: 1), // 4 mint
-        UIColor(red: 0.62, green: 0.86, blue: 1.00, alpha: 1), // 5 sky
-        UIColor(red: 0.80, green: 0.72, blue: 1.00, alpha: 1), // 6 lavender
-        UIColor(red: 1.00, green: 0.72, blue: 0.86, alpha: 1), // 7 rose
-        UIColor(red: 0.75, green: 0.91, blue: 0.75, alpha: 1), // 8 sage
-        UIColor(red: 0.72, green: 0.76, blue: 1.00, alpha: 1), // 9 periwinkle
-    ]
-
-    static func color(for value: Int) -> UIColor { colors[value] }
+    /// Couleur d'une valeur selon le thème actif.
+    static func color(for value: Int) -> UIColor {
+        ThemeManager.shared.active.color(forValue: value)
+    }
 
     init(value: Int) {
         self.value = value
 
-        let color = BubbleNode.colors[value]
+        let color = BubbleNode.color(for: value)
         circle = SKShapeNode(circleOfRadius: BubbleNode.bubbleRadius)
         circle.fillColor = color
         circle.strokeColor = color.darkened(by: 0.12)
@@ -45,7 +34,7 @@ class BubbleNode: SKNode {
         digitLabel = SKLabelNode(text: "\(value)")
         digitLabel.fontName = "AvenirNext-Medium"
         digitLabel.fontSize = 36
-        digitLabel.fontColor = UIColor(white: 0.25, alpha: 1)
+        digitLabel.fontColor = ThemeManager.shared.active.digit
         digitLabel.verticalAlignmentMode = .center
         digitLabel.horizontalAlignmentMode = .center
 
@@ -116,7 +105,7 @@ class BubbleNode: SKNode {
 
     func setSelected(_ selected: Bool) {
         removeAction(forKey: "select")
-        let color = BubbleNode.colors[value]
+        let color = BubbleNode.color(for: value)
         if selected {
             circle.strokeColor = UIColor(white: 1.0, alpha: 0.9)
             circle.lineWidth = 2.5
@@ -158,7 +147,7 @@ class BubbleNode: SKNode {
 
     private func makeBurst() -> SKNode {
         let container = SKNode()
-        let color = BubbleNode.colors[value]
+        let color = BubbleNode.color(for: value)
         let count = 6
         for i in 0..<count {
             let angle = CGFloat(i) / CGFloat(count) * .pi * 2

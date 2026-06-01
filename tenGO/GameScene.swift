@@ -97,7 +97,7 @@ class GameScene: SKScene {
     override func sceneDidLoad() {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         removeAllChildren()
-        backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
+        backgroundColor = ThemeManager.shared.active.background
         setupBackground()
         setupUI()
         if mode == .daily, let today = dailyToday {
@@ -109,6 +109,7 @@ class GameScene: SKScene {
         }
         setupGrid()
         StreakManager.shared.registerPlay()
+        CoinManager.shared.awardStreakMilestones(currentStreak: StreakManager.shared.current)
         NotificationManager.shared.registerGameAndMaybeRequest()
     }
 
@@ -189,17 +190,7 @@ class GameScene: SKScene {
 
     // MARK: - Background
 
-    private let bubbleColors: [UIColor] = [
-        UIColor(red: 0.98, green: 0.72, blue: 0.68, alpha: 1),
-        UIColor(red: 0.99, green: 0.84, blue: 0.70, alpha: 1),
-        UIColor(red: 0.99, green: 0.95, blue: 0.72, alpha: 1),
-        UIColor(red: 0.78, green: 0.94, blue: 0.82, alpha: 1),
-        UIColor(red: 0.72, green: 0.88, blue: 0.98, alpha: 1),
-        UIColor(red: 0.82, green: 0.78, blue: 0.97, alpha: 1),
-        UIColor(red: 0.98, green: 0.78, blue: 0.88, alpha: 1),
-        UIColor(red: 0.80, green: 0.91, blue: 0.80, alpha: 1),
-        UIColor(red: 0.76, green: 0.82, blue: 0.97, alpha: 1),
-    ]
+    private var bubbleColors: [UIColor] { ThemeManager.shared.active.bubbles }
 
     private func setupBackground() {
         let configs: [(radius: CGFloat, x: CGFloat, y: CGFloat, colorIdx: Int, duration: Double)] = [
@@ -234,7 +225,7 @@ class GameScene: SKScene {
         let ten = SKLabelNode(text: "TEN")
         ten.fontName = "AvenirNext-Heavy"
         ten.fontSize = 48
-        ten.fontColor = UIColor(white: 0.28, alpha: 1)
+        ten.fontColor = ThemeManager.shared.active.logo
         ten.verticalAlignmentMode = .center
         ten.horizontalAlignmentMode = .right
         ten.position = CGPoint(x: -14, y: logoY)
@@ -254,7 +245,7 @@ class GameScene: SKScene {
         let go = SKLabelNode(text: "GO")
         go.fontName = "AvenirNext-Heavy"
         go.fontSize = 48
-        go.fontColor = UIColor(white: 0.28, alpha: 1)
+        go.fontColor = ThemeManager.shared.active.logo
         go.verticalAlignmentMode = .center
         go.horizontalAlignmentMode = .left
         go.position = CGPoint(x: 14, y: logoY)
@@ -730,6 +721,10 @@ class GameScene: SKScene {
             GameCenterManager.shared.submitScore(score)
             GameState.clear()
         case .daily:
+            // Pièces offertes une seule fois, à la première complétion du jour.
+            if !DailyChallenge.isCompletedToday() {
+                CoinManager.shared.awardDailyChallenge()
+            }
             DailyChallenge.markCompleted()
             GameCenterManager.shared.submitDailyScore(score)
         }
@@ -976,7 +971,7 @@ class GameScene: SKScene {
     private func performReset() {
         isAnimating = true
         messageLabel.isHidden = true
-        backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
+        backgroundColor = ThemeManager.shared.active.background
         score = 0
         combosCreated = 0
         longestChain = 0
