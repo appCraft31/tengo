@@ -193,30 +193,7 @@ class GameScene: SKScene {
     private var bubbleColors: [UIColor] { ThemeManager.shared.active.bubbles }
 
     private func setupBackground() {
-        let configs: [(radius: CGFloat, x: CGFloat, y: CGFloat, colorIdx: Int, duration: Double)] = [
-            (88,  -280,  480, 0, 7.2),
-            (62,   260,  350, 4, 9.5),
-            (110, -180, -150, 6, 11.0),
-            (74,   310, -320, 1, 8.3),
-            (96,   -60,  560, 3, 10.1),
-            (54,   200, -500, 7, 6.8),
-            (80,  -320, -480, 2, 12.4),
-            (68,    80,  200, 5, 9.0),
-            (50,  -200,  -30, 8, 7.6),
-        ]
-        for cfg in configs {
-            let bubble = SKShapeNode(circleOfRadius: cfg.radius)
-            bubble.fillColor = bubbleColors[cfg.colorIdx].withAlphaComponent(0.18)
-            bubble.strokeColor = .clear
-            bubble.position = CGPoint(x: cfg.x, y: cfg.y)
-            bubble.zPosition = -1
-            addChild(bubble)
-            let up = SKAction.moveBy(x: 0, y: 18, duration: cfg.duration)
-            let down = SKAction.moveBy(x: 0, y: -18, duration: cfg.duration)
-            up.timingMode = .easeInEaseOut
-            down.timingMode = .easeInEaseOut
-            bubble.run(SKAction.repeatForever(SKAction.sequence([up, down])))
-        }
+        addChild(ThemeBackground.make(for: ThemeManager.shared.active, size: size))
     }
 
     private func setupUI() {
