@@ -66,5 +66,11 @@ enum AppConfig {
         static let ownedThemes = "tenGO_ownedThemes"
         /// Identifiant du thème actif.
         static let activeTheme = "tenGO_activeTheme"
+        /// Matières de bulles possédées / actives (cosmétique).
+        static let ownedBubbleStyles = "tenGO_ownedBubbleStyles"
+        static let activeBubbleStyle = "tenGO_activeBubbleStyle"
+        /// Styles de tracé possédés / actifs (cosmétique).
+        static let ownedTrails = "tenGO_ownedTrails"
+        static let activeTrail = "tenGO_activeTrail"
     }
 }
