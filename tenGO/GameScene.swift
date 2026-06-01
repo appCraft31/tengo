@@ -441,42 +441,63 @@ class GameScene: SKScene {
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard !isAnimating, !currentPath.isEmpty, let touch = touches.first else { return }
         let point = touch.location(in: self)
-        guard let coord = gridCoord(for: point) else { return }
+        guard let target = gridCoord(for: point) else { return }
         let last = currentPath.last!
 
-        // Same cell — do nothing
-        if coord.row == last.row && coord.col == last.col { return }
+        // Même cellule — ne rien faire
+        if target.row == last.row && target.col == last.col { return }
 
-        // Backtrack one step
-        if currentPath.count >= 2 {
-            let prev = currentPath[currentPath.count - 2]
-            if coord.row == prev.row && coord.col == prev.col {
-                bubbleNodes[last.row][last.col]?.setSelected(false)
-                currentPath.removeLast()
-                SoundManager.shared.playBacktrack()
-                updateSumLabel()
-                updatePathLine()
-                return
+        // Backtrack étendu : si la cible est déjà dans le chemin, tronquer jusqu'à elle.
+        // Permet de revenir en arrière fluide même sur plusieurs cases (boucles, U-turn).
+        if let idx = currentPath.firstIndex(where: { $0.row == target.row && $0.col == target.col }),
+           idx < currentPath.count - 1 {
+            while currentPath.count > idx + 1 {
+                let removed = currentPath.removeLast()
+                bubbleNodes[removed.row][removed.col]?.setSelected(false)
             }
+            SoundManager.shared.playBacktrack()
+            updateSumLabel()
+            updatePathLine()
+            return
         }
 
-        // Already in path
-        if currentPath.contains(where: { $0.row == coord.row && $0.col == coord.col }) { return }
+        // Sinon, étendre le chemin par pas king-move successifs vers la cible.
+        // Fix les sauts de cellule en swipe diagonal rapide (interpolation 60Hz vs vitesse du doigt).
+        walkPath(toward: target)
+    }
 
-        // Must be adjacent to last cell
-        guard gridModel.isAdjacent(last, coord) else { return }
+    /// Avance le chemin un pas king-move à la fois vers `target`, jusqu'à atteindre
+    /// la cible ou rencontrer une cellule invalide (hors grille, vide, déjà dans le
+    /// chemin, ou somme dépassée).
+    private func walkPath(toward target: (row: Int, col: Int)) {
+        while let last = currentPath.last,
+              !(last.row == target.row && last.col == target.col) {
+            let dr = (target.row - last.row).signum()
+            let dc = (target.col - last.col).signum()
+            let next = (row: last.row + dr, col: last.col + dc)
+            if !tryAppendCell(next) { break }
+        }
+    }
 
-        // Sum must not exceed 10
-        guard let bubble = gridModel.cells[coord.row][coord.col] else { return }
-        guard gridModel.pathSum(currentPath) + bubble.value <= 10 else { return }
+    /// Tente d'ajouter `coord` au chemin courant. Retourne `true` si ajouté.
+    @discardableResult
+    private func tryAppendCell(_ coord: (row: Int, col: Int)) -> Bool {
+        // Bornes
+        guard coord.row >= 0, coord.row < GridModel.rows,
+              coord.col >= 0, coord.col < GridModel.cols else { return false }
+        // Déjà dans le chemin
+        if currentPath.contains(where: { $0.row == coord.row && $0.col == coord.col }) { return false }
+        // Cellule non vide
+        guard let bubble = gridModel.cells[coord.row][coord.col] else { return false }
+        // Contrainte de somme
+        guard gridModel.pathSum(currentPath) + bubble.value <= 10 else { return false }
 
         currentPath.append(coord)
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
         SoundManager.shared.playConnect(bubbleValue: bubble.value)
-        // Note : le haptic est désormais déclenché par SoundManager
-        // au moment où la note sort réellement de l'arpégiateur.
         updateSumLabel()
         updatePathLine()
+        return true
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
