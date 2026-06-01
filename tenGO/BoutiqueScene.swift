@@ -9,7 +9,7 @@ import SpriteKit
 
 class BoutiqueScene: SKScene {
 
-    private let cardH: CGFloat = 132
+    private let cardH: CGFloat = 152
     // Largeur réellement visible (l'aspectFill rogne la largeur) — calculée depuis la vue.
     private var usableWidth: CGFloat = 600
     private var cardW: CGFloat = 280
@@ -31,7 +31,7 @@ class BoutiqueScene: SKScene {
         let theme = ThemeManager.shared.active
         backgroundColor = theme.background
 
-        let topY = size.height * 0.40
+        let topY = size.height * 0.42
 
         // Titre
         let title = SKLabelNode(text: String(localized: "shop.title", defaultValue: "Boutique"))
@@ -43,11 +43,11 @@ class BoutiqueScene: SKScene {
         addChild(title)
 
         // Solde de pièces
-        addBalanceChip(atY: topY - 58, theme: theme)
+        addBalanceChip(atY: topY - 62, theme: theme)
 
         // Cartes de thèmes (grille 2 colonnes)
         let themes = ThemeManager.shared.themes
-        let startY = topY - 130
+        let startY = topY - 168
         let colCenter = usableWidth / 4
         let colX: [CGFloat] = [-colCenter, colCenter]
         for (i, t) in themes.enumerated() {
@@ -65,22 +65,30 @@ class BoutiqueScene: SKScene {
         let container = SKNode()
         container.position = CGPoint(x: 0, y: y)
 
-        let coin = CoinIcon.make(radius: 11)
+        let coin = CoinIcon.make(radius: 12)
         coin.zPosition = 1
 
         let label = SKLabelNode(text: "\(CoinManager.shared.balance)")
-        label.fontName = "AvenirNext-Medium"
+        label.fontName = "AvenirNext-DemiBold"
         label.fontSize = 24
-        label.fontColor = theme.logo
+        label.fontColor = UIColor(red: 0.45, green: 0.34, blue: 0.10, alpha: 1)
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .left
         label.zPosition = 1
 
-        let gap: CGFloat = 8
-        let contentW = 22 + gap + label.frame.width
+        let gap: CGFloat = 9
+        let contentW = 24 + gap + label.frame.width
+
+        // Pilule dorée
+        let pill = SKShapeNode(rectOf: CGSize(width: contentW + 44, height: 46), cornerRadius: 23)
+        pill.fillColor = UIColor(red: 0.98, green: 0.92, blue: 0.74, alpha: 0.95)
+        pill.strokeColor = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 0.4)
+        pill.lineWidth = 1
+        container.addChild(pill)
+
         let startX = -contentW / 2
-        coin.position = CGPoint(x: startX + 11, y: 0)
-        label.position = CGPoint(x: startX + 22 + gap, y: 0)
+        coin.position = CGPoint(x: startX + 12, y: 0)
+        label.position = CGPoint(x: startX + 24 + gap, y: 0)
 
         container.addChild(coin)
         container.addChild(label)
@@ -94,65 +102,89 @@ class BoutiqueScene: SKScene {
 
         let isActive = ThemeManager.shared.activeID == theme.id
         let owned = ThemeManager.shared.owns(theme.id)
+        let cardSize = CGSize(width: cardW, height: cardH)
+
+        // Ombre portée douce (profondeur)
+        let shadow = SKShapeNode(rectOf: cardSize, cornerRadius: 26)
+        shadow.fillColor = UIColor(white: 0, alpha: 0.08)
+        shadow.strokeColor = .clear
+        shadow.position = CGPoint(x: 0, y: -5)
+        shadow.zPosition = -1
+        card.addChild(shadow)
 
         // Fond de carte = ambiance du thème (aperçu)
-        let bg = SKShapeNode(rectOf: CGSize(width: cardW, height: cardH), cornerRadius: 22)
+        let bg = SKShapeNode(rectOf: cardSize, cornerRadius: 26)
         bg.fillColor = theme.background
-        bg.strokeColor = isActive ? theme.accent : theme.logo.withAlphaComponent(0.25)
+        bg.strokeColor = isActive ? theme.accent : theme.logo.withAlphaComponent(0.18)
         bg.lineWidth = isActive ? 3 : 1
         card.addChild(bg)
 
-        // Aperçu : quelques bulles du thème
-        let previewValues = [1, 3, 6, 9]
-        let bubbleR: CGFloat = 17
-        let spacing: CGFloat = 44
+        // Aperçu : 5 bulles du thème, joliment espacées en haut
+        let previewValues = [1, 3, 5, 7, 9]
+        let bubbleR: CGFloat = 16
+        let spacing = min(42, (cardW - 56) / CGFloat(previewValues.count - 1))
         let totalW = CGFloat(previewValues.count - 1) * spacing
         for (i, v) in previewValues.enumerated() {
             let dot = SKShapeNode(circleOfRadius: bubbleR)
             dot.fillColor = theme.color(forValue: v)
-            dot.strokeColor = .clear
-            dot.position = CGPoint(x: -totalW / 2 + CGFloat(i) * spacing, y: 30)
+            dot.strokeColor = UIColor(white: 1, alpha: 0.22)
+            dot.lineWidth = 1
+            dot.position = CGPoint(x: -totalW / 2 + CGFloat(i) * spacing, y: 42)
             card.addChild(dot)
         }
 
-        // Nom du thème
-        let name = SKLabelNode(text: "\(theme.emoji)  \(themeName(theme.id))")
-        name.fontName = "AvenirNext-Medium"
-        name.fontSize = 20
+        // Nom du thème (sans emoji — l'identité passe par les couleurs)
+        let name = SKLabelNode(text: themeName(theme.id))
+        name.fontName = "AvenirNext-DemiBold"
+        name.fontSize = 22
         name.fontColor = theme.logo
         name.verticalAlignmentMode = .center
-        name.position = CGPoint(x: 0, y: -14)
+        name.position = CGPoint(x: 0, y: -6)
         card.addChild(name)
 
-        // Statut : actif / possédé / prix
-        addStatus(to: card, theme: theme, isActive: isActive, owned: owned)
+        // Badge de statut (pilule)
+        addStatusBadge(to: card, theme: theme, isActive: isActive, owned: owned, atY: -48)
 
         addChild(card)
     }
 
-    private func addStatus(to card: SKNode, theme: Theme, isActive: Bool, owned: Bool) {
-        let y: CGFloat = -46
+    private func addStatusBadge(to card: SKNode, theme: Theme, isActive: Bool, owned: Bool, atY y: CGFloat) {
         if isActive {
-            let label = SKLabelNode(text: "✓ " + String(localized: "shop.active", defaultValue: "Actif"))
+            // Pilule pleine accent + « Actif »
+            let pill = SKShapeNode(rectOf: CGSize(width: 96, height: 32), cornerRadius: 16)
+            pill.fillColor = theme.accent
+            pill.strokeColor = .clear
+            pill.position = CGPoint(x: 0, y: y)
+            card.addChild(pill)
+
+            let label = SKLabelNode(text: String(localized: "shop.active", defaultValue: "Actif"))
             label.fontName = "AvenirNext-Bold"
-            label.fontSize = 17
-            label.fontColor = theme.accent
+            label.fontSize = 15
+            label.fontColor = contrastingText(on: theme.accent)
             label.verticalAlignmentMode = .center
             label.position = CGPoint(x: 0, y: y)
             card.addChild(label)
         } else if owned {
+            // Pilule contour + « Choisir »
+            let pill = SKShapeNode(rectOf: CGSize(width: 108, height: 32), cornerRadius: 16)
+            pill.fillColor = .clear
+            pill.strokeColor = theme.logo.withAlphaComponent(0.5)
+            pill.lineWidth = 1.5
+            pill.position = CGPoint(x: 0, y: y)
+            card.addChild(pill)
+
             let label = SKLabelNode(text: String(localized: "shop.select", defaultValue: "Choisir"))
             label.fontName = "AvenirNext-Medium"
-            label.fontSize = 17
-            label.fontColor = theme.logo.withAlphaComponent(0.85)
+            label.fontSize = 15
+            label.fontColor = theme.logo
             label.verticalAlignmentMode = .center
             label.position = CGPoint(x: 0, y: y)
             card.addChild(label)
         } else {
-            // Prix : pièce + montant
+            // Prix : pièce + montant, dans une pilule discrète
             let priceLabel = SKLabelNode(text: "\(theme.price)")
             priceLabel.fontName = "AvenirNext-Bold"
-            priceLabel.fontSize = 18
+            priceLabel.fontSize = 17
             priceLabel.fontColor = theme.logo
             priceLabel.verticalAlignmentMode = .center
             priceLabel.horizontalAlignmentMode = .left
@@ -160,6 +192,13 @@ class BoutiqueScene: SKScene {
             let coin = CoinIcon.make(radius: 9)
             let gap: CGFloat = 6
             let contentW = 18 + gap + priceLabel.frame.width
+            let pill = SKShapeNode(rectOf: CGSize(width: contentW + 28, height: 32), cornerRadius: 16)
+            pill.fillColor = theme.logo.withAlphaComponent(0.06)
+            pill.strokeColor = theme.logo.withAlphaComponent(0.18)
+            pill.lineWidth = 1
+            pill.position = CGPoint(x: 0, y: y)
+            card.addChild(pill)
+
             let startX = -contentW / 2
             coin.position = CGPoint(x: startX + 9, y: y)
             priceLabel.position = CGPoint(x: startX + 18 + gap, y: y)
@@ -186,6 +225,14 @@ class BoutiqueScene: SKScene {
         label.verticalAlignmentMode = .center
         node.addChild(label)
         addChild(node)
+    }
+
+    /// Couleur de texte lisible sur un fond donné (clair → texte foncé, sombre → blanc).
+    private func contrastingText(on color: UIColor) -> UIColor {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        color.getRed(&r, green: &g, blue: &b, alpha: &a)
+        let luminance = 0.299 * r + 0.587 * g + 0.114 * b
+        return luminance > 0.6 ? UIColor(white: 0.18, alpha: 1) : .white
     }
 
     /// Nom localisé du thème (clés statiques → extraction + fallback français).
