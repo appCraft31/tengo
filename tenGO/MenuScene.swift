@@ -48,11 +48,14 @@ class MenuScene: SKScene {
 
         // Géométrie réellement visible (aspectFill rogne la largeur).
         var topRowY = centerY * 0.78
-        var edgeX = size.width * 0.32
+        var edgeX = size.width * 0.30
         if let v = view {
             let scale = max(v.bounds.width / size.width, v.bounds.height / size.height)
-            topRowY = (v.bounds.height / scale) / 2 - v.safeAreaInsets.top / scale - 30
-            edgeX = (v.bounds.width / scale) / 2 - 46
+            // Marge haute minimale garantie : safeAreaInsets peut être nul au lancement
+            // (encoche/dynamic island) → on plancher à ~47pt pour ne pas remonter dans l'encoche.
+            let topInset = max(v.safeAreaInsets.top, 47) / scale
+            topRowY = (v.bounds.height / scale) / 2 - topInset - 26
+            edgeX = (v.bounds.width / scale) / 2 - 58
         }
 
         // Logo + slogan — bloc descendu pour centrer l'ensemble logo+boutons.
