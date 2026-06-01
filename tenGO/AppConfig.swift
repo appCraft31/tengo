@@ -38,11 +38,39 @@ enum AppConfig {
     /// (Fonctionnalités → Game Center → Classements)
     static let gameCenterLeaderboardID = "com.tengo.leaderboard.global"
 
+    /// Classement du Défi du jour — à créer dans App Store Connect.
+    /// Idéalement configuré en réinitialisation quotidienne.
+    static let gameCenterDailyLeaderboardID = "com.tengo.leaderboard.daily"
+
     // MARK: - UserDefaults keys
 
     enum UserDefaultsKey {
         static let hasSeenTutorial = "hasSeenTutorial"
         static let soundMuted = "tenGO_soundMuted"
         static let hapticsEnabled = "tenGO_hapticsEnabled"
+        /// Dernier jour (clé AAAAMMJJ, UTC) où le Défi du jour a été complété.
+        static let dailyLastCompletedDayKey = "tenGO_dailyLastCompleted"
+        /// Série de jours consécutifs de jeu (rétention douce).
+        static let streakCurrent = "tenGO_streakCurrent"
+        static let streakBest = "tenGO_streakBest"
+        static let streakLastPlayed = "tenGO_streakLastPlayed"
+        /// Nombre de parties jouées (pour différer la demande de notifications).
+        static let notifGamesPlayed = "tenGO_notifGamesPlayed"
+        /// L'autorisation de notifications a déjà été demandée.
+        static let notifRequested = "tenGO_notifRequested"
+        /// Solde de pièces (monnaie de la boutique).
+        static let coinsBalance = "tenGO_coins"
+        /// Plus haut palier de série déjà récompensé en pièces (anti-farm).
+        static let streakRewardedMilestone = "tenGO_streakRewardedMilestone"
+        /// Thèmes possédés (liste d'identifiants) ; le thème par défaut est toujours possédé.
+        static let ownedThemes = "tenGO_ownedThemes"
+        /// Identifiant du thème actif.
+        static let activeTheme = "tenGO_activeTheme"
+        /// Matières de bulles possédées / actives (cosmétique).
+        static let ownedBubbleStyles = "tenGO_ownedBubbleStyles"
+        static let activeBubbleStyle = "tenGO_activeBubbleStyle"
+        /// Styles de tracé possédés / actifs (cosmétique).
+        static let ownedTrails = "tenGO_ownedTrails"
+        static let activeTrail = "tenGO_activeTrail"
     }
 }
