@@ -41,7 +41,7 @@ enum ThemeBackground {
         switch theme.effect {
         case .bubbles: buildBubbles(node, size, theme)
         case .waves:   buildWaves(node, size, theme)
-        case .stars:   buildStars(node, size, theme, count: 70, withMoon: false)
+        case .stars:   buildStars(node, size, theme, count: 70, withMoon: false); addPlanets(node, size, theme)
         case .leaves:  buildLeaves(node, size, theme)
         case .sand:    buildSand(node, size, theme)
         case .moon:    buildStars(node, size, theme, count: 45, withMoon: true)
@@ -145,6 +145,53 @@ enum ThemeBackground {
             star.run(.wait(forDuration: .random(in: 0...2)))
         }
         if withMoon { addMoon(node, size, theme) }
+    }
+
+    /// Planètes douces (thème Espace), placées vers les bords pour épargner la grille.
+    private static func addPlanets(_ node: SKNode, _ size: CGSize, _ theme: Theme) {
+        let w = size.width, h = size.height
+        // (x, y, rayon, indice couleur, anneau)
+        let planets: [(x: CGFloat, y: CGFloat, r: CGFloat, c: Int, ring: Bool)] = [
+            (-w * 0.30, h * 0.31, 58, 5, true),    // grande planète dorée à anneau (haut-gauche)
+            (w * 0.31, -h * 0.30, 44, 2, false),   // planète rose (bas-droite)
+            (w * 0.33, h * 0.42, 26, 3, false),    // petite planète cyan (haut-droite)
+        ]
+        for p in planets {
+            let planet = SKNode()
+            planet.position = CGPoint(x: p.x, y: p.y)
+            let base = theme.bubbles[p.c]
+
+            let disc = SKShapeNode(circleOfRadius: p.r)
+            disc.fillColor = base.withAlphaComponent(0.55)
+            disc.strokeColor = base.withAlphaComponent(0.7)
+            disc.lineWidth = 1
+            planet.addChild(disc)
+
+            // Léger reflet
+            let glow = SKShapeNode(circleOfRadius: p.r * 0.42)
+            glow.fillColor = UIColor(white: 1, alpha: 0.12)
+            glow.strokeColor = .clear
+            glow.position = CGPoint(x: -p.r * 0.3, y: p.r * 0.3)
+            planet.addChild(glow)
+
+            if p.ring {
+                let ring = SKShapeNode(ellipseOf: CGSize(width: p.r * 3.0, height: p.r * 1.05))
+                ring.fillColor = .clear
+                ring.strokeColor = UIColor(white: 0.88, alpha: 0.4)
+                ring.lineWidth = 4
+                ring.zRotation = -0.35
+                planet.addChild(ring)
+            }
+
+            node.addChild(planet)
+
+            // Bercement lent
+            let up = SKAction.moveBy(x: 0, y: 12, duration: 7.5)
+            let down = SKAction.moveBy(x: 0, y: -12, duration: 7.5)
+            up.timingMode = .easeInEaseOut
+            down.timingMode = .easeInEaseOut
+            planet.run(.repeatForever(.sequence([up, down])))
+        }
     }
 
     private static func addMoon(_ node: SKNode, _ size: CGSize, _ theme: Theme) {
