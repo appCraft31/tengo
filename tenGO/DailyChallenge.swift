@@ -15,12 +15,12 @@ enum DailyTwist: Int, CaseIterable {
     case anchored   // bulles qui ne tombent pas avec la gravité
     case frozen     // bulles givrées, débloquées par un chemin adjacent
 
-    /// Nombre d'éléments perturbateurs placés sur la grille.
+    /// Nombre d'éléments perturbateurs placés sur la grille (intensité « corsée »).
     var count: Int {
         switch self {
-        case .obstacles: return 6
-        case .anchored:  return 4
-        case .frozen:    return 4
+        case .obstacles: return 9
+        case .anchored:  return 6
+        case .frozen:    return 6
         }
     }
 }
@@ -57,19 +57,41 @@ enum DailyChallenge {
 
     // MARK: - Génération déterministe validée
 
-    /// Génère la grille + twist et garantit qu'elle est jouable en dérivant la
-    /// graine (key, key+1, …) jusqu'à obtenir une grille résoluble.
+    /// Génère plusieurs candidates (graine dérivée déterministe) et sélectionne
+    /// la plus RETORSE : le moins de paires/coups évidents (somme 10 en ≤ 2 cases),
+    /// tout en gardant assez de matière pour scorer (« corsé mais juste »).
+    /// Le joueur doit alors construire des chemins longs plutôt que cueillir des paires.
     private static func solvableGrid(dayKey: Int, twist: DailyTwist) -> GridModel {
         let base = UInt64(bitPattern: Int64(dayKey))
-        for offset in 0..<200 {
+        let candidates = 80
+        let materialFloor = 6   // nb min de coups courts (≤4) → la grille reste jouable
+
+        var best: GridModel?
+        var bestEasy = Int.max
+        var bestTotal = 0
+        var anyPlayable: GridModel?   // repli si aucune candidate n'atteint le seuil
+
+        for offset in 0..<candidates {
             var generator = SeededGenerator(seed: base &+ UInt64(offset))
             var grid = GridModel(using: &generator)
             apply(twist, to: &grid, using: &generator)
-            if grid.isSolvable() {
-                return grid
+            guard grid.isSolvable() else { continue }
+            if anyPlayable == nil { anyPlayable = grid }
+
+            let total = grid.countSumTenGroups(maxLen: 4)
+            guard total >= materialFloor else { continue }
+            let easy = grid.countSumTenGroups(maxLen: 2)   // paires évidentes
+            // Le moins de paires possible ; à égalité, on garde le plus de matière.
+            if easy < bestEasy || (easy == bestEasy && total > bestTotal) {
+                bestEasy = easy
+                bestTotal = total
+                best = grid
             }
         }
-        // Repli (quasi impossible) : grille sans twist, déjà validée jouable.
+
+        if let best { return best }
+        if let anyPlayable { return anyPlayable }
+        // Repli ultime (quasi impossible) : grille sans twist, déjà jouable.
         var generator = SeededGenerator(seed: base)
         return GridModel(using: &generator)
     }

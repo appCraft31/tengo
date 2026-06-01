@@ -129,6 +129,44 @@ struct GridModel {
         hasValidMove()
     }
 
+    /// Mesure de difficulté : nombre de groupes de bulles DISTINCTS (≤ maxLen)
+    /// qui forment un chemin adjacent de somme 10. Peu de groupes courts =
+    /// peu de coups évidents = grille plus retorse à lire.
+    /// La grille fait 9×7 = 63 cellules ≤ 64 → on encode un ensemble de cases
+    /// comme un masque de bits UInt64 (déduplication immédiate).
+    func countSumTenGroups(maxLen: Int) -> Int {
+        var seen = Set<UInt64>()
+
+        func explore(row: Int, col: Int, sum: Int, depth: Int, mask: UInt64) {
+            if sum == 10 {
+                seen.insert(mask)   // groupe valide (chemin adjacent par construction)
+                return
+            }
+            if sum > 10 || depth >= maxLen { return }
+            for dr in -1...1 {
+                for dc in -1...1 {
+                    guard dr != 0 || dc != 0 else { continue }
+                    let nr = row + dr, nc = col + dc
+                    guard nr >= 0 && nr < GridModel.rows else { continue }
+                    guard nc >= 0 && nc < GridModel.cols else { continue }
+                    guard let nb = cells[nr][nc], !nb.isFrozen else { continue }
+                    let bit = UInt64(1) << (nr * GridModel.cols + nc)
+                    guard mask & bit == 0 else { continue }
+                    explore(row: nr, col: nc, sum: sum + nb.value, depth: depth + 1, mask: mask | bit)
+                }
+            }
+        }
+
+        for row in 0..<GridModel.rows {
+            for col in 0..<GridModel.cols {
+                guard let b = cells[row][col], !b.isFrozen else { continue }
+                let bit = UInt64(1) << (row * GridModel.cols + col)
+                explore(row: row, col: col, sum: b.value, depth: 1, mask: bit)
+            }
+        }
+        return seen.count
+    }
+
     // DFS: does any path of sum exactly 10 exist? (les bulles gelées sont intraversables)
     func hasValidMove() -> Bool {
         for row in 0..<GridModel.rows {
