@@ -241,9 +241,9 @@ struct GridModel {
                         falling.append(b)
                     }
                 }
-                // Empilées au bas du segment en conservant l'ordre relatif.
+                // Empilées au bas du segment (ligne 0 = bas de l'écran), ordre relatif conservé.
                 for (i, model) in falling.enumerated() {
-                    let toRow = bottom - (falling.count - 1 - i)
+                    let toRow = top + i
                     var placed = model
                     let fromRow = placed.row
                     placed.row = toRow
