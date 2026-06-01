@@ -8,6 +8,9 @@ import Foundation
 struct GameState: Codable {
     let cells: [[BubbleModel?]]
     let score: Int
+    /// Cases-obstacles du Défi du jour. Optionnel : absent des sauvegardes
+    /// antérieures aux twists (mode normal → masque vide au chargement).
+    let blocked: [[Bool]]?
 
     private static let savedGameKey = "tengo_saved_game"
     private static let highScoresKey = "tengo_high_scores"
@@ -15,7 +18,7 @@ struct GameState: Codable {
     // MARK: - Persistence
 
     static func save(gridModel: GridModel, score: Int) {
-        let state = GameState(cells: gridModel.cells, score: score)
+        let state = GameState(cells: gridModel.cells, score: score, blocked: gridModel.blocked)
         if let data = try? JSONEncoder().encode(state) {
             UserDefaults.standard.set(data, forKey: savedGameKey)
         }
