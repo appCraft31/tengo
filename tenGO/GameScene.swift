@@ -348,6 +348,9 @@ class GameScene: SKScene {
         restartButton.name = "restartButton"
         restartButton.position = .zero
         restartBubble.addChild(restartButton)
+
+        // Mode Défi : pas de rejeu (une seule partie par jour) → bouton masqué.
+        restartBubble.isHidden = (mode == .daily)
     }
 
     private func setupGrid() {
@@ -453,9 +456,9 @@ class GameScene: SKScene {
             return  // bloquer le reste du touch si panel visible
         }
 
-        // Bulle restart — toujours réactive
+        // Bulle restart — réactive uniquement en mode normal (pas de rejeu en Défi)
         let dist = hypot(point.x - restartBubbleNode.position.x, point.y - restartBubbleNode.position.y)
-        if dist < 55 {
+        if mode == .normal && dist < 55 {
             restartBubbleNode.run(SKAction.sequence([
                 SKAction.scale(to: 0.88, duration: 0.08),
                 SKAction.scale(to: 1.0, duration: 0.12)
@@ -888,29 +891,31 @@ class GameScene: SKScene {
         sep2.position = CGPoint(x: 0, y: -76)
         panel.addChild(sep2)
 
-        // Bouton Rejouer
-        let replayBtn = SKNode()
-        replayBtn.name = "replayBtn"
-        replayBtn.position = CGPoint(x: 0, y: -140)
-        panel.addChild(replayBtn)
+        // Bouton Rejouer — masqué en mode Défi (une seule partie par jour).
+        if mode == .normal {
+            let replayBtn = SKNode()
+            replayBtn.name = "replayBtn"
+            replayBtn.position = CGPoint(x: 0, y: -140)
+            panel.addChild(replayBtn)
 
-        let replayBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
-        replayBg.fillColor = UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1)
-        replayBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
-        replayBg.lineWidth = 1
-        replayBtn.addChild(replayBg)
+            let replayBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
+            replayBg.fillColor = UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1)
+            replayBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+            replayBg.lineWidth = 1
+            replayBtn.addChild(replayBg)
 
-        let replayLabel = SKLabelNode(text: String(localized: "game_over.replay"))
-        replayLabel.fontName = "AvenirNext-Medium"
-        replayLabel.fontSize = 24
-        replayLabel.fontColor = UIColor(white: 0.26, alpha: 1)
-        replayLabel.verticalAlignmentMode = .center
-        replayBtn.addChild(replayLabel)
+            let replayLabel = SKLabelNode(text: String(localized: "game_over.replay"))
+            replayLabel.fontName = "AvenirNext-Medium"
+            replayLabel.fontSize = 24
+            replayLabel.fontColor = UIColor(white: 0.26, alpha: 1)
+            replayLabel.verticalAlignmentMode = .center
+            replayBtn.addChild(replayLabel)
+        }
 
-        // Bouton Accueil
+        // Bouton Accueil — action principale en mode Défi (remonte si pas de Rejouer).
         let homeBtn = SKNode()
         homeBtn.name = "homePanelBtn"
-        homeBtn.position = CGPoint(x: 0, y: -204)
+        homeBtn.position = CGPoint(x: 0, y: mode == .daily ? -150 : -204)
         panel.addChild(homeBtn)
 
         let homeBg = SKShapeNode(rectOf: CGSize(width: 200, height: 52), cornerRadius: 26)

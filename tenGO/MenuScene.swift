@@ -103,17 +103,21 @@ class MenuScene: SKScene {
                       accent: UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1))
         buttonY -= 86
 
-        // Défi du jour — grille unique partagée par tous, change chaque jour.
+        // Défi du jour — grille unique partagée par tous, une seule fois par jour.
+        let dailyDone = DailyChallenge.isCompletedToday()
         let dailyButton = addMenuButton(
             text: String(localized: "menu.daily", defaultValue: "Défi du jour"),
             name: "dailyChallenge",
             width: 240, height: 58, at: CGPoint(x: 0, y: buttonY),
-            accent: UIColor(red: 0.86, green: 0.82, blue: 0.97, alpha: 1)) // lavande
-        if DailyChallenge.isCompletedToday() {
+            accent: dailyDone
+                ? UIColor(red: 0.90, green: 0.90, blue: 0.89, alpha: 1)   // grisé : déjà fait
+                : UIColor(red: 0.86, green: 0.82, blue: 0.97, alpha: 1))  // lavande : jouable
+        if dailyDone {
+            dailyButton.alpha = 0.5   // désactivé jusqu'au lendemain
             let check = SKLabelNode(text: "✓")
             check.fontName = "AvenirNext-Bold"
             check.fontSize = 24
-            check.fontColor = UIColor(red: 0.36, green: 0.62, blue: 0.46, alpha: 1)
+            check.fontColor = UIColor(red: 0.45, green: 0.55, blue: 0.48, alpha: 1)
             check.verticalAlignmentMode = .center
             check.position = CGPoint(x: 98, y: 0)
             dailyButton.addChild(check)
@@ -308,6 +312,8 @@ class MenuScene: SKScene {
                 }
                 return
             case "dailyChallenge":
+                // Déjà terminé aujourd'hui → grisé, non jouable jusqu'au lendemain.
+                if DailyChallenge.isCompletedToday() { return }
                 animateTap(node.parent ?? node)
                 run(SKAction.wait(forDuration: 0.12)) {
                     self.navigateToDailyChallenge()
