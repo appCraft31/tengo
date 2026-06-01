@@ -1,0 +1,77 @@
+{
+  "identifier" : "A1B2C3D4-0000-4000-8000-000000000001",
+  "nonRenewingSubscriptions" : [],
+  "products" : [
+    {
+      "displayPrice" : "0.99",
+      "familyShareable" : false,
+      "internalID" : "A1B2C3D4-0000-4000-8000-000000000101",
+      "localizations" : [
+        {
+          "description" : "Petit sac de pièces",
+          "displayName" : "500 pièces",
+          "locale" : "fr"
+        }
+      ],
+      "productID" : "com.tengo.coins.tier1",
+      "referenceName" : "Coins 500",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "1.99",
+      "familyShareable" : false,
+      "internalID" : "A1B2C3D4-0000-4000-8000-000000000102",
+      "localizations" : [
+        {
+          "description" : "Sac de pièces",
+          "displayName" : "1200 pièces",
+          "locale" : "fr"
+        }
+      ],
+      "productID" : "com.tengo.coins.tier2",
+      "referenceName" : "Coins 1200",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "3.99",
+      "familyShareable" : false,
+      "internalID" : "A1B2C3D4-0000-4000-8000-000000000103",
+      "localizations" : [
+        {
+          "description" : "Grand sac de pièces",
+          "displayName" : "3000 pièces",
+          "locale" : "fr"
+        }
+      ],
+      "productID" : "com.tengo.coins.tier3",
+      "referenceName" : "Coins 3000",
+      "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "7.99",
+      "familyShareable" : false,
+      "internalID" : "A1B2C3D4-0000-4000-8000-000000000104",
+      "localizations" : [
+        {
+          "description" : "Coffre de pièces",
+          "displayName" : "6500 pièces",
+          "locale" : "fr"
+        }
+      ],
+      "productID" : "com.tengo.coins.tier4",
+      "referenceName" : "Coins 6500",
+      "type" : "Consumable"
+    }
+  ],
+  "settings" : {
+    "_failTransactionsEnabled" : false,
+    "_locale" : "fr_FR",
+    "_storefront" : "FRA",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [],
+  "version" : {
+    "major" : 3,
+    "minor" : 0
+  }
+}

@@ -7,11 +7,13 @@
 //
 
 import SpriteKit
+import StoreKit
 
 class BoutiqueScene: SKScene {
 
-    private enum Tab: String { case themes, bubbles, trails }
+    private enum Tab: String { case themes, bubbles, trails, coins }
     private var tab: Tab = .themes
+    private var attemptedProductLoad = false
 
     private let cardH: CGFloat = 150
     private var usableWidth: CGFloat = 600
@@ -71,6 +73,25 @@ class BoutiqueScene: SKScene {
                 addCosmeticCard(kind: .trail, id: t.id, price: t.price,
                                 title: trailStyleName(t.id), preview: trailPreview(t), previewY: 36, at: place(i))
             }
+        case .coins:
+            let products = StoreManager.shared.products
+            if products.isEmpty {
+                let msg = attemptedProductLoad
+                    ? String(localized: "shop.coins_unavailable", defaultValue: "Indisponible pour le moment")
+                    : String(localized: "shop.coins_loading", defaultValue: "Chargement…")
+                addInfoLabel(msg, atY: startY - 10, theme: theme)
+                if !attemptedProductLoad {
+                    attemptedProductLoad = true
+                    Task { @MainActor in
+                        await StoreManager.shared.loadProducts()
+                        if self.tab == .coins { self.rebuild() }
+                    }
+                }
+            } else {
+                for (i, p) in products.enumerated() {
+                    addCoinPackCard(p, at: place(i))
+                }
+            }
         }
 
         addBackButton(atY: -size.height * 0.43, theme: theme)
@@ -81,16 +102,17 @@ class BoutiqueScene: SKScene {
             (.themes, String(localized: "shop.tab_themes", defaultValue: "Thèmes")),
             (.bubbles, String(localized: "shop.tab_bubbles", defaultValue: "Matières")),
             (.trails, String(localized: "shop.tab_trails", defaultValue: "Tracés")),
+            (.coins, String(localized: "shop.tab_coins", defaultValue: "Pièces")),
         ]
-        let tabW = (usableWidth - 20) / 3
+        let tabW = (usableWidth - 16) / CGFloat(items.count)
         for (i, item) in items.enumerated() {
             let isOn = tab == item.0
-            let x = -usableWidth / 2 + 10 + tabW * (CGFloat(i) + 0.5)
+            let x = -usableWidth / 2 + 8 + tabW * (CGFloat(i) + 0.5)
             let node = SKNode()
             node.name = "tab:\(item.0.rawValue)"
             node.position = CGPoint(x: x, y: y)
 
-            let bg = SKShapeNode(rectOf: CGSize(width: tabW - 8, height: 42), cornerRadius: 21)
+            let bg = SKShapeNode(rectOf: CGSize(width: tabW - 6, height: 40), cornerRadius: 20)
             bg.fillColor = isOn ? theme.accent : theme.logo.withAlphaComponent(0.08)
             bg.strokeColor = isOn ? .clear : theme.logo.withAlphaComponent(0.18)
             bg.lineWidth = 1
@@ -98,11 +120,52 @@ class BoutiqueScene: SKScene {
 
             let label = SKLabelNode(text: item.1)
             label.fontName = isOn ? "AvenirNext-Bold" : "AvenirNext-Medium"
-            label.fontSize = 16
+            label.fontSize = 14
             label.fontColor = isOn ? contrastingText(on: theme.accent) : theme.logo.withAlphaComponent(0.8)
             label.verticalAlignmentMode = .center
             node.addChild(label)
             addChild(node)
+        }
+    }
+
+    private func addInfoLabel(_ text: String, atY y: CGFloat, theme: Theme) {
+        let label = SKLabelNode(text: text)
+        label.fontName = "AvenirNext-Medium"
+        label.fontSize = 19
+        label.fontColor = theme.logo.withAlphaComponent(0.7)
+        label.verticalAlignmentMode = .center
+        label.position = CGPoint(x: 0, y: y)
+        addChild(label)
+    }
+
+    /// Carte d'un pack de pièces (achat en vraie monnaie via StoreKit).
+    private func addCoinPackCard(_ product: Product, at position: CGPoint) {
+        let theme = ThemeManager.shared.active
+        let amount = StoreManager.shared.coins(for: product)
+
+        let preview = SKNode()
+        let coin = CoinIcon.make(radius: 24)
+        preview.addChild(coin)
+
+        addCardFrame(name: "pack:\(product.id)", background: theme.background,
+                     border: theme.logo.withAlphaComponent(0.18), borderWidth: 1,
+                     title: "\(amount)", titleColor: theme.logo,
+                     preview: preview, previewY: 40, at: position)
+
+        if let card = childNode(withName: "pack:\(product.id)") {
+            // Pilule accent = prix en euros (bouton d'achat)
+            let pill = SKShapeNode(rectOf: CGSize(width: 110, height: 34), cornerRadius: 17)
+            pill.fillColor = theme.accent
+            pill.strokeColor = .clear
+            pill.position = CGPoint(x: 0, y: -48)
+            card.addChild(pill)
+            let label = SKLabelNode(text: product.displayPrice)
+            label.fontName = "AvenirNext-Bold"
+            label.fontSize = 16
+            label.fontColor = contrastingText(on: theme.accent)
+            label.verticalAlignmentMode = .center
+            label.position = CGPoint(x: 0, y: -48)
+            card.addChild(label)
         }
     }
 
@@ -371,6 +434,18 @@ class BoutiqueScene: SKScene {
             if name.hasPrefix("item:trail:") {
                 handleCosmetic(.trail, id: String(name.dropFirst("item:trail:".count)), card: childNode(withName: name)); return
             }
+            if name.hasPrefix("pack:") {
+                handleCoinPack(String(name.dropFirst("pack:".count))); return
+            }
+        }
+    }
+
+    private func handleCoinPack(_ productID: String) {
+        guard let product = StoreManager.shared.products.first(where: { $0.id == productID }) else { return }
+        HapticManager.light()
+        Task { @MainActor in
+            let success = await StoreManager.shared.purchase(product)
+            if success { HapticManager.medium(); rebuild() }
         }
     }
 
