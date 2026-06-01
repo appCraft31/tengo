@@ -24,7 +24,12 @@ class GameViewController: UIViewController {
         MobileAds.shared.requestConfiguration.testDeviceIdentifiers = ["052b09f5dbca790a5d0b42140dcfa503"]
         #endif
 
-        let scene = MenuScene(size: CGSize(width: 750, height: 1334))
+        let scene: SKScene
+        if ProcessInfo.processInfo.environment["SCREENSHOT_DAILY"] == "1" {
+            scene = GameScene(size: CGSize(width: 750, height: 1334), daily: DailyChallenge.make())
+        } else {
+            scene = MenuScene(size: CGSize(width: 750, height: 1334))
+        }
         scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scene.scaleMode = .aspectFill
         skView.presentScene(scene)
@@ -40,7 +45,7 @@ class GameViewController: UIViewController {
         )
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(showGameCenter),
+            selector: #selector(showGameCenter(_:)),
             name: .tenGOShowGameCenter,
             object: nil
         )
@@ -56,6 +61,7 @@ class GameViewController: UIViewController {
         super.viewDidAppear(animated)
         // Lien entrant reçu avant que l'observateur ne soit prêt (lancement à froid).
         if DeepLink.pendingDaily { openDaily() }
+        guard ProcessInfo.processInfo.environment["SCREENSHOT_DAILY"] != "1" else { return }
         guard !consentGathered else { return }
         consentGathered = true
 
@@ -103,8 +109,9 @@ class GameViewController: UIViewController {
         bannerView = banner
     }
 
-    @objc private func showGameCenter() {
-        GameCenterManager.shared.showLeaderboard(from: self)
+    @objc private func showGameCenter(_ notification: Notification) {
+        let id = notification.userInfo?["leaderboardID"] as? String ?? AppConfig.gameCenterLeaderboardID
+        GameCenterManager.shared.showLeaderboard(id, from: self)
     }
 
     @objc private func openDailyFromLink() {

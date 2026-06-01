@@ -127,9 +127,16 @@ class LeaderboardScene: SKScene {
         // Bouton retour — style bulle jeu
         addBackButton(atY: bottomY + 90)
 
-        // Bouton classement mondial Game Center
+        // Boutons Game Center : Défi du jour + Mondial, côte à côte
         if GKLocalPlayer.local.isAuthenticated {
-            addWorldLeaderboardButton(atY: bottomY + 190)
+            addLeaderboardButton(name: "dailyLeaderboard",
+                                 title: String(localized: "leaderboard.daily_button", defaultValue: "Défi du jour"),
+                                 color: UIColor(red: 0.86, green: 0.82, blue: 0.97, alpha: 1),
+                                 at: CGPoint(x: -88, y: bottomY + 190))
+            addLeaderboardButton(name: "worldLeaderboard",
+                                 title: String(localized: "leaderboard.world_button"),
+                                 color: UIColor(red: 0.72, green: 0.88, blue: 0.98, alpha: 1),
+                                 at: CGPoint(x: 88, y: bottomY + 190))
         }
     }
 
@@ -217,23 +224,23 @@ class LeaderboardScene: SKScene {
         }
     }
 
-    private func addWorldLeaderboardButton(atY y: CGFloat) {
+    private func addLeaderboardButton(name: String, title: String, color: UIColor, at position: CGPoint) {
         let btn = SKNode()
-        btn.name = "worldLeaderboard"
-        btn.position = CGPoint(x: 0, y: y)
+        btn.name = name
+        btn.position = position
         addChild(btn)
 
-        let pillW: CGFloat = 260
+        let pillW: CGFloat = 165
         let pillH: CGFloat = 52
         let bg = SKShapeNode(rectOf: CGSize(width: pillW, height: pillH), cornerRadius: pillH / 2)
-        bg.fillColor = UIColor(red: 0.72, green: 0.88, blue: 0.98, alpha: 1)
+        bg.fillColor = color
         bg.strokeColor = UIColor(white: 0.60, alpha: 0.35)
         bg.lineWidth = 1
         btn.addChild(bg)
 
-        let label = SKLabelNode(text: String(localized: "leaderboard.world_button"))
+        let label = SKLabelNode(text: title)
         label.fontName = "AvenirNext-Medium"
-        label.fontSize = 18
+        label.fontSize = 17
         label.fontColor = UIColor(white: 0.25, alpha: 1)
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .center
@@ -274,7 +281,13 @@ class LeaderboardScene: SKScene {
                 return
             }
             if node.name == "worldLeaderboard" || node.parent?.name == "worldLeaderboard" {
-                NotificationCenter.default.post(name: .tenGOShowGameCenter, object: nil)
+                NotificationCenter.default.post(name: .tenGOShowGameCenter, object: nil,
+                                                userInfo: ["leaderboardID": AppConfig.gameCenterLeaderboardID])
+                return
+            }
+            if node.name == "dailyLeaderboard" || node.parent?.name == "dailyLeaderboard" {
+                NotificationCenter.default.post(name: .tenGOShowGameCenter, object: nil,
+                                                userInfo: ["leaderboardID": AppConfig.gameCenterDailyLeaderboardID])
                 return
             }
         }
