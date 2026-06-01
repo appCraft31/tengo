@@ -135,7 +135,7 @@ class MenuScene: SKScene {
     }
 
     /// Indicateur de série de jours consécutifs (rétention douce, sans pression).
-    /// Pastille arrondie sauge, cohérente avec les boutons du menu.
+    /// Pastille arrondie sauge + pièce vectorielle, dans la DA pastel du jeu.
     private func addStreakChip(atY y: CGFloat) {
         let streak = StreakManager.shared.current
         guard streak >= 1 else { return }
@@ -143,26 +143,66 @@ class MenuScene: SKScene {
         let container = SKNode()
         container.position = CGPoint(x: 0, y: y)
 
-        let label = SKLabelNode(text: "🪙 \(streak)")
-        label.fontName = "AvenirNext-Medium"
-        label.fontSize = 19
-        label.fontColor = UIColor(white: 0.40, alpha: 1)
-        label.verticalAlignmentMode = .center
-        label.horizontalAlignmentMode = .center
-        label.position = .zero
-        label.zPosition = 1
+        let coinR: CGFloat = 9
+        let coin = makeCoinNode(radius: coinR)
+        coin.zPosition = 1
 
+        let number = SKLabelNode(text: "\(streak)")
+        number.fontName = "AvenirNext-Medium"
+        number.fontSize = 19
+        number.fontColor = UIColor(white: 0.40, alpha: 1)
+        number.verticalAlignmentMode = .center
+        number.horizontalAlignmentMode = .left
+        number.zPosition = 1
+
+        let gap: CGFloat = 7
+        let contentW = coinR * 2 + gap + number.frame.width
         let height: CGFloat = 40
-        let width = max(label.frame.width + 44, 66)
+        let width = max(contentW + 40, 66)
+
         let bg = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: height / 2)
         bg.fillColor = UIColor(red: 0.85, green: 0.93, blue: 0.86, alpha: 1) // sauge douce
         bg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
         bg.lineWidth = 1
         bg.zPosition = 0
 
+        let startX = -contentW / 2
+        coin.position = CGPoint(x: startX + coinR, y: 0)
+        number.position = CGPoint(x: startX + coinR * 2 + gap, y: 0)
+
         container.addChild(bg)
-        container.addChild(label)
+        container.addChild(coin)
+        container.addChild(number)
         addChild(container)
+    }
+
+    /// Pièce vectorielle pastel : disque or doux, liseré ambré et reflet discret.
+    private func makeCoinNode(radius r: CGFloat) -> SKNode {
+        let coin = SKNode()
+        let gold = UIColor(red: 0.98, green: 0.84, blue: 0.46, alpha: 1)
+        let amber = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 1)
+
+        let disc = SKShapeNode(circleOfRadius: r)
+        disc.fillColor = gold
+        disc.strokeColor = amber
+        disc.lineWidth = 1.3
+        coin.addChild(disc)
+
+        // Liseré intérieur (rappelle le relief d'une pièce)
+        let rim = SKShapeNode(circleOfRadius: r - 2.8)
+        rim.fillColor = .clear
+        rim.strokeColor = amber.withAlphaComponent(0.5)
+        rim.lineWidth = 1
+        coin.addChild(rim)
+
+        // Petit reflet pastel en haut à gauche
+        let glint = SKShapeNode(circleOfRadius: r * 0.28)
+        glint.fillColor = UIColor(white: 1.0, alpha: 0.55)
+        glint.strokeColor = .clear
+        glint.position = CGPoint(x: -r * 0.32, y: r * 0.32)
+        coin.addChild(glint)
+
+        return coin
     }
 
     private func addLogo(atY y: CGFloat) {
