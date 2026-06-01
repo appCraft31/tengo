@@ -44,5 +44,7 @@ enum AppConfig {
         static let hasSeenTutorial = "hasSeenTutorial"
         static let soundMuted = "tenGO_soundMuted"
         static let hapticsEnabled = "tenGO_hapticsEnabled"
+        /// Dernier jour (clé AAAAMMJJ, UTC) où le Défi du jour a été complété.
+        static let dailyLastCompletedDayKey = "tenGO_dailyLastCompleted"
     }
 }
