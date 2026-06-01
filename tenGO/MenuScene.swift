@@ -55,15 +55,15 @@ class MenuScene: SKScene {
             edgeX = (v.bounds.width / scale) / 2 - 46
         }
 
-        // Logo + slogan
-        addLogo(atY: centerY * 0.42)
+        // Logo + slogan — bloc descendu pour centrer l'ensemble logo+boutons.
+        addLogo(atY: centerY * 0.22)
 
         let tagline = SKLabelNode(text: String(localized: "menu.tagline"))
         tagline.fontName = "AvenirNext-Light"
         tagline.fontSize = 22
         tagline.fontColor = ThemeManager.shared.active.logo.withAlphaComponent(0.6)
         tagline.verticalAlignmentMode = .center
-        tagline.position = CGPoint(x: 0, y: centerY * 0.42 - 60)
+        tagline.position = CGPoint(x: 0, y: centerY * 0.22 - 56)
         addChild(tagline)
 
         // Barre du haut : trophée (gauche) et engrenage (droite) dans les coins ;
@@ -74,8 +74,8 @@ class MenuScene: SKScene {
 
         // Pile de boutons hiérarchisée, centrée
         let theme = ThemeManager.shared.active
-        let gap: CGFloat = 22
-        var topCursor: CGFloat = centerY * 0.27
+        let gap: CGFloat = 26
+        var topCursor: CGFloat = centerY * 0.06
         func stack(_ h: CGFloat) -> CGFloat {
             let c = topCursor - h / 2
             topCursor -= (h + gap)
