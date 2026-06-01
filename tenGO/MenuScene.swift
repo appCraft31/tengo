@@ -68,6 +68,13 @@ class MenuScene: SKScene {
                       accent: ThemeManager.shared.active.accent)
         buttonY -= 86
 
+        // Continuer — placé juste sous Nouvelle partie si une partie est en cours.
+        if hasSaved {
+            addMenuButton(text: String(localized: "menu.continue"), name: "continuer",
+                          width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
+            buttonY -= 80
+        }
+
         // Défi du jour — grille unique partagée par tous, une seule fois par jour.
         let dailyDone = DailyChallenge.isCompletedToday()
         let dailyButton = addMenuButton(
@@ -92,12 +99,6 @@ class MenuScene: SKScene {
         addMenuButton(text: String(localized: "menu.shop", defaultValue: "Boutique"), name: "boutique",
                       width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
         buttonY -= 80
-
-        if hasSaved {
-            addMenuButton(text: String(localized: "menu.continue"), name: "continuer",
-                          width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
-            buttonY -= 80
-        }
 
         addMenuButton(text: String(localized: "menu.leaderboard"), name: "classement",
                       width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
