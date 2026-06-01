@@ -92,6 +92,8 @@ class MenuScene: SKScene {
         tagline.position = CGPoint(x: 0, y: centerY * 0.45 - 62)
         addChild(tagline)
 
+        addStreakChip(atY: centerY * 0.78)
+
         // Boutons
         let hasSaved = GameState.exists
         var buttonY: CGFloat = 40
@@ -130,6 +132,21 @@ class MenuScene: SKScene {
 
         addMenuButton(text: String(localized: "menu.settings"), name: "parametres",
                       width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
+    }
+
+    /// Indicateur de série de jours consécutifs (rétention douce, sans pression).
+    private func addStreakChip(atY y: CGFloat) {
+        let streak = StreakManager.shared.current
+        guard streak >= 1 else { return }
+
+        let chip = SKLabelNode(text: "🌿 \(streak)")
+        chip.fontName = "AvenirNext-Medium"
+        chip.fontSize = 20
+        chip.fontColor = UIColor(white: 0.42, alpha: 1)
+        chip.verticalAlignmentMode = .center
+        chip.horizontalAlignmentMode = .center
+        chip.position = CGPoint(x: 0, y: y)
+        addChild(chip)
     }
 
     private func addLogo(atY y: CGFloat) {

@@ -108,6 +108,7 @@ class GameScene: SKScene {
             scoreLabel.text = "\(score)"
         }
         setupGrid()
+        StreakManager.shared.registerPlay()
     }
 
     override func didMove(to view: SKView) {
