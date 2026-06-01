@@ -40,7 +40,73 @@ class BubbleNode: SKNode {
 
         super.init()
         addChild(circle)
+        digitLabel.zPosition = 2
         addChild(digitLabel)
+        applyStyle()
+    }
+
+    /// Applique la matière de bulle active (cosmétique, purement visuel).
+    private func applyStyle() {
+        BubbleNode.applyStyle(CosmeticManager.shared.activeBubbleStyle.kind,
+                              to: circle, on: self,
+                              color: BubbleNode.color(for: value),
+                              radius: BubbleNode.bubbleRadius)
+    }
+
+    /// Crée un visuel de bulle autonome (pour les aperçus de boutique).
+    static func makeVisual(value: Int, styleKind: BubbleStyle.Kind, radius: CGFloat) -> SKNode {
+        let node = SKNode()
+        let color = color(for: value)
+        let c = SKShapeNode(circleOfRadius: radius)
+        c.fillColor = color
+        c.strokeColor = color.darkened(by: 0.12)
+        c.lineWidth = 1.5
+        node.addChild(c)
+        let digit = SKLabelNode(text: "\(value)")
+        digit.fontName = "AvenirNext-Medium"
+        digit.fontSize = 36 * (radius / bubbleRadius)
+        digit.fontColor = ThemeManager.shared.active.digit
+        digit.verticalAlignmentMode = .center
+        digit.zPosition = 2
+        node.addChild(digit)
+        applyStyle(styleKind, to: c, on: node, color: color, radius: radius)
+        return node
+    }
+
+    private static func applyStyle(_ kind: BubbleStyle.Kind, to circle: SKShapeNode, on node: SKNode, color: UIColor, radius: CGFloat) {
+        switch kind {
+        case .classic:
+            break   // rendu par défaut déjà posé
+        case .matte:
+            circle.strokeColor = .clear
+            circle.lineWidth = 0
+        case .glossy:
+            addGlint(to: node, radius: radius)
+        case .glass:
+            circle.fillColor = color.withAlphaComponent(0.5)
+            circle.strokeColor = UIColor(white: 1, alpha: 0.6)
+            circle.lineWidth = 2
+            addGlint(to: node, radius: radius)
+        case .neon:
+            circle.fillColor = color.withAlphaComponent(0.9)
+            circle.strokeColor = color.lightened(by: 0.25)
+            circle.lineWidth = 2.5
+            let glow = SKShapeNode(circleOfRadius: radius + 4)
+            glow.fillColor = color.withAlphaComponent(0.28)
+            glow.strokeColor = .clear
+            glow.zPosition = -1
+            node.addChild(glow)
+        }
+    }
+
+    private static func addGlint(to node: SKNode, radius: CGFloat) {
+        let glint = SKShapeNode(ellipseOf: CGSize(width: radius * 0.7, height: radius * 0.42))
+        glint.fillColor = UIColor(white: 1, alpha: 0.4)
+        glint.strokeColor = .clear
+        glint.position = CGPoint(x: -radius * 0.28, y: radius * 0.34)
+        glint.zRotation = -0.5
+        glint.zPosition = 1
+        node.addChild(glint)
     }
 
     required init?(coder: NSCoder) { fatalError() }
@@ -177,5 +243,11 @@ private extension UIColor {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         getRed(&r, green: &g, blue: &b, alpha: &a)
         return UIColor(red: max(0, r - factor), green: max(0, g - factor), blue: max(0, b - factor), alpha: a)
+    }
+
+    func lightened(by factor: CGFloat) -> UIColor {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        getRed(&r, green: &g, blue: &b, alpha: &a)
+        return UIColor(red: min(1, r + factor), green: min(1, g + factor), blue: min(1, b + factor), alpha: a)
     }
 }

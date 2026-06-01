@@ -2,15 +2,18 @@
 //  BoutiqueScene.swift
 //  tenGO
 //
-//  Boutique : achète des thèmes avec les pièces gagnées, et sélectionne le thème actif.
+//  Boutique à onglets : Thèmes, Matières de bulles, Styles de tracé.
+//  Achat avec les pièces gagnées, sélection du cosmétique actif. Tout est non bloquant.
 //
 
 import SpriteKit
 
 class BoutiqueScene: SKScene {
 
-    private let cardH: CGFloat = 152
-    // Largeur réellement visible (l'aspectFill rogne la largeur) — calculée depuis la vue.
+    private enum Tab: String { case themes, bubbles, trails }
+    private var tab: Tab = .themes
+
+    private let cardH: CGFloat = 150
     private var usableWidth: CGFloat = 600
     private var cardW: CGFloat = 280
 
@@ -33,78 +36,134 @@ class BoutiqueScene: SKScene {
 
         let topY = size.height * 0.42
 
-        // Titre
         let title = SKLabelNode(text: String(localized: "shop.title", defaultValue: "Boutique"))
         title.fontName = "AvenirNext-Heavy"
-        title.fontSize = 40
+        title.fontSize = 38
         title.fontColor = theme.logo
         title.verticalAlignmentMode = .center
         title.position = CGPoint(x: 0, y: topY)
         addChild(title)
 
-        // Solde de pièces
-        addBalanceChip(atY: topY - 62, theme: theme)
+        addBalanceChip(atY: topY - 56, theme: theme)
+        addTabBar(atY: topY - 116, theme: theme)
 
-        // Cartes de thèmes (grille 2 colonnes)
-        let themes = ThemeManager.shared.themes
-        let startY = topY - 168
+        let startY = topY - 232
         let colCenter = usableWidth / 4
         let colX: [CGFloat] = [-colCenter, colCenter]
-        for (i, t) in themes.enumerated() {
-            let col = i % 2
-            let row = i / 2
-            let pos = CGPoint(x: colX[col], y: startY - CGFloat(row) * (cardH + 18))
-            addThemeCard(t, at: pos)
+
+        func place(_ index: Int) -> CGPoint {
+            CGPoint(x: colX[index % 2], y: startY - CGFloat(index / 2) * (cardH + 18))
         }
 
-        // Bouton retour
+        switch tab {
+        case .themes:
+            for (i, t) in ThemeManager.shared.themes.enumerated() {
+                addThemeCard(t, at: place(i))
+            }
+        case .bubbles:
+            for (i, s) in CosmeticManager.shared.bubbleStyles.enumerated() {
+                let preview = BubbleNode.makeVisual(value: 5, styleKind: s.kind, radius: 23)
+                addCosmeticCard(kind: .bubbleStyle, id: s.id, price: s.price,
+                                title: bubbleStyleName(s.id), preview: preview, previewY: 36, at: place(i))
+            }
+        case .trails:
+            for (i, t) in CosmeticManager.shared.trails.enumerated() {
+                addCosmeticCard(kind: .trail, id: t.id, price: t.price,
+                                title: trailStyleName(t.id), preview: trailPreview(t), previewY: 36, at: place(i))
+            }
+        }
+
         addBackButton(atY: -size.height * 0.43, theme: theme)
     }
 
-    private func addBalanceChip(atY y: CGFloat, theme: Theme) {
-        let container = SKNode()
-        container.position = CGPoint(x: 0, y: y)
+    private func addTabBar(atY y: CGFloat, theme: Theme) {
+        let items: [(Tab, String)] = [
+            (.themes, String(localized: "shop.tab_themes", defaultValue: "Thèmes")),
+            (.bubbles, String(localized: "shop.tab_bubbles", defaultValue: "Matières")),
+            (.trails, String(localized: "shop.tab_trails", defaultValue: "Tracés")),
+        ]
+        let tabW = (usableWidth - 20) / 3
+        for (i, item) in items.enumerated() {
+            let isOn = tab == item.0
+            let x = -usableWidth / 2 + 10 + tabW * (CGFloat(i) + 0.5)
+            let node = SKNode()
+            node.name = "tab:\(item.0.rawValue)"
+            node.position = CGPoint(x: x, y: y)
 
-        let coin = CoinIcon.make(radius: 12)
-        coin.zPosition = 1
+            let bg = SKShapeNode(rectOf: CGSize(width: tabW - 8, height: 42), cornerRadius: 21)
+            bg.fillColor = isOn ? theme.accent : theme.logo.withAlphaComponent(0.08)
+            bg.strokeColor = isOn ? .clear : theme.logo.withAlphaComponent(0.18)
+            bg.lineWidth = 1
+            node.addChild(bg)
 
-        let label = SKLabelNode(text: "\(CoinManager.shared.balance)")
-        label.fontName = "AvenirNext-DemiBold"
-        label.fontSize = 24
-        label.fontColor = UIColor(red: 0.45, green: 0.34, blue: 0.10, alpha: 1)
-        label.verticalAlignmentMode = .center
-        label.horizontalAlignmentMode = .left
-        label.zPosition = 1
-
-        let gap: CGFloat = 9
-        let contentW = 24 + gap + label.frame.width
-
-        // Pilule dorée
-        let pill = SKShapeNode(rectOf: CGSize(width: contentW + 44, height: 46), cornerRadius: 23)
-        pill.fillColor = UIColor(red: 0.98, green: 0.92, blue: 0.74, alpha: 0.95)
-        pill.strokeColor = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 0.4)
-        pill.lineWidth = 1
-        container.addChild(pill)
-
-        let startX = -contentW / 2
-        coin.position = CGPoint(x: startX + 12, y: 0)
-        label.position = CGPoint(x: startX + 24 + gap, y: 0)
-
-        container.addChild(coin)
-        container.addChild(label)
-        addChild(container)
+            let label = SKLabelNode(text: item.1)
+            label.fontName = isOn ? "AvenirNext-Bold" : "AvenirNext-Medium"
+            label.fontSize = 16
+            label.fontColor = isOn ? contrastingText(on: theme.accent) : theme.logo.withAlphaComponent(0.8)
+            label.verticalAlignmentMode = .center
+            node.addChild(label)
+            addChild(node)
+        }
     }
 
-    private func addThemeCard(_ theme: Theme, at position: CGPoint) {
-        let card = SKNode()
-        card.name = "theme:\(theme.id)"
-        card.position = position
+    // MARK: - Cartes
 
+    private func addThemeCard(_ theme: Theme, at position: CGPoint) {
         let isActive = ThemeManager.shared.activeID == theme.id
         let owned = ThemeManager.shared.owns(theme.id)
+
+        // Aperçu : 5 bulles de la palette
+        let preview = SKNode()
+        let previewValues = [1, 3, 5, 7, 9]
+        let spacing = min(42, (cardW - 56) / CGFloat(previewValues.count - 1))
+        let totalW = CGFloat(previewValues.count - 1) * spacing
+        for (i, v) in previewValues.enumerated() {
+            let dot = SKShapeNode(circleOfRadius: 16)
+            dot.fillColor = theme.color(forValue: v)
+            dot.strokeColor = UIColor(white: 1, alpha: 0.22)
+            dot.lineWidth = 1
+            dot.position = CGPoint(x: -totalW / 2 + CGFloat(i) * spacing, y: 0)
+            preview.addChild(dot)
+        }
+
+        addCardFrame(name: "item:theme:\(theme.id)", background: theme.background,
+                     border: isActive ? theme.accent : theme.logo.withAlphaComponent(0.18),
+                     borderWidth: isActive ? 3 : 1,
+                     title: themeName(theme.id), titleColor: theme.logo,
+                     preview: preview, previewY: 42, at: position)
+        // Badge
+        if let card = childNode(withName: "item:theme:\(theme.id)") {
+            addStatusBadge(to: card, theme: theme, isActive: isActive, owned: owned, atY: -48,
+                           priceOverride: owned ? nil : theme.price)
+        }
+    }
+
+    private func addCosmeticCard(kind: CosmeticKind, id: String, price: Int, title: String,
+                                 preview: SKNode, previewY: CGFloat, at position: CGPoint) {
+        let theme = ThemeManager.shared.active
+        let isActive = CosmeticManager.shared.activeID(kind) == id
+        let owned = CosmeticManager.shared.owns(kind, id)
+        let prefix = kind == .bubbleStyle ? "bubbleStyle" : "trail"
+
+        addCardFrame(name: "item:\(prefix):\(id)", background: theme.background,
+                     border: isActive ? theme.accent : theme.logo.withAlphaComponent(0.18),
+                     borderWidth: isActive ? 3 : 1,
+                     title: title, titleColor: theme.logo,
+                     preview: preview, previewY: previewY, at: position)
+        if let card = childNode(withName: "item:\(prefix):\(id)") {
+            addStatusBadge(to: card, theme: theme, isActive: isActive, owned: owned, atY: -48,
+                           priceOverride: owned ? nil : price)
+        }
+    }
+
+    /// Cadre commun de carte (ombre + fond + titre + aperçu).
+    private func addCardFrame(name: String, background: UIColor, border: UIColor, borderWidth: CGFloat,
+                              title: String, titleColor: UIColor, preview: SKNode, previewY: CGFloat, at position: CGPoint) {
+        let card = SKNode()
+        card.name = name
+        card.position = position
         let cardSize = CGSize(width: cardW, height: cardH)
 
-        // Ombre portée douce (profondeur)
         let shadow = SKShapeNode(rectOf: cardSize, cornerRadius: 26)
         shadow.fillColor = UIColor(white: 0, alpha: 0.08)
         shadow.strokeColor = .clear
@@ -112,51 +171,33 @@ class BoutiqueScene: SKScene {
         shadow.zPosition = -1
         card.addChild(shadow)
 
-        // Fond de carte = ambiance du thème (aperçu)
         let bg = SKShapeNode(rectOf: cardSize, cornerRadius: 26)
-        bg.fillColor = theme.background
-        bg.strokeColor = isActive ? theme.accent : theme.logo.withAlphaComponent(0.18)
-        bg.lineWidth = isActive ? 3 : 1
+        bg.fillColor = background
+        bg.strokeColor = border
+        bg.lineWidth = borderWidth
         card.addChild(bg)
 
-        // Aperçu : 5 bulles du thème, joliment espacées en haut
-        let previewValues = [1, 3, 5, 7, 9]
-        let bubbleR: CGFloat = 16
-        let spacing = min(42, (cardW - 56) / CGFloat(previewValues.count - 1))
-        let totalW = CGFloat(previewValues.count - 1) * spacing
-        for (i, v) in previewValues.enumerated() {
-            let dot = SKShapeNode(circleOfRadius: bubbleR)
-            dot.fillColor = theme.color(forValue: v)
-            dot.strokeColor = UIColor(white: 1, alpha: 0.22)
-            dot.lineWidth = 1
-            dot.position = CGPoint(x: -totalW / 2 + CGFloat(i) * spacing, y: 42)
-            card.addChild(dot)
-        }
+        preview.position = CGPoint(x: 0, y: previewY)
+        card.addChild(preview)
 
-        // Nom du thème (sans emoji — l'identité passe par les couleurs)
-        let name = SKLabelNode(text: themeName(theme.id))
-        name.fontName = "AvenirNext-DemiBold"
-        name.fontSize = 22
-        name.fontColor = theme.logo
-        name.verticalAlignmentMode = .center
-        name.position = CGPoint(x: 0, y: -6)
-        card.addChild(name)
-
-        // Badge de statut (pilule)
-        addStatusBadge(to: card, theme: theme, isActive: isActive, owned: owned, atY: -48)
+        let titleLabel = SKLabelNode(text: title)
+        titleLabel.fontName = "AvenirNext-DemiBold"
+        titleLabel.fontSize = 22
+        titleLabel.fontColor = titleColor
+        titleLabel.verticalAlignmentMode = .center
+        titleLabel.position = CGPoint(x: 0, y: -6)
+        card.addChild(titleLabel)
 
         addChild(card)
     }
 
-    private func addStatusBadge(to card: SKNode, theme: Theme, isActive: Bool, owned: Bool, atY y: CGFloat) {
+    private func addStatusBadge(to card: SKNode, theme: Theme, isActive: Bool, owned: Bool, atY y: CGFloat, priceOverride: Int? = nil) {
         if isActive {
-            // Pilule pleine accent + « Actif »
             let pill = SKShapeNode(rectOf: CGSize(width: 96, height: 32), cornerRadius: 16)
             pill.fillColor = theme.accent
             pill.strokeColor = .clear
             pill.position = CGPoint(x: 0, y: y)
             card.addChild(pill)
-
             let label = SKLabelNode(text: String(localized: "shop.active", defaultValue: "Actif"))
             label.fontName = "AvenirNext-Bold"
             label.fontSize = 15
@@ -165,14 +206,12 @@ class BoutiqueScene: SKScene {
             label.position = CGPoint(x: 0, y: y)
             card.addChild(label)
         } else if owned {
-            // Pilule contour + « Choisir »
             let pill = SKShapeNode(rectOf: CGSize(width: 108, height: 32), cornerRadius: 16)
             pill.fillColor = .clear
             pill.strokeColor = theme.logo.withAlphaComponent(0.5)
             pill.lineWidth = 1.5
             pill.position = CGPoint(x: 0, y: y)
             card.addChild(pill)
-
             let label = SKLabelNode(text: String(localized: "shop.select", defaultValue: "Choisir"))
             label.fontName = "AvenirNext-Medium"
             label.fontSize = 15
@@ -181,14 +220,13 @@ class BoutiqueScene: SKScene {
             label.position = CGPoint(x: 0, y: y)
             card.addChild(label)
         } else {
-            // Prix : pièce + montant, dans une pilule discrète
-            let priceLabel = SKLabelNode(text: "\(theme.price)")
+            let price = priceOverride ?? 0
+            let priceLabel = SKLabelNode(text: "\(price)")
             priceLabel.fontName = "AvenirNext-Bold"
             priceLabel.fontSize = 17
             priceLabel.fontColor = theme.logo
             priceLabel.verticalAlignmentMode = .center
             priceLabel.horizontalAlignmentMode = .left
-
             let coin = CoinIcon.make(radius: 9)
             let gap: CGFloat = 6
             let contentW = 18 + gap + priceLabel.frame.width
@@ -198,7 +236,6 @@ class BoutiqueScene: SKScene {
             pill.lineWidth = 1
             pill.position = CGPoint(x: 0, y: y)
             card.addChild(pill)
-
             let startX = -contentW / 2
             coin.position = CGPoint(x: startX + 9, y: y)
             priceLabel.position = CGPoint(x: startX + 18 + gap, y: y)
@@ -207,17 +244,42 @@ class BoutiqueScene: SKScene {
         }
     }
 
+    private func addBalanceChip(atY y: CGFloat, theme: Theme) {
+        let container = SKNode()
+        container.position = CGPoint(x: 0, y: y)
+        let coin = CoinIcon.make(radius: 12)
+        coin.zPosition = 1
+        let label = SKLabelNode(text: "\(CoinManager.shared.balance)")
+        label.fontName = "AvenirNext-DemiBold"
+        label.fontSize = 24
+        label.fontColor = UIColor(red: 0.45, green: 0.34, blue: 0.10, alpha: 1)
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .left
+        label.zPosition = 1
+        let gap: CGFloat = 9
+        let contentW = 24 + gap + label.frame.width
+        let pill = SKShapeNode(rectOf: CGSize(width: contentW + 44, height: 46), cornerRadius: 23)
+        pill.fillColor = UIColor(red: 0.98, green: 0.92, blue: 0.74, alpha: 0.95)
+        pill.strokeColor = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 0.4)
+        pill.lineWidth = 1
+        container.addChild(pill)
+        let startX = -contentW / 2
+        coin.position = CGPoint(x: startX + 12, y: 0)
+        label.position = CGPoint(x: startX + 24 + gap, y: 0)
+        container.addChild(coin)
+        container.addChild(label)
+        addChild(container)
+    }
+
     private func addBackButton(atY y: CGFloat, theme: Theme) {
         let node = SKNode()
         node.name = "shopBack"
         node.position = CGPoint(x: 0, y: y)
-
         let bg = SKShapeNode(rectOf: CGSize(width: 210, height: 56), cornerRadius: 28)
         bg.fillColor = UIColor(white: 0.96, alpha: 0.95)
         bg.strokeColor = UIColor(white: 0.68, alpha: 0.35)
         bg.lineWidth = 1
         node.addChild(bg)
-
         let label = SKLabelNode(text: String(localized: "shop.back", defaultValue: "Accueil"))
         label.fontName = "AvenirNext-Medium"
         label.fontSize = 19
@@ -227,7 +289,18 @@ class BoutiqueScene: SKScene {
         addChild(node)
     }
 
-    /// Couleur de texte lisible sur un fond donné (clair → texte foncé, sombre → blanc).
+    // MARK: - Aperçu de tracé
+
+    private func trailPreview(_ style: TrailStyle) -> SKNode {
+        let path = CGMutablePath()
+        let pts: [CGPoint] = [(-58, -8), (-29, 12), (0, -12), (29, 12), (58, -8)].map { CGPoint(x: $0.0, y: $0.1) }
+        path.move(to: pts[0])
+        for p in pts.dropFirst() { path.addLine(to: p) }
+        return TrailRenderer.make(path: path, style: style, accent: ThemeManager.shared.active.accent)
+    }
+
+    // MARK: - Couleur de texte contrastée
+
     private func contrastingText(on color: UIColor) -> UIColor {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         color.getRed(&r, green: &g, blue: &b, alpha: &a)
@@ -235,7 +308,8 @@ class BoutiqueScene: SKScene {
         return luminance > 0.6 ? UIColor(white: 0.18, alpha: 1) : .white
     }
 
-    /// Nom localisé du thème (clés statiques → extraction + fallback français).
+    // MARK: - Noms localisés
+
     private func themeName(_ id: String) -> String {
         switch id {
         case "default": return String(localized: "theme.default", defaultValue: "Pastel")
@@ -249,6 +323,28 @@ class BoutiqueScene: SKScene {
         }
     }
 
+    private func bubbleStyleName(_ id: String) -> String {
+        switch id {
+        case "classic": return String(localized: "style.classic", defaultValue: "Classique")
+        case "matte":   return String(localized: "style.matte", defaultValue: "Mat")
+        case "glossy":  return String(localized: "style.glossy", defaultValue: "Brillant")
+        case "glass":   return String(localized: "style.glass", defaultValue: "Verre")
+        case "neon":    return String(localized: "style.neon", defaultValue: "Néon")
+        default:        return id
+        }
+    }
+
+    private func trailStyleName(_ id: String) -> String {
+        switch id {
+        case "classic": return String(localized: "trail.classic", defaultValue: "Classique")
+        case "dotted":  return String(localized: "trail.dotted", defaultValue: "Pointillé")
+        case "ink":     return String(localized: "trail.ink", defaultValue: "Encre")
+        case "ribbon":  return String(localized: "trail.ribbon", defaultValue: "Ruban")
+        case "neon":    return String(localized: "trail.neon", defaultValue: "Néon")
+        default:        return id
+        }
+    }
+
     // MARK: - Touch
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -256,52 +352,63 @@ class BoutiqueScene: SKScene {
         let point = touch.location(in: self)
 
         for node in nodes(at: point) {
-            let name = node.name ?? node.parent?.name ?? node.parent?.parent?.name
-            guard let name else { continue }
-            if name == "shopBack" {
-                goBackToMenu()
+            guard let name = node.name ?? node.parent?.name ?? node.parent?.parent?.name else { continue }
+            if name == "shopBack" { goBackToMenu(); return }
+            if name.hasPrefix("tab:") {
+                if let t = Tab(rawValue: String(name.dropFirst("tab:".count))), t != tab {
+                    tab = t
+                    HapticManager.light()
+                    rebuild()
+                }
                 return
             }
-            if name.hasPrefix("theme:") {
-                let id = String(name.dropFirst("theme:".count))
-                handleThemeTap(id: id, cardNode: cardNode(named: name))
-                return
+            if name.hasPrefix("item:theme:") {
+                handleTheme(String(name.dropFirst("item:theme:".count)), card: childNode(withName: name)); return
+            }
+            if name.hasPrefix("item:bubbleStyle:") {
+                handleCosmetic(.bubbleStyle, id: String(name.dropFirst("item:bubbleStyle:".count)), card: childNode(withName: name)); return
+            }
+            if name.hasPrefix("item:trail:") {
+                handleCosmetic(.trail, id: String(name.dropFirst("item:trail:".count)), card: childNode(withName: name)); return
             }
         }
     }
 
-    private func cardNode(named name: String) -> SKNode? {
-        children.first { $0.name == name }
-    }
-
-    private func handleThemeTap(id: String, cardNode: SKNode?) {
-        guard let theme = ThemeManager.shared.theme(id: id) else { return }
+    private func handleTheme(_ id: String, card: SKNode?) {
         let manager = ThemeManager.shared
-
-        if manager.activeID == id { return }   // déjà actif
-
+        guard let theme = manager.theme(id: id), manager.activeID != id else { return }
         if manager.owns(id) {
-            manager.setActive(id)
-            HapticManager.light()
-            rebuild()
-            return
-        }
-
-        // Achat
-        if manager.purchase(theme) {
-            manager.setActive(id)
-            HapticManager.medium()
-            rebuild()
+            manager.setActive(id); HapticManager.light(); rebuild()
+        } else if manager.purchase(theme) {
+            manager.setActive(id); HapticManager.medium(); rebuild()
         } else {
-            // Fonds insuffisants → secousse
-            HapticManager.light()
-            cardNode?.run(SKAction.sequence([
-                SKAction.moveBy(x: 7, y: 0, duration: 0.05),
-                SKAction.moveBy(x: -14, y: 0, duration: 0.05),
-                SKAction.moveBy(x: 14, y: 0, duration: 0.05),
-                SKAction.moveBy(x: -7, y: 0, duration: 0.05),
-            ]))
+            shake(card)
         }
+    }
+
+    private func handleCosmetic(_ kind: CosmeticKind, id: String, card: SKNode?) {
+        let m = CosmeticManager.shared
+        guard m.activeID(kind) != id else { return }
+        let price = (kind == .bubbleStyle
+                     ? m.bubbleStyles.first { $0.id == id }?.price
+                     : m.trails.first { $0.id == id }?.price) ?? 0
+        if m.owns(kind, id) {
+            m.setActive(kind, id); HapticManager.light(); rebuild()
+        } else if m.purchase(kind, id: id, price: price) {
+            m.setActive(kind, id); HapticManager.medium(); rebuild()
+        } else {
+            shake(card)
+        }
+    }
+
+    private func shake(_ card: SKNode?) {
+        HapticManager.light()
+        card?.run(.sequence([
+            .moveBy(x: 7, y: 0, duration: 0.05),
+            .moveBy(x: -14, y: 0, duration: 0.05),
+            .moveBy(x: 14, y: 0, duration: 0.05),
+            .moveBy(x: -7, y: 0, duration: 0.05),
+        ]))
     }
 
     private func goBackToMenu() {

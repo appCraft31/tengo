@@ -65,7 +65,7 @@ class GameScene: SKScene {
     )
 
     private var currentPath: [(row: Int, col: Int)] = []
-    private var pathLineNode: SKShapeNode?
+    private var pathLineNode: SKNode?
     private var isAnimating = false
 
     // MARK: - Score
@@ -539,14 +539,17 @@ class GameScene: SKScene {
             cgPath.addLine(to: scenePos(row: coord.row, col: coord.col))
         }
 
-        let line = SKShapeNode(path: cgPath)
-        line.strokeColor = UIColor(white: 1.0, alpha: 0.6)
-        line.lineWidth = 6
-        line.lineCap = .round
-        line.lineJoin = .round
-        line.zPosition = 5
-        addChild(line)
-        pathLineNode = line
+        let container = makeTrailNode(path: cgPath)
+        container.zPosition = 5
+        addChild(container)
+        pathLineNode = container
+    }
+
+    /// Construit la ligne de tracé selon le style cosmétique actif (purement visuel).
+    private func makeTrailNode(path: CGMutablePath) -> SKNode {
+        TrailRenderer.make(path: path,
+                           style: CosmeticManager.shared.activeTrail,
+                           accent: ThemeManager.shared.active.accent)
     }
 
     private func cancelPath() {
