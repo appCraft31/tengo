@@ -49,10 +49,18 @@ class GameViewController: UIViewController {
             name: .tenGOShowGameCenter,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(openDailyFromLink),
+            name: .tenGOOpenDaily,
+            object: nil
+        )
     }
 
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
+        // Lien entrant reçu avant que l'observateur ne soit prêt (lancement à froid).
+        if DeepLink.pendingDaily { openDaily() }
         guard ProcessInfo.processInfo.environment["SCREENSHOT_DAILY"] != "1" else { return }
         guard !consentGathered else { return }
         consentGathered = true
@@ -104,6 +112,20 @@ class GameViewController: UIViewController {
     @objc private func showGameCenter(_ notification: Notification) {
         let id = notification.userInfo?["leaderboardID"] as? String ?? AppConfig.gameCenterLeaderboardID
         GameCenterManager.shared.showLeaderboard(id, from: self)
+    }
+
+    @objc private func openDailyFromLink() {
+        openDaily()
+    }
+
+    /// Ouvre directement le Défi du jour (depuis un lien externe / événement intégré).
+    private func openDaily() {
+        _ = DeepLink.consumePendingDaily()
+        guard let skView = self.view as? SKView else { return }
+        let scene = GameScene(size: CGSize(width: 750, height: 1334), daily: DailyChallenge.make())
+        scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        scene.scaleMode = .aspectFill
+        skView.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
     }
 
     @objc private func sceneDidChange(_ notification: Notification) {
