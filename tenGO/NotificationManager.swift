@@ -22,8 +22,11 @@ final class NotificationManager {
 
     /// Nombre de parties avant de proposer les notifications.
     private let promptThreshold = 3
-    /// Heure (locale) du rappel quotidien.
+    /// Heure (locale) du rappel quotidien du soir.
     private let reminderHour = 19
+    /// Heure (locale) de la notification « défi disponible » — le défi est dispo
+    /// dès 5h, mais on notifie à une heure plus douce.
+    private let dailyAvailableHour = 9
 
     // MARK: - Cycle de vie
 
@@ -70,10 +73,10 @@ final class NotificationManager {
             body: String(localized: "notif.daily_body", defaultValue: "Une grille t'attend 🌿")
         )
 
-        // Matin (5h) — un nouveau Défi du jour est disponible.
+        // Matin (9h) — un nouveau Défi du jour est disponible (dispo dès 5h).
         scheduleRepeating(
             id: dailyAvailableID,
-            hour: DailyChallenge.resetHour,
+            hour: dailyAvailableHour,
             title: String(localized: "notif.daily_available_title", defaultValue: "Défi du jour 🧩"),
             body: String(localized: "notif.daily_available_body", defaultValue: "Un nouveau défi t'attend !")
         )
