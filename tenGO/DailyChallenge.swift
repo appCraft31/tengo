@@ -2,8 +2,8 @@
 //  DailyChallenge.swift
 //  tenGO
 //
-//  Défi du jour : une grille identique pour tous les joueurs chaque jour,
-//  générée de façon déterministe à partir de la date (UTC) — aucun backend.
+//  Défi du jour : une nouvelle grille déterministe chaque jour, disponible à
+//  partir de 5h du matin (heure locale) — aucun backend.
 //  Un « twist » perturbateur tourne chaque jour pour renouveler le défi.
 //
 
@@ -26,6 +26,9 @@ enum DailyTwist: Int, CaseIterable {
 }
 
 enum DailyChallenge {
+
+    /// Heure (locale) à laquelle un nouveau défi devient disponible.
+    static let resetHour = 5
 
     /// Grille du jour + twist appliqué, prête à jouer.
     struct Today {
@@ -104,13 +107,15 @@ enum DailyChallenge {
         }
     }
 
-    // MARK: - Clé du jour (UTC pour l'équité entre fuseaux horaires)
+    // MARK: - Clé du jour (bascule à 5h, heure locale)
 
-    /// Date → entier AAAAMMJJ en UTC (ex. 2026-06-01 → 20260601).
+    /// Date → entier AAAAMMJJ. La « journée de défi » bascule à `resetHour`
+    /// (heure locale) : avant 5h on est encore sur le défi de la veille.
     private static func dayKey(for date: Date) -> Int {
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(identifier: "UTC") ?? .current
-        let c = calendar.dateComponents([.year, .month, .day], from: date)
+        calendar.timeZone = .current
+        let shifted = calendar.date(byAdding: .hour, value: -resetHour, to: date) ?? date
+        let c = calendar.dateComponents([.year, .month, .day], from: shifted)
         return (c.year ?? 0) * 10000 + (c.month ?? 0) * 100 + (c.day ?? 0)
     }
 }

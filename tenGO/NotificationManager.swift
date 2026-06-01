@@ -18,6 +18,7 @@ final class NotificationManager {
     private let center = UNUserNotificationCenter.current()
     private let defaults = UserDefaults.standard
     private let reminderID = "tenGO.dailyReminder"
+    private let dailyAvailableID = "tenGO.dailyAvailable"
 
     /// Nombre de parties avant de proposer les notifications.
     private let promptThreshold = 3
@@ -59,19 +60,37 @@ final class NotificationManager {
     // MARK: - Planification
 
     private func scheduleDailyReminder() {
-        center.removePendingNotificationRequests(withIdentifiers: [reminderID])
+        center.removePendingNotificationRequests(withIdentifiers: [reminderID, dailyAvailableID])
 
+        // Rappel du soir — invite à revenir jouer (pause zen).
+        scheduleRepeating(
+            id: reminderID,
+            hour: reminderHour,
+            title: String(localized: "notif.daily_title", defaultValue: "Une pause zen ?"),
+            body: String(localized: "notif.daily_body", defaultValue: "Une grille t'attend 🌿")
+        )
+
+        // Matin (5h) — un nouveau Défi du jour est disponible.
+        scheduleRepeating(
+            id: dailyAvailableID,
+            hour: DailyChallenge.resetHour,
+            title: String(localized: "notif.daily_available_title", defaultValue: "Défi du jour 🧩"),
+            body: String(localized: "notif.daily_available_body", defaultValue: "Un nouveau défi t'attend !")
+        )
+    }
+
+    /// Planifie une notification locale quotidienne répétée à l'heure indiquée.
+    private func scheduleRepeating(id: String, hour: Int, title: String, body: String) {
         let content = UNMutableNotificationContent()
-        content.title = String(localized: "notif.daily_title", defaultValue: "Une pause zen ?")
-        content.body = String(localized: "notif.daily_body", defaultValue: "Une grille t'attend 🌿")
+        content.title = title
+        content.body = body
         content.sound = .default
 
         var components = DateComponents()
-        components.hour = reminderHour
+        components.hour = hour
         components.minute = 0
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: true)
 
-        let request = UNNotificationRequest(identifier: reminderID, content: content, trigger: trigger)
-        center.add(request)
+        center.add(UNNotificationRequest(identifier: id, content: content, trigger: trigger))
     }
 }
