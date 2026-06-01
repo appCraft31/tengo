@@ -1,6 +1,10 @@
 # Release notes — tenGO
 
-## 1.6 (build 66)
+## 1.7 (build 67)
+
+Ajoute, en plus des nouveautés ci-dessous : classement du Défi du jour in-app et ouverture du défi via lien (événement intégré).
+
+
 
 ### Nouveautés (App Store — FR)
 🎯 **Défi du jour**
