@@ -14,15 +14,30 @@ class GameScene: SKScene {
 
     // MARK: - Init
 
+    enum Mode { case normal, daily }
+
+    private let mode: Mode
+    private var dailyToday: DailyChallenge.Today?
+    private var obstacleNodes: [SKNode] = []
+
     private var savedState: GameState?
     private var homeBubbleNode: SKNode!
 
     init(size: CGSize, savedState: GameState? = nil) {
         self.savedState = savedState
+        self.mode = .normal
+        super.init(size: size)
+    }
+
+    /// Mode Défi du jour : grille déterministe + twist, identique pour tous.
+    init(size: CGSize, daily: DailyChallenge.Today) {
+        self.mode = .daily
+        self.dailyToday = daily
         super.init(size: size)
     }
 
     required init?(coder aDecoder: NSCoder) {
+        self.mode = .normal
         super.init(coder: aDecoder)
     }
 
@@ -85,7 +100,9 @@ class GameScene: SKScene {
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
         setupBackground()
         setupUI()
-        if let state = savedState {
+        if mode == .daily, let today = dailyToday {
+            gridModel = today.grid
+        } else if let state = savedState {
             gridModel = GridModel(from: state)
             score = state.score
             scoreLabel.text = "\(score)"
@@ -332,13 +349,31 @@ class GameScene: SKScene {
     }
 
     private func setupGrid() {
+        renderObstacles()
         for row in 0..<GridModel.rows {
             for col in 0..<GridModel.cols {
                 guard let model = gridModel.cells[row][col] else { continue }
                 let node = BubbleNode(value: model.value)
                 node.position = scenePos(row: row, col: col)
+                if model.isAnchored { node.setAnchored(true) }
+                if model.isFrozen { node.setFrozen(true) }
                 addChild(node)
                 bubbleNodes[row][col] = node
+            }
+        }
+    }
+
+    /// Place les pierres-obstacles du Défi du jour (cases bloquées, statiques).
+    private func renderObstacles() {
+        obstacleNodes.forEach { $0.removeFromParent() }
+        obstacleNodes.removeAll()
+        for row in 0..<GridModel.rows {
+            for col in 0..<GridModel.cols where gridModel.blocked[row][col] {
+                let stone = BubbleNode.makeObstacle(cellSize: GameScene.cellSize)
+                stone.position = scenePos(row: row, col: col)
+                stone.zPosition = 0
+                addChild(stone)
+                obstacleNodes.append(stone)
             }
         }
     }
@@ -429,6 +464,8 @@ class GameScene: SKScene {
 
         guard !isAnimating else { return }
         guard let coord = gridCoord(for: point) else { return }
+        // Une bulle gelée est intraversable tant que le givre n'a pas fondu.
+        if gridModel.cells[coord.row][coord.col]?.isFrozen == true { return }
 
         currentPath = [coord]
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
@@ -487,8 +524,8 @@ class GameScene: SKScene {
               coord.col >= 0, coord.col < GridModel.cols else { return false }
         // Déjà dans le chemin
         if currentPath.contains(where: { $0.row == coord.row && $0.col == coord.col }) { return false }
-        // Cellule non vide
-        guard let bubble = gridModel.cells[coord.row][coord.col] else { return false }
+        // Cellule non vide et non gelée
+        guard let bubble = gridModel.cells[coord.row][coord.col], !bubble.isFrozen else { return false }
         // Contrainte de somme
         guard gridModel.pathSum(currentPath) + bubble.value <= 10 else { return false }
 
@@ -624,6 +661,10 @@ class GameScene: SKScene {
         }
         gridModel.removeBubbles(at: pathCopy)
 
+        // Défi du jour : un chemin adjacent fait fondre le givre des bulles gelées.
+        let thawed = gridModel.thawFrozenBubbles(adjacentTo: pathCopy)
+        for pos in thawed { bubbleNodes[pos.row][pos.col]?.thaw() }
+
         run(SKAction.sequence([
             SKAction.wait(forDuration: 0.26),
             SKAction.run { [weak self] in self?.afterPop() }
@@ -676,6 +717,19 @@ class GameScene: SKScene {
 
     // MARK: - Win / Lose
 
+    /// Enregistre le score de fin de partie selon le mode.
+    private func recordScore() {
+        switch mode {
+        case .normal:
+            GameState.addScore(score)
+            GameCenterManager.shared.submitScore(score)
+            GameState.clear()
+        case .daily:
+            DailyChallenge.markCompleted()
+            GameCenterManager.shared.submitDailyScore(score)
+        }
+    }
+
     private func triggerWin() {
         SoundManager.shared.playWin()
         InterstitialAdManager.shared.markGameCompleted()
@@ -684,9 +738,7 @@ class GameScene: SKScene {
         score += bonus
         updateScoreLabel()
         showScorePopup(points: bonus, at: CGPoint(x: 0, y: 50))
-        GameState.addScore(score)
-        GameCenterManager.shared.submitScore(score)
-        GameState.clear()
+        recordScore()
         run(SKAction.wait(forDuration: 0.5)) { [weak self] in
             self?.showGameOverPanel()
         }
@@ -714,9 +766,7 @@ class GameScene: SKScene {
                         self.bubbleNodes[row][col]?.run(SKAction.fadeAlpha(to: 0.12, duration: 0.4))
                     }
                 }
-                GameState.addScore(self.score)
-                GameCenterManager.shared.submitScore(self.score)
-                GameState.clear()
+                self.recordScore()
             },
             SKAction.wait(forDuration: 0.5),
             SKAction.run { [weak self] in self?.showGameOverPanel() }
@@ -950,7 +1000,12 @@ class GameScene: SKScene {
             SKAction.wait(forDuration: 0.25),
             SKAction.run { [weak self] in
                 guard let self = self else { return }
-                self.gridModel = GridModel()
+                // Défi du jour : on rejoue la MÊME grille (déterministe), pas une nouvelle.
+                if self.mode == .daily, let today = self.dailyToday {
+                    self.gridModel = today.grid
+                } else {
+                    self.gridModel = GridModel()
+                }
                 self.bubbleNodes = [[BubbleNode?]](
                     repeating: [BubbleNode?](repeating: nil, count: GridModel.cols),
                     count: GridModel.rows
@@ -961,6 +1016,7 @@ class GameScene: SKScene {
     }
 
     private func setupGridAnimated() {
+        renderObstacles()
         var delay: TimeInterval = 0
         let stagger: TimeInterval = 0.012
 
@@ -969,6 +1025,8 @@ class GameScene: SKScene {
                 guard let model = gridModel.cells[row][col] else { continue }
                 let node = BubbleNode(value: model.value)
                 node.position = scenePos(row: row, col: col)
+                if model.isAnchored { node.setAnchored(true) }
+                if model.isFrozen { node.setFrozen(true) }
                 node.setScale(0)
                 node.alpha = 0
                 addChild(node)
@@ -994,7 +1052,8 @@ class GameScene: SKScene {
     // MARK: - Navigation
 
     private func goBackToMenu() {
-        if !gridModel.isGridEmpty() && !isAnimating {
+        // Le Défi du jour ne se sauvegarde pas dans le slot « Continuer » du mode normal.
+        if mode == .normal && !gridModel.isGridEmpty() && !isAnimating {
             GameState.save(gridModel: gridModel, score: score)
         }
         let rootVC = view?.window?.rootViewController ?? UIViewController()

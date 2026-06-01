@@ -38,6 +38,10 @@ enum AppConfig {
     /// (Fonctionnalités → Game Center → Classements)
     static let gameCenterLeaderboardID = "com.tengo.leaderboard.global"
 
+    /// Classement du Défi du jour — à créer dans App Store Connect.
+    /// Idéalement configuré en réinitialisation quotidienne.
+    static let gameCenterDailyLeaderboardID = "com.tengo.leaderboard.daily"
+
     // MARK: - UserDefaults keys
 
     enum UserDefaultsKey {

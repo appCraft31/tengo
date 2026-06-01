@@ -10,6 +10,11 @@ class BubbleNode: SKNode {
     private let circle: SKShapeNode
     private let digitLabel: SKLabelNode
 
+    // Défi du jour — twists visuels (rendu sobre, monochrome).
+    private(set) var isFrozen = false
+    private(set) var isAnchored = false
+    private var frostOverlay: SKNode?
+
     static let bubbleRadius: CGFloat = 39
 
     // Pastel color per digit value (index 0 unused)
@@ -50,6 +55,62 @@ class BubbleNode: SKNode {
     }
 
     required init?(coder: NSCoder) { fatalError() }
+
+    // MARK: - Twists (Défi du jour)
+
+    /// Bulle ancrée : ne tombe pas. Repère sobre = petit point fixe sous le chiffre.
+    func setAnchored(_ anchored: Bool) {
+        isAnchored = anchored
+        guard anchored else { return }
+        let mark = SKShapeNode(circleOfRadius: 4)
+        mark.fillColor = UIColor(white: 0.45, alpha: 0.9)
+        mark.strokeColor = .clear
+        mark.position = CGPoint(x: 0, y: -BubbleNode.bubbleRadius + 12)
+        mark.zPosition = 2
+        addChild(mark)
+    }
+
+    /// Bulle gelée : inutilisable tant que le givre n'a pas fondu.
+    /// Voile glacé translucide + chiffre atténué.
+    func setFrozen(_ frozen: Bool) {
+        guard frozen else { return }
+        isFrozen = true
+        let overlay = SKNode()
+        let ice = SKShapeNode(circleOfRadius: BubbleNode.bubbleRadius)
+        ice.fillColor = UIColor(red: 0.82, green: 0.90, blue: 0.98, alpha: 0.55)
+        ice.strokeColor = UIColor(white: 1.0, alpha: 0.7)
+        ice.lineWidth = 2
+        overlay.addChild(ice)
+        overlay.zPosition = 1
+        addChild(overlay)
+        frostOverlay = overlay
+        digitLabel.alpha = 0.45
+    }
+
+    /// Fait fondre le givre (un chemin adjacent a été validé).
+    func thaw() {
+        guard isFrozen else { return }
+        isFrozen = false
+        digitLabel.run(SKAction.fadeAlpha(to: 1.0, duration: 0.3))
+        frostOverlay?.run(SKAction.sequence([
+            SKAction.group([
+                SKAction.fadeOut(withDuration: 0.3),
+                SKAction.scale(to: 1.25, duration: 0.3)
+            ]),
+            SKAction.removeFromParent()
+        ]))
+        frostOverlay = nil
+    }
+
+    /// Bloc-obstacle inerte (case bloquée). Pierre pastel sans chiffre.
+    static func makeObstacle(cellSize: CGFloat) -> SKNode {
+        let side = cellSize * 0.66
+        let stone = SKShapeNode(rectOf: CGSize(width: side, height: side), cornerRadius: 13)
+        stone.fillColor = UIColor(white: 0.80, alpha: 1)
+        stone.strokeColor = UIColor(white: 0.62, alpha: 0.8)
+        stone.lineWidth = 1.5
+        return stone
+    }
 
     // MARK: - State
 

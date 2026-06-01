@@ -101,6 +101,23 @@ class MenuScene: SKScene {
                       accent: UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1))
         buttonY -= 86
 
+        // Défi du jour — grille unique partagée par tous, change chaque jour.
+        let dailyButton = addMenuButton(
+            text: String(localized: "menu.daily", defaultValue: "Défi du jour"),
+            name: "dailyChallenge",
+            width: 240, height: 58, at: CGPoint(x: 0, y: buttonY),
+            accent: UIColor(red: 0.86, green: 0.82, blue: 0.97, alpha: 1)) // lavande
+        if DailyChallenge.isCompletedToday() {
+            let check = SKLabelNode(text: "✓")
+            check.fontName = "AvenirNext-Bold"
+            check.fontSize = 24
+            check.fontColor = UIColor(red: 0.36, green: 0.62, blue: 0.46, alpha: 1)
+            check.verticalAlignmentMode = .center
+            check.position = CGPoint(x: 98, y: 0)
+            dailyButton.addChild(check)
+        }
+        buttonY -= 82
+
         if hasSaved {
             addMenuButton(text: String(localized: "menu.continue"), name: "continuer",
                           width: 210, height: 56, at: CGPoint(x: 0, y: buttonY))
@@ -152,8 +169,9 @@ class MenuScene: SKScene {
         ])))
     }
 
+    @discardableResult
     private func addMenuButton(text: String, name: String, width: CGFloat, height: CGFloat,
-                               at position: CGPoint, accent: UIColor? = nil) {
+                               at position: CGPoint, accent: UIColor? = nil) -> SKNode {
         let node = SKNode()
         node.name = name
         node.position = position
@@ -182,6 +200,7 @@ class MenuScene: SKScene {
         node.addChild(label)
 
         addChild(node)
+        return node
     }
 
     // MARK: - Touch
@@ -215,6 +234,12 @@ class MenuScene: SKScene {
                     }
                 }
                 return
+            case "dailyChallenge":
+                animateTap(node.parent ?? node)
+                run(SKAction.wait(forDuration: 0.12)) {
+                    self.navigateToDailyChallenge()
+                }
+                return
             case "continuer":
                 animateTap(node.parent ?? node)
                 run(SKAction.wait(forDuration: 0.12)) {
@@ -243,6 +268,13 @@ class MenuScene: SKScene {
 
     private func navigateToGame(savedState: GameState?) {
         let scene = GameScene(size: size, savedState: savedState)
+        scene.scaleMode = .aspectFill
+        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+    }
+
+    private func navigateToDailyChallenge() {
+        let today = DailyChallenge.make()
+        let scene = GameScene(size: size, daily: today)
         scene.scaleMode = .aspectFill
         view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
     }
