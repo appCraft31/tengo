@@ -51,7 +51,7 @@
          </BuildableReference>
       </BuildableProductRunnable>
       <StoreKitConfigurationFileReference
-         identifier = "../../../tenGO.storekit">
+         identifier = "../../../tenGO/tenGO.storekit">
       </StoreKitConfigurationFileReference>
    </LaunchAction>
    <ProfileAction
