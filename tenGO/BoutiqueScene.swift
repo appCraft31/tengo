@@ -47,7 +47,7 @@ class BoutiqueScene: SKScene {
         addBalanceChip(atY: topY - 56, theme: theme)
         addTabBar(atY: topY - 116, theme: theme)
 
-        let startY = topY - 196
+        let startY = topY - 232
         let colCenter = usableWidth / 4
         let colX: [CGFloat] = [-colCenter, colCenter]
 
@@ -133,7 +133,8 @@ class BoutiqueScene: SKScene {
                      preview: preview, previewY: 42, at: position)
         // Badge
         if let card = childNode(withName: "item:theme:\(theme.id)") {
-            addStatusBadge(to: card, theme: theme, isActive: isActive, owned: owned, atY: -48)
+            addStatusBadge(to: card, theme: theme, isActive: isActive, owned: owned, atY: -48,
+                           priceOverride: owned ? nil : theme.price)
         }
     }
 
