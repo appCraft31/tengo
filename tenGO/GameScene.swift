@@ -109,6 +109,7 @@ class GameScene: SKScene {
         }
         setupGrid()
         StreakManager.shared.registerPlay()
+        NotificationManager.shared.registerGameAndMaybeRequest()
     }
 
     override func didMove(to view: SKView) {

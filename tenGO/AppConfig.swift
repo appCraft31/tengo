@@ -54,5 +54,9 @@ enum AppConfig {
         static let streakCurrent = "tenGO_streakCurrent"
         static let streakBest = "tenGO_streakBest"
         static let streakLastPlayed = "tenGO_streakLastPlayed"
+        /// Nombre de parties jouées (pour différer la demande de notifications).
+        static let notifGamesPlayed = "tenGO_notifGamesPlayed"
+        /// L'autorisation de notifications a déjà été demandée.
+        static let notifRequested = "tenGO_notifRequested"
     }
 }
