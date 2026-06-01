@@ -14,7 +14,13 @@ struct GridModel {
     private(set) var cells: [[BubbleModel?]]
 
     init() {
-        cells = GridModel.generateCells()
+        var generator = SystemRandomNumberGenerator()
+        cells = GridModel.generateCells(using: &generator)
+    }
+
+    /// Génère une grille reproductible à partir d'un RNG injecté (Défi du jour).
+    init(using generator: inout some RandomNumberGenerator) {
+        cells = GridModel.generateCells(using: &generator)
     }
 
     init(from state: GameState) {
@@ -27,24 +33,24 @@ struct GridModel {
 
     // MARK: - Generation
 
-    private static func generateCells() -> [[BubbleModel?]] {
+    private static func generateCells<G: RandomNumberGenerator>(using generator: inout G) -> [[BubbleModel?]] {
         for _ in 0..<100 {
-            let candidate = makeCells()
+            let candidate = makeCells(using: &generator)
             if GridModel(cells: candidate).hasValidMove() {
                 return candidate
             }
         }
         // Fallback: force at least one valid pair
-        var fallback = makeCells()
+        var fallback = makeCells(using: &generator)
         fallback[0][0] = BubbleModel(value: 5, row: 0, col: 0)
         fallback[0][1] = BubbleModel(value: 5, row: 0, col: 1)
         return fallback
     }
 
-    private static func makeCells() -> [[BubbleModel?]] {
+    private static func makeCells<G: RandomNumberGenerator>(using generator: inout G) -> [[BubbleModel?]] {
         (0..<rows).map { row in
             (0..<cols).map { col in
-                BubbleModel(value: Int.random(in: 1...9), row: row, col: col) as BubbleModel?
+                BubbleModel(value: Int.random(in: 1...9, using: &generator), row: row, col: col) as BubbleModel?
             }
         }
     }
