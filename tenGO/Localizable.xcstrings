@@ -1,711 +1,4166 @@
 {
-  "sourceLanguage" : "fr",
-  "strings" : {
-    "app.share_message" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Entdecke tenGO — ein Zen-Puzzle zum Durchatmen.\n%@" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Discover tenGO — a zen puzzle to breathe.\n%@" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Descubre tenGO — un puzzle zen para respirar.\n%@" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Découvre tenGO — un puzzle zen pour respirer.\n%@" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Scopri tenGO — un puzzle zen per respirare.\n%@" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "tenGOを発見 — 深呼吸のためのゼンパズル。\n%@" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "tenGO 발견 — 숨 쉬게 하는 선(禪) 퍼즐.\n%@" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Ontdek tenGO — een zenpuzzel om adem te halen.\n%@" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Descubra tenGO — um puzzle zen para respirar.\n%@" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "发现 tenGO — 一款让你呼吸的禅意解谜。\n%@" } }
+  "sourceLanguage": "fr",
+  "strings": {
+    "app.share_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Entdecke tenGO — ein Zen-Puzzle zum Durchatmen.\n%@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Discover tenGO — a zen puzzle to breathe.\n%@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descubre tenGO — un puzzle zen para respirar.\n%@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Découvre tenGO — un puzzle zen pour respirer.\n%@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scopri tenGO — un puzzle zen per respirare.\n%@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGOを発見 — 深呼吸のためのゼンパズル。\n%@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGO 발견 — 숨 쉬게 하는 선(禪) 퍼즐.\n%@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ontdek tenGO — een zenpuzzel om adem te halen.\n%@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Descubra tenGO — um puzzle zen para respirar.\n%@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "发现 tenGO — 一款让你呼吸的禅意解谜。\n%@"
+          }
+        }
       }
     },
-    "app.version_label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Version %@" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Version %@" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Versión %@" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Version %@" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Versione %@" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "バージョン %@" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "버전 %@" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Versie %@" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Versão %@" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "版本 %@" } }
+    "app.version_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versión %@"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Version %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versione %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バージョン %@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "버전 %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versie %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Versão %@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "版本 %@"
+          }
+        }
       }
     },
-    "game.points_label" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Pkt." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "pts" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "pts" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "pts" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "pt" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "点" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "점" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "pnt" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "pts" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分" } }
+    "game.points_label": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pkt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pts"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pts"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pt"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "点"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "점"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pnt"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "pts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分"
+          }
+        }
       }
     },
-    "game_over.best_score" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bestwert: %lld Pkt." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Best: %lld pts" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Mejor: %lld pts" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Meilleur : %lld pts" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Migliore: %lld pt" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ベスト: %lld点" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "최고: %lld점" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Beste: %lld pnt" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Melhor: %lld pts" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最佳：%lld 分" } }
+    "game_over.best_score": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestwert: %lld Pkt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Best: %lld pts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mejor: %lld pts"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meilleur : %lld pts"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Migliore: %lld pt"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ベスト: %lld点"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "최고: %lld점"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beste: %lld pnt"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Melhor: %lld pts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最佳：%lld 分"
+          }
+        }
       }
     },
-    "game_over.combos_created" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "%lld Kombos erstellt" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "%lld combos made" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "%lld combinaciones" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "%lld combinaisons créées" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "%lld combo create" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "%lldコンボ作成" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "%lld 콤보 생성" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "%lld combo's gemaakt" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "%lld combos criados" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "已创建 %lld 个组合" } }
+    "game_over.combos_created": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld Kombos erstellt"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld combos made"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld combinaciones"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld combinaisons créées"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld combo create"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lldコンボ作成"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld 콤보 생성"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld combo's gemaakt"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%lld combos criados"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "已创建 %lld 个组合"
+          }
+        }
       }
     },
-    "game_over.game_over_title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Spiel beendet" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Game Over" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Fin de partida" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Fin de partie" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Partita finita" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ゲーム終了" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "게임 종료" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Spel voorbij" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Fim de jogo" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "游戏结束" } }
+    "game_over.game_over_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spiel beendet"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Game Over"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fin de partida"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fin de partie"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partita finita"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ゲーム終了"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "게임 종료"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spel voorbij"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fim de jogo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "游戏结束"
+          }
+        }
       }
     },
-    "game_over.home" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Startseite" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Home" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Inicio" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Accueil" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Home" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ホーム" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "홈" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Home" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Início" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "主页" } }
+    "game_over.home": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Startseite"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicio"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accueil"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ホーム"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "홈"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Início"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主页"
+          }
+        }
       }
     },
-    "game_over.longest_chain" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Längste Kette · %lld Blasen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Longest chain · %lld bubbles" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cadena máx · %lld burbujas" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Chaîne max · %lld bulles" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Catena max · %lld bolle" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最長チェーン・%lld個" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "최장 연결 · %lld 방울" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Langste ketting · %lld bellen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Maior sequência · %lld bolhas" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "最长连接 · %lld 个泡泡" } }
+    "game_over.longest_chain": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Längste Kette · %lld Blasen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Longest chain · %lld bubbles"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cadena máx · %lld burbujas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Chaîne max · %lld bulles"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Catena max · %lld bolle"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最長チェーン・%lld個"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "최장 연결 · %lld 방울"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Langste ketting · %lld bellen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maior sequência · %lld bolhas"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最长连接 · %lld 个泡泡"
+          }
+        }
       }
     },
-    "game_over.new_record" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "★  Neuer Rekord!" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "★  New record!" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "★  ¡Nuevo récord!" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "★  Nouveau record !" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "★  Nuovo record!" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "★  新記録!" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "★  신기록!" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "★  Nieuw record!" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "★  Novo recorde!" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "★  新纪录！" } }
+    "game_over.new_record": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Neuer Rekord!"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  New record!"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  ¡Nuevo récord!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Nouveau record !"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Nuovo record!"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  新記録!"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  신기록!"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Nieuw record!"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Novo recorde!"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  新纪录！"
+          }
+        }
       }
     },
-    "game_over.perfect_title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Perfekt!" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Perfect!" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "¡Perfecto!" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Parfait !" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Perfetto!" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "完璧!" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "완벽!" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Perfect!" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Perfeito!" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "完美！" } }
+    "game_over.perfect_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perfekt!"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perfect!"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¡Perfecto!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Parfait !"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perfetto!"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完璧!"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "완벽!"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perfect!"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Perfeito!"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完美！"
+          }
+        }
       }
     },
-    "game_over.replay" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nochmal" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replay" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Reiniciar" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Rejouer" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Rigioca" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "もう一度" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "다시 플레이" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Opnieuw" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Jogar de novo" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "再玩一次" } }
+    "game_over.replay": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nochmal"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replay"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reiniciar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rejouer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rigioca"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "もう一度"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "다시 플레이"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opnieuw"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jogar de novo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "再玩一次"
+          }
+        }
       }
     },
-    "leaderboard.empty_subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Starte ein Spiel und komm zum Glänzen zurück." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Start a game and come back to shine." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Empieza una partida y vuelve a brillar aquí." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Lance une partie et reviens briller ici." } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Avvia una partita e torna a brillare qui." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ゲームをプレイして、ここに戻って輝こう。" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "게임을 시작하고 돌아와 빛나세요." } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Start een spel en kom hier schitteren." } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Comece um jogo e volte para brilhar aqui." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始一局游戏，回来闪耀吧。" } }
+    "leaderboard.empty_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Starte ein Spiel und komm zum Glänzen zurück."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start a game and come back to shine."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Empieza una partida y vuelve a brillar aquí."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Lance une partie et reviens briller ici."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avvia una partita e torna a brillare qui."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ゲームをプレイして、ここに戻って輝こう。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "게임을 시작하고 돌아와 빛나세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start een spel en kom hier schitteren."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comece um jogo e volte para brilhar aqui."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始一局游戏，回来闪耀吧。"
+          }
+        }
       }
     },
-    "leaderboard.empty_title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Dein erster Rekord wartet." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Your first score awaits." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Tu primera puntuación te espera." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Ton premier score t'attend." } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Il tuo primo punteggio ti aspetta." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最初のスコアが待っています。" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "첫 점수가 당신을 기다립니다." } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Je eerste score wacht." } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Sua primeira pontuação aguarda." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "你的第一个分数在等你。" } }
+    "leaderboard.empty_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dein erster Rekord wartet."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Your first score awaits."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tu primera puntuación te espera."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton premier score t'attend."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Il tuo primo punteggio ti aspetta."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最初のスコアが待っています。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "첫 점수가 당신을 기다립니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je eerste score wacht."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sua primeira pontuação aguarda."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "你的第一个分数在等你。"
+          }
+        }
       }
     },
-    "leaderboard.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bestenliste" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Leaderboard" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Clasificación" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Classement" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Classifica" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ランキング" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "순위표" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Ranglijst" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ranking" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "排行榜" } }
+    "leaderboard.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestenliste"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaderboard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clasificación"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classifica"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ランキング"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "순위표"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranglijst"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranking"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排行榜"
+          }
+        }
       }
     },
-    "leaderboard.world_button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Weltrangliste" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "World Leaderboard" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ranking mundial" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Classement mondial" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Classifica mondiale" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "世界ランキング" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "세계 순위" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Wereldranglijst" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ranking mundial" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "全球排行榜" } }
+    "leaderboard.world_button": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weltrangliste"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "World Leaderboard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranking mundial"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classement mondial"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classifica mondiale"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "世界ランキング"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "세계 순위"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wereldranglijst"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranking mundial"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "全球排行榜"
+          }
+        }
       }
     },
-    "menu.continue" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Fortsetzen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Continuar" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Continuer" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Continua" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "続ける" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "계속하기" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Doorgaan" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Continuar" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "继续" } }
+    "menu.continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fortsetzen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "続ける"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "계속하기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doorgaan"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续"
+          }
+        }
       }
     },
-    "menu.leaderboard" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Bestenliste" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Leaderboard" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Clasificación" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Classement" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Classifica" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "ランキング" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "순위표" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Ranglijst" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ranking" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "排行榜" } }
+    "menu.daily": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tägliche Challenge"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily Challenge"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reto diario"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Défi du jour"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sfida del giorno"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日のチャレンジ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "오늘의 도전"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dagelijkse uitdaging"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desafio diário"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每日挑战"
+          }
+        }
       }
     },
-    "menu.new_game" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Neues Spiel" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "New Game" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Nueva partida" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Nouvelle partie" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Nuova partita" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "新しいゲーム" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "새 게임" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Nieuw spel" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Novo jogo" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "新游戏" } }
+    "menu.leaderboard": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestenliste"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaderboard"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clasificación"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classement"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classifica"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ランキング"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "순위표"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranglijst"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ranking"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排行榜"
+          }
+        }
       }
     },
-    "menu.settings" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einstellungen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ajustes" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Paramètres" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Impostazioni" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "설정" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Instellingen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ajustes" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设置" } }
+    "menu.new_game": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Neues Spiel"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "New Game"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nueva partida"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nouvelle partie"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuova partita"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいゲーム"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "새 게임"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nieuw spel"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Novo jogo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新游戏"
+          }
+        }
       }
     },
-    "menu.tagline" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verbinde. Addiere. Befreie." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect. Add. Release." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conecta. Suma. Libera." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Relie. Additionne. Libère." } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Collega. Somma. Libera." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "つなぐ。たす。ひらく。" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "잇다. 더하다. 풀다." } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Verbind. Tel op. Laat los." } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Conecte. Some. Liberte." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接。相加。释放。" } }
+    "menu.settings": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paramètres"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impostazioni"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "설정"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instellingen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        }
       }
     },
-    "privacy.tracking_usage" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Wir verwenden anonyme Daten, um relevante Anzeigen anzuzeigen." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "We use anonymous data to show you relevant ads." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Usamos datos anónimos para mostrar anuncios relevantes." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Nous utilisons des données anonymes pour afficher des publicités pertinentes." } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Usiamo dati anonimi per mostrare annunci pertinenti." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "関連性の高い広告を表示するために匿名データを使用します。" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "관련성 있는 광고를 표시하기 위해 익명 데이터를 사용합니다." } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "We gebruiken anonieme gegevens om relevante advertenties te tonen." } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Usamos dados anônimos para exibir anúncios relevantes." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "我们使用匿名数据来展示相关广告。" } }
+    "menu.shop": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shop"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tienda"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boutique"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Negozio"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ショップ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "상점"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Winkel"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loja"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "商店"
+          }
+        }
       }
     },
-    "settings.contact_support" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Support kontaktieren" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Contact support" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Contactar soporte" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Contacter le support" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Contatta l'assistenza" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サポートに連絡" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "지원 문의" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Contact support" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Contatar suporte" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "联系支持" } }
+    "menu.tagline": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinde. Addiere. Befreie."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect. Add. Release."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta. Suma. Libera."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relie. Additionne. Libère."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collega. Somma. Libera."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "つなぐ。たす。ひらく。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "잇다. 더하다. 풀다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbind. Tel op. Laat los."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecte. Some. Liberte."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接。相加。释放。"
+          }
+        }
       }
     },
-    "settings.haptics" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Haptisches Feedback" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Haptic feedback" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Respuesta háptica" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Retours haptiques" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Feedback aptico" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "触覚フィードバック" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "햅틱 피드백" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Haptische feedback" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Resposta tátil" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "触感反馈" } }
+    "notif.daily_available_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine neue Challenge wartet auf dich!"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A new challenge is waiting for you!"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¡Un nuevo reto te espera!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Un nouveau défi t'attend !"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una nuova sfida ti aspetta!"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいチャレンジが待っています！"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "새로운 도전이 기다려요!"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Een nieuwe uitdaging wacht op je!"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Um novo desafio espera por você!"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新的挑战在等你！"
+          }
+        }
       }
     },
-    "settings.privacy_options" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Datenschutzoptionen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Privacy options" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Opciones de privacidad" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Options de confidentialité" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Opzioni sulla privacy" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プライバシー設定" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "개인정보 옵션" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Privacyopties" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Opções de privacidade" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "隐私选项" } }
+    "notif.daily_available_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tägliche Challenge 🧩"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Daily Challenge 🧩"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reto diario 🧩"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Défi du jour 🧩"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sfida del giorno 🧩"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日のチャレンジ 🧩"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "오늘의 도전 🧩"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Dagelijkse uitdaging 🧩"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desafio diário 🧩"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "每日挑战 🧩"
+          }
+        }
       }
     },
-    "settings.rate_app" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "App bewerten" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Rate the app" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Valorar la app" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Noter l'application" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Valuta l'app" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "アプリを評価" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "앱 평가하기" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "App beoordelen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Avaliar o app" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "评价应用" } }
+    "notif.daily_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein Raster wartet auf dich 🌿"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A grid is waiting for you 🌿"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una cuadrícula te espera 🌿"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une grille t'attend 🌿"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una griglia ti aspetta 🌿"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "新しいグリッドが待っています 🌿"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "새로운 그리드가 기다려요 🌿"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Een raster wacht op je 🌿"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma grade espera por você 🌿"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "一局新棋盘在等你 🌿"
+          }
+        }
       }
     },
-    "settings.replay_tutorial" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Tutorial erneut ansehen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Replay tutorial" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Volver al tutorial" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Revoir le tutoriel" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Rivedi il tutorial" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "チュートリアルをもう一度" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "튜토리얼 다시 보기" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Tutorial opnieuw" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Rever tutorial" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重看教程" } }
+    "notif.daily_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eine Zen-Pause?"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A zen break?"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Una pausa zen?"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Une pause zen ?"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Una pausa zen?"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ひと息つきませんか？"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "잠깐 쉬어갈까요?"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Even een zen-pauze?"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uma pausa zen?"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来一段禅意时光？"
+          }
+        }
       }
     },
-    "settings.share_tengo" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "tenGO teilen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Share tenGO" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Compartir tenGO" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Partager tenGO" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Condividi tenGO" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "tenGOを共有" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "tenGO 공유" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "tenGO delen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Compartilhar tenGO" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "分享 tenGO" } }
+    "privacy.tracking_usage": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wir verwenden anonyme Daten, um relevante Anzeigen anzuzeigen."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We use anonymous data to show you relevant ads."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usamos datos anónimos para mostrar anuncios relevantes."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nous utilisons des données anonymes pour afficher des publicités pertinentes."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usiamo dati anonimi per mostrare annunci pertinenti."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "関連性の高い広告を表示するために匿名データを使用します。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "관련성 있는 광고를 표시하기 위해 익명 데이터를 사용합니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "We gebruiken anonieme gegevens om relevante advertenties te tonen."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Usamos dados anônimos para exibir anúncios relevantes."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "我们使用匿名数据来展示相关广告。"
+          }
+        }
       }
     },
-    "settings.sound" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ton" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Sound" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Sonido" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Son" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Suono" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "サウンド" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "소리" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Geluid" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Som" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "声音" } }
+    "settings.contact_support": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support kontaktieren"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact support"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contactar soporte"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contacter le support"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contatta l'assistenza"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サポートに連絡"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "지원 문의"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contact support"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Contatar suporte"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "联系支持"
+          }
+        }
       }
     },
-    "settings.support_subject" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Support tenGO" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "tenGO support" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Soporte tenGO" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Support tenGO" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Supporto tenGO" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "tenGOサポート" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "tenGO 지원" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "tenGO support" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Suporte tenGO" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "tenGO 支持" } }
+    "settings.haptics": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haptisches Feedback"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haptic feedback"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Respuesta háptica"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Retours haptiques"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feedback aptico"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "触覚フィードバック"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "햅틱 피드백"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Haptische feedback"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resposta tátil"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "触感反馈"
+          }
+        }
       }
     },
-    "settings.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Einstellungen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Settings" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ajustes" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Paramètres" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Impostazioni" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "設定" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "설정" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Instellingen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ajustes" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "设置" } }
+    "settings.privacy_options": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Datenschutzoptionen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacy options"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opciones de privacidad"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Options de confidentialité"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opzioni sulla privacy"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プライバシー設定"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "개인정보 옵션"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Privacyopties"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Opções de privacidade"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隐私选项"
+          }
+        }
       }
     },
-    "settings.toggle_off" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Aus" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Off" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Apagado" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Muet" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Off" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オフ" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "꺼짐" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Uit" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Desligado" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "关闭" } }
+    "settings.rate_app": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App bewerten"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rate the app"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valorar la app"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noter l'application"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valuta l'app"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "アプリを評価"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "앱 평가하기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "App beoordelen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avaliar o app"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "评价应用"
+          }
+        }
       }
     },
-    "settings.toggle_on" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ein" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "On" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Activado" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Activé" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Attivo" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "オン" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "켜짐" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Aan" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Ativado" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开启" } }
+    "settings.replay_tutorial": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutorial erneut ansehen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Replay tutorial"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volver al tutorial"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revoir le tutoriel"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rivedi il tutorial"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "チュートリアルをもう一度"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "튜토리얼 다시 보기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tutorial opnieuw"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Rever tutorial"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重看教程"
+          }
+        }
       }
     },
-    "tutorial.previous_button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "‹ Zurück" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "‹ Previous" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "‹ Anterior" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "‹ Précédent" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "‹ Precedente" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "‹ 前へ" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "‹ 이전" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "‹ Vorige" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "‹ Anterior" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "‹ 上一步" } }
+    "settings.share_tengo": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGO teilen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share tenGO"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartir tenGO"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partager tenGO"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi tenGO"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGOを共有"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGO 공유"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGO delen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartilhar tenGO"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享 tenGO"
+          }
+        }
       }
     },
-    "tutorial.next_button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Weiter ›" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Next ›" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Siguiente ›" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Suivant ›" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Avanti ›" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "次へ ›" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "다음 ›" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Volgende ›" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Próximo ›" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "下一步 ›" } }
+    "settings.sound": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ton"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sound"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sonido"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Son"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suono"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "サウンド"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "소리"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geluid"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Som"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "声音"
+          }
+        }
       }
     },
-    "tutorial.play_button" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Spielen!" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Play!" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "¡Jugar!" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Jouer !" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Gioca!" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "プレイ!" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "시작!" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Spelen!" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Jogar!" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "开始游戏！" } }
+    "settings.support_subject": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support tenGO"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGO support"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Soporte tenGO"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Support tenGO"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Supporto tenGO"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGOサポート"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGO 지원"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGO support"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suporte tenGO"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "tenGO 支持"
+          }
+        }
       }
     },
-    "tutorial.step0_subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Ziehe den Finger von Blase zu Blase.\nDiagonalen sind erlaubt." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Drag your finger from bubble to bubble.\nDiagonals are allowed." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Desliza el dedo de burbuja a burbuja.\nLas diagonales están permitidas." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Glisse le doigt de bulle en bulle.\nLes diagonales sont autorisées." } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Trascina il dito da bolla a bolla.\nLe diagonali sono consentite." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "指でバブルからバブルへドラッグ。\n斜めもOK。" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "손가락으로 방울에서 방울로 드래그.\n대각선도 가능해요." } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Sleep je vinger van bel naar bel.\nDiagonalen zijn toegestaan." } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Arraste o dedo de bolha em bolha.\nDiagonais são permitidas." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "用手指从一个泡泡滑到下一个。\n可以走斜线。" } }
+    "settings.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Einstellungen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Settings"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Paramètres"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impostazioni"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "設定"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "설정"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Instellingen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajustes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "设置"
+          }
+        }
       }
     },
-    "tutorial.step0_title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Verbinde benachbarte Blasen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Connect adjacent bubbles" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Conecta burbujas adyacentes" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Relie des bulles adjacentes" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Collega bolle adiacenti" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "隣り合うバブルをつなげよう" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "인접한 방울을 이으세요" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Verbind aangrenzende bellen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Conecte bolhas adjacentes" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接相邻的泡泡" } }
+    "settings.toggle_off": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aus"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Apagado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muet"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Off"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オフ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "꺼짐"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Uit"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desligado"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "关闭"
+          }
+        }
       }
     },
-    "tutorial.step1_hint" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Gehe zurück, indem du erneut über\ndie letzte ausgewählte Blase fährst." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Go back by passing over\nthe last selected bubble." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Vuelve atrás pasando de nuevo\nsobre la última burbuja seleccionada." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Reviens en arrière en repassant sur\nla dernière bulle sélectionnée." } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Torna indietro passando di nuovo\nsull'ultima bolla selezionata." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "最後に選んだバブルを通過すると\n戻ることができます。" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "마지막으로 선택한 방울 위로\n다시 지나가면 뒤로 갑니다." } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Ga terug door over de laatst\ngeselecteerde bel te bewegen." } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Volte passando de novo pela\núltima bolha selecionada." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "重新滑过最后选中的泡泡\n即可撤回一步。" } }
+    "settings.toggle_on": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ein"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "On"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activado"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activé"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attivo"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "オン"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "켜짐"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aan"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ativado"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开启"
+          }
+        }
       }
     },
-    "tutorial.step1_subtitle" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Nicht mehr, nicht weniger.\nDer Pfad kann 2 bis 9 Blasen haben." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "No more, no less.\nThe path can have 2 to 9 bubbles." } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Ni más, ni menos.\nEl camino puede tener de 2 a 9 burbujas." } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Pas plus, pas moins.\nLe chemin peut avoir 2 à 9 bulles." } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Né più né meno.\nIl percorso può avere da 2 a 9 bolle." } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "多くても少なくてもダメ。\nつなげるのは2〜9個。" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "많아도, 적어도 안 돼요.\n경로는 2~9개의 방울까지." } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Niet meer, niet minder.\nHet pad kan 2 tot 9 bellen bevatten." } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Nem mais, nem menos.\nO caminho pode ter de 2 a 9 bolhas." } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "不多不少。\n路径可以有 2 到 9 个泡泡。" } }
+    "shop.active": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aktiv"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Active"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Activo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actif"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Attivo"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用中"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "사용 중"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Actief"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ativo"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "使用中"
+          }
+        }
       }
     },
-    "tutorial.step1_title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Die Summe muss genau 10 ergeben" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The sum must equal exactly 10" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "La suma debe ser exactamente 10" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "La somme doit faire exactement 10" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "La somma deve essere esattamente 10" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "合計をちょうど10にしよう" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "합은 정확히 10이어야 해요" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "De som moet precies 10 zijn" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "A soma deve ser exatamente 10" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "总和必须正好是 10" } }
+    "shop.back": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Start"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Inicio"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Accueil"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ホーム"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "홈"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Home"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Início"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "主页"
+          }
+        }
       }
     },
-    "tutorial.step2_2_bubbles" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "2 Blasen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "2 bubbles" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "2 burbujas" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "2 bulles" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "2 bolle" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "2個" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "2 방울" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "2 bellen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "2 bolhas" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "2 个泡泡" } }
+    "shop.select": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wählen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Select"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Elegir"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Choisir"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Scegli"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "選ぶ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "선택"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kiezen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Escolher"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "选择"
+          }
+        }
       }
     },
-    "tutorial.step2_3_bubbles" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "3 Blasen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "3 bubbles" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "3 burbujas" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "3 bulles" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "3 bolle" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "3個" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "3 방울" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "3 bellen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "3 bolhas" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "3 个泡泡" } }
+    "shop.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shop"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tienda"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boutique"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Negozio"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ショップ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "상점"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Winkel"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loja"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "商店"
+          }
+        }
       }
     },
-    "tutorial.step2_4_bubbles" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "4 Blasen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "4 bubbles" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "4 burbujas" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "4 bulles" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "4 bolle" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "4個" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "4 방울" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "4 bellen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "4 bolhas" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "4 个泡泡" } }
+    "theme.candy": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonbon"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Candy"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caramelo"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bonbon"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Caramella"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "キャンディ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "사탕"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Snoep"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doce"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "糖果"
+          }
+        }
       }
     },
-    "tutorial.step2_5plus_bubbles" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "5+ Blasen" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "5+ bubbles" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "5+ burbujas" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "5+ bulles" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "5+ bolle" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "5個以上" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "5+ 방울" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "5+ bellen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "5+ bolhas" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "5+ 个泡泡" } }
+    "theme.default": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastell"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastel"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastel"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastel"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastello"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "パステル"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "파스텔"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastel"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pastel"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "粉彩"
+          }
+        }
       }
     },
-    "tutorial.step2_perfect_clear" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "★  Leeres Feld — Bonus +1000 Pkt." } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "★  Grid cleared — Bonus +1000 pts" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "★  Tablero vacío — Bonus +1000 pts" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "★  Grille vide — Bonus +1000 pts" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "★  Griglia vuota — Bonus +1000 pt" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "★  全消し — ボーナス+1000点" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "★  그리드 클리어 — 보너스 +1000점" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "★  Leeg raster — Bonus +1000 pnt" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "★  Grade vazia — Bônus +1000 pts" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "★  清空 — 奖励 +1000 分" } }
+    "theme.desert": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wüste"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desert"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desierto"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Désert"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deserto"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "砂漠"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "사막"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Woestijn"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deserto"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "沙漠"
+          }
+        }
       }
     },
-    "tutorial.step2_title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "Je länger die Kette,\ndesto höher die Punkte!" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "The longer the chain,\nthe more you score!" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "¡Cuanto más larga la cadena,\nmás puntos ganas!" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Plus la chaîne est longue,\nplus tu scores !" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Più lunga è la catena,\npiù alto il punteggio!" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "長くつなげるほど\nスコアが高くなる!" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "사슬이 길수록\n점수가 올라가요!" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Hoe langer de ketting,\nhoe meer punten!" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Quanto maior a sequência,\nmaior sua pontuação!" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "连接越长，\n得分越高！" } }
+    "theme.forest": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Wald"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forest"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bosque"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Forêt"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Foresta"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "森"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "숲"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bos"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Floresta"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "森林"
+          }
+        }
       }
     },
-    "tutorial.title" : {
-      "extractionState" : "manual",
-      "localizations" : {
-        "de" : { "stringUnit" : { "state" : "translated", "value" : "So spielst du" } },
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "How to play" } },
-        "es" : { "stringUnit" : { "state" : "translated", "value" : "Cómo jugar" } },
-        "fr" : { "stringUnit" : { "state" : "translated", "value" : "Comment jouer" } },
-        "it" : { "stringUnit" : { "state" : "translated", "value" : "Come giocare" } },
-        "ja" : { "stringUnit" : { "state" : "translated", "value" : "遊び方" } },
-        "ko" : { "stringUnit" : { "state" : "translated", "value" : "게임 방법" } },
-        "nl" : { "stringUnit" : { "state" : "translated", "value" : "Hoe te spelen" } },
-        "pt-BR" : { "stringUnit" : { "state" : "translated", "value" : "Como jogar" } },
-        "zh-Hans" : { "stringUnit" : { "state" : "translated", "value" : "如何游玩" } }
+    "theme.night": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nacht"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Night"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noche"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nuit"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notte"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夜"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "밤"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nacht"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Noite"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "夜晚"
+          }
+        }
+      }
+    },
+    "theme.ocean": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ozean"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ocean"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océano"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Océan"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oceano"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "海"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "바다"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oceaan"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Oceano"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "海洋"
+          }
+        }
+      }
+    },
+    "theme.space": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weltraum"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Space"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espacio"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espace"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spazio"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "宇宙"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "우주"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ruimte"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Espaço"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "太空"
+          }
+        }
+      }
+    },
+    "tutorial.next_button": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiter ›"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Next ›"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Siguiente ›"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Suivant ›"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Avanti ›"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "次へ ›"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "다음 ›"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volgende ›"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Próximo ›"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "下一步 ›"
+          }
+        }
+      }
+    },
+    "tutorial.play_button": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spielen!"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Play!"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¡Jugar!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jouer !"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gioca!"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "プレイ!"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "시작!"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Spelen!"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Jogar!"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "开始游戏！"
+          }
+        }
+      }
+    },
+    "tutorial.previous_button": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‹ Zurück"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‹ Previous"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‹ Anterior"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‹ Précédent"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‹ Precedente"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‹ 前へ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‹ 이전"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‹ Vorige"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‹ Anterior"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "‹ 上一步"
+          }
+        }
+      }
+    },
+    "tutorial.step0_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ziehe den Finger von Blase zu Blase.\nDiagonalen sind erlaubt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Drag your finger from bubble to bubble.\nDiagonals are allowed."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Desliza el dedo de burbuja a burbuja.\nLas diagonales están permitidas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Glisse le doigt de bulle en bulle.\nLes diagonales sont autorisées."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Trascina il dito da bolla a bolla.\nLe diagonali sono consentite."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "指でバブルからバブルへドラッグ。\n斜めもOK。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "손가락으로 방울에서 방울로 드래그.\n대각선도 가능해요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sleep je vinger van bel naar bel.\nDiagonalen zijn toegestaan."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Arraste o dedo de bolha em bolha.\nDiagonais são permitidas."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "用手指从一个泡泡滑到下一个。\n可以走斜线。"
+          }
+        }
+      }
+    },
+    "tutorial.step0_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbinde benachbarte Blasen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Connect adjacent bubbles"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecta burbujas adyacentes"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Relie des bulles adjacentes"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Collega bolle adiacenti"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "隣り合うバブルをつなげよう"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "인접한 방울을 이으세요"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verbind aangrenzende bellen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Conecte bolhas adjacentes"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接相邻的泡泡"
+          }
+        }
+      }
+    },
+    "tutorial.step1_hint": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Gehe zurück, indem du erneut über\ndie letzte ausgewählte Blase fährst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Go back by passing over\nthe last selected bubble."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vuelve atrás pasando de nuevo\nsobre la última burbuja seleccionada."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reviens en arrière en repassant sur\nla dernière bulle sélectionnée."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Torna indietro passando di nuovo\nsull'ultima bolla selezionata."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "最後に選んだバブルを通過すると\n戻ることができます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "마지막으로 선택한 방울 위로\n다시 지나가면 뒤로 갑니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ga terug door over de laatst\ngeselecteerde bel te bewegen."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Volte passando de novo pela\núltima bolha selecionada."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新滑过最后选中的泡泡\n即可撤回一步。"
+          }
+        }
+      }
+    },
+    "tutorial.step1_subtitle": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nicht mehr, nicht weniger.\nDer Pfad kann 2 bis 9 Blasen haben."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No more, no less.\nThe path can have 2 to 9 bubbles."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ni más, ni menos.\nEl camino puede tener de 2 a 9 burbujas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pas plus, pas moins.\nLe chemin peut avoir 2 à 9 bulles."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Né più né meno.\nIl percorso può avere da 2 a 9 bolle."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "多くても少なくてもダメ。\nつなげるのは2〜9個。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "많아도, 적어도 안 돼요.\n경로는 2~9개의 방울까지."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Niet meer, niet minder.\nHet pad kan 2 tot 9 bellen bevatten."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nem mais, nem menos.\nO caminho pode ter de 2 a 9 bolhas."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "不多不少。\n路径可以有 2 到 9 个泡泡。"
+          }
+        }
+      }
+    },
+    "tutorial.step1_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Die Summe muss genau 10 ergeben"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The sum must equal exactly 10"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La suma debe ser exactamente 10"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La somme doit faire exactement 10"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "La somma deve essere esattamente 10"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合計をちょうど10にしよう"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "합은 정확히 10이어야 해요"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "De som moet precies 10 zijn"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "A soma deve ser exatamente 10"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "总和必须正好是 10"
+          }
+        }
+      }
+    },
+    "tutorial.step2_2_bubbles": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 Blasen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 bubbles"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 burbujas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 bulles"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 bolle"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2個"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 방울"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 bellen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 bolhas"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "2 个泡泡"
+          }
+        }
+      }
+    },
+    "tutorial.step2_3_bubbles": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 Blasen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 bubbles"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 burbujas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 bulles"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 bolle"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3個"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 방울"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 bellen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 bolhas"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "3 个泡泡"
+          }
+        }
+      }
+    },
+    "tutorial.step2_4_bubbles": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 Blasen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 bubbles"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 burbujas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 bulles"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 bolle"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4個"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 방울"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 bellen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 bolhas"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "4 个泡泡"
+          }
+        }
+      }
+    },
+    "tutorial.step2_5plus_bubbles": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5+ Blasen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5+ bubbles"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5+ burbujas"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5+ bulles"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5+ bolle"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5個以上"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5+ 방울"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5+ bellen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5+ bolhas"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "5+ 个泡泡"
+          }
+        }
+      }
+    },
+    "tutorial.step2_perfect_clear": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Leeres Feld — Bonus +1000 Pkt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Grid cleared — Bonus +1000 pts"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Tablero vacío — Bonus +1000 pts"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Grille vide — Bonus +1000 pts"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Griglia vuota — Bonus +1000 pt"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  全消し — ボーナス+1000点"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  그리드 클리어 — 보너스 +1000점"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Leeg raster — Bonus +1000 pnt"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  Grade vazia — Bônus +1000 pts"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "★  清空 — 奖励 +1000 分"
+          }
+        }
+      }
+    },
+    "tutorial.step2_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je länger die Kette,\ndesto höher die Punkte!"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "The longer the chain,\nthe more you score!"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¡Cuanto más larga la cadena,\nmás puntos ganas!"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus la chaîne est longue,\nplus tu scores !"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Più lunga è la catena,\npiù alto il punteggio!"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "長くつなげるほど\nスコアが高くなる!"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "사슬이 길수록\n점수가 올라가요!"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoe langer de ketting,\nhoe meer punten!"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Quanto maior a sequência,\nmaior sua pontuação!"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "连接越长，\n得分越高！"
+          }
+        }
+      }
+    },
+    "tutorial.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "So spielst du"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "How to play"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cómo jugar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Comment jouer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Come giocare"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "遊び方"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "게임 방법"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Hoe te spelen"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Como jogar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "如何游玩"
+          }
+        }
       }
     }
   },
-  "version" : "1.0"
+  "version": "1.0"
 }

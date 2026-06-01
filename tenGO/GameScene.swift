@@ -14,15 +14,30 @@ class GameScene: SKScene {
 
     // MARK: - Init
 
+    enum Mode { case normal, daily }
+
+    private let mode: Mode
+    private var dailyToday: DailyChallenge.Today?
+    private var obstacleNodes: [SKNode] = []
+
     private var savedState: GameState?
     private var homeBubbleNode: SKNode!
 
     init(size: CGSize, savedState: GameState? = nil) {
         self.savedState = savedState
+        self.mode = .normal
+        super.init(size: size)
+    }
+
+    /// Mode Défi du jour : grille déterministe + twist, identique pour tous.
+    init(size: CGSize, daily: DailyChallenge.Today) {
+        self.mode = .daily
+        self.dailyToday = daily
         super.init(size: size)
     }
 
     required init?(coder aDecoder: NSCoder) {
+        self.mode = .normal
         super.init(coder: aDecoder)
     }
 
@@ -82,15 +97,20 @@ class GameScene: SKScene {
     override func sceneDidLoad() {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         removeAllChildren()
-        backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
+        backgroundColor = ThemeManager.shared.active.background
         setupBackground()
         setupUI()
-        if let state = savedState {
+        if mode == .daily, let today = dailyToday {
+            gridModel = today.grid
+        } else if let state = savedState {
             gridModel = GridModel(from: state)
             score = state.score
             scoreLabel.text = "\(score)"
         }
         setupGrid()
+        StreakManager.shared.registerPlay()
+        CoinManager.shared.awardStreakMilestones(currentStreak: StreakManager.shared.current)
+        NotificationManager.shared.registerGameAndMaybeRequest()
     }
 
     override func didMove(to view: SKView) {
@@ -170,17 +190,7 @@ class GameScene: SKScene {
 
     // MARK: - Background
 
-    private let bubbleColors: [UIColor] = [
-        UIColor(red: 0.98, green: 0.72, blue: 0.68, alpha: 1),
-        UIColor(red: 0.99, green: 0.84, blue: 0.70, alpha: 1),
-        UIColor(red: 0.99, green: 0.95, blue: 0.72, alpha: 1),
-        UIColor(red: 0.78, green: 0.94, blue: 0.82, alpha: 1),
-        UIColor(red: 0.72, green: 0.88, blue: 0.98, alpha: 1),
-        UIColor(red: 0.82, green: 0.78, blue: 0.97, alpha: 1),
-        UIColor(red: 0.98, green: 0.78, blue: 0.88, alpha: 1),
-        UIColor(red: 0.80, green: 0.91, blue: 0.80, alpha: 1),
-        UIColor(red: 0.76, green: 0.82, blue: 0.97, alpha: 1),
-    ]
+    private var bubbleColors: [UIColor] { ThemeManager.shared.active.bubbles }
 
     private func setupBackground() {
         let configs: [(radius: CGFloat, x: CGFloat, y: CGFloat, colorIdx: Int, duration: Double)] = [
@@ -215,7 +225,7 @@ class GameScene: SKScene {
         let ten = SKLabelNode(text: "TEN")
         ten.fontName = "AvenirNext-Heavy"
         ten.fontSize = 48
-        ten.fontColor = UIColor(white: 0.28, alpha: 1)
+        ten.fontColor = ThemeManager.shared.active.logo
         ten.verticalAlignmentMode = .center
         ten.horizontalAlignmentMode = .right
         ten.position = CGPoint(x: -14, y: logoY)
@@ -235,7 +245,7 @@ class GameScene: SKScene {
         let go = SKLabelNode(text: "GO")
         go.fontName = "AvenirNext-Heavy"
         go.fontSize = 48
-        go.fontColor = UIColor(white: 0.28, alpha: 1)
+        go.fontColor = ThemeManager.shared.active.logo
         go.verticalAlignmentMode = .center
         go.horizontalAlignmentMode = .left
         go.position = CGPoint(x: 14, y: logoY)
@@ -329,16 +339,37 @@ class GameScene: SKScene {
         restartButton.name = "restartButton"
         restartButton.position = .zero
         restartBubble.addChild(restartButton)
+
+        // Mode Défi : pas de rejeu (une seule partie par jour) → bouton masqué.
+        restartBubble.isHidden = (mode == .daily)
     }
 
     private func setupGrid() {
+        renderObstacles()
         for row in 0..<GridModel.rows {
             for col in 0..<GridModel.cols {
                 guard let model = gridModel.cells[row][col] else { continue }
                 let node = BubbleNode(value: model.value)
                 node.position = scenePos(row: row, col: col)
+                if model.isAnchored { node.setAnchored(true) }
+                if model.isFrozen { node.setFrozen(true) }
                 addChild(node)
                 bubbleNodes[row][col] = node
+            }
+        }
+    }
+
+    /// Place les pierres-obstacles du Défi du jour (cases bloquées, statiques).
+    private func renderObstacles() {
+        obstacleNodes.forEach { $0.removeFromParent() }
+        obstacleNodes.removeAll()
+        for row in 0..<GridModel.rows {
+            for col in 0..<GridModel.cols where gridModel.blocked[row][col] {
+                let stone = BubbleNode.makeObstacle(cellSize: GameScene.cellSize)
+                stone.position = scenePos(row: row, col: col)
+                stone.zPosition = 0
+                addChild(stone)
+                obstacleNodes.append(stone)
             }
         }
     }
@@ -416,9 +447,9 @@ class GameScene: SKScene {
             return  // bloquer le reste du touch si panel visible
         }
 
-        // Bulle restart — toujours réactive
+        // Bulle restart — réactive uniquement en mode normal (pas de rejeu en Défi)
         let dist = hypot(point.x - restartBubbleNode.position.x, point.y - restartBubbleNode.position.y)
-        if dist < 55 {
+        if mode == .normal && dist < 55 {
             restartBubbleNode.run(SKAction.sequence([
                 SKAction.scale(to: 0.88, duration: 0.08),
                 SKAction.scale(to: 1.0, duration: 0.12)
@@ -429,6 +460,8 @@ class GameScene: SKScene {
 
         guard !isAnimating else { return }
         guard let coord = gridCoord(for: point) else { return }
+        // Une bulle gelée est intraversable tant que le givre n'a pas fondu.
+        if gridModel.cells[coord.row][coord.col]?.isFrozen == true { return }
 
         currentPath = [coord]
         bubbleNodes[coord.row][coord.col]?.setSelected(true)
@@ -487,8 +520,8 @@ class GameScene: SKScene {
               coord.col >= 0, coord.col < GridModel.cols else { return false }
         // Déjà dans le chemin
         if currentPath.contains(where: { $0.row == coord.row && $0.col == coord.col }) { return false }
-        // Cellule non vide
-        guard let bubble = gridModel.cells[coord.row][coord.col] else { return false }
+        // Cellule non vide et non gelée
+        guard let bubble = gridModel.cells[coord.row][coord.col], !bubble.isFrozen else { return false }
         // Contrainte de somme
         guard gridModel.pathSum(currentPath) + bubble.value <= 10 else { return false }
 
@@ -624,6 +657,10 @@ class GameScene: SKScene {
         }
         gridModel.removeBubbles(at: pathCopy)
 
+        // Défi du jour : un chemin adjacent fait fondre le givre des bulles gelées.
+        let thawed = gridModel.thawFrozenBubbles(adjacentTo: pathCopy)
+        for pos in thawed { bubbleNodes[pos.row][pos.col]?.thaw() }
+
         run(SKAction.sequence([
             SKAction.wait(forDuration: 0.26),
             SKAction.run { [weak self] in self?.afterPop() }
@@ -676,6 +713,23 @@ class GameScene: SKScene {
 
     // MARK: - Win / Lose
 
+    /// Enregistre le score de fin de partie selon le mode.
+    private func recordScore() {
+        switch mode {
+        case .normal:
+            GameState.addScore(score)
+            GameCenterManager.shared.submitScore(score)
+            GameState.clear()
+        case .daily:
+            // Pièces offertes une seule fois, à la première complétion du jour.
+            if !DailyChallenge.isCompletedToday() {
+                CoinManager.shared.awardDailyChallenge()
+            }
+            DailyChallenge.markCompleted()
+            GameCenterManager.shared.submitDailyScore(score)
+        }
+    }
+
     private func triggerWin() {
         SoundManager.shared.playWin()
         InterstitialAdManager.shared.markGameCompleted()
@@ -684,9 +738,7 @@ class GameScene: SKScene {
         score += bonus
         updateScoreLabel()
         showScorePopup(points: bonus, at: CGPoint(x: 0, y: 50))
-        GameState.addScore(score)
-        GameCenterManager.shared.submitScore(score)
-        GameState.clear()
+        recordScore()
         run(SKAction.wait(forDuration: 0.5)) { [weak self] in
             self?.showGameOverPanel()
         }
@@ -714,9 +766,7 @@ class GameScene: SKScene {
                         self.bubbleNodes[row][col]?.run(SKAction.fadeAlpha(to: 0.12, duration: 0.4))
                     }
                 }
-                GameState.addScore(self.score)
-                GameCenterManager.shared.submitScore(self.score)
-                GameState.clear()
+                self.recordScore()
             },
             SKAction.wait(forDuration: 0.5),
             SKAction.run { [weak self] in self?.showGameOverPanel() }
@@ -836,29 +886,31 @@ class GameScene: SKScene {
         sep2.position = CGPoint(x: 0, y: -76)
         panel.addChild(sep2)
 
-        // Bouton Rejouer
-        let replayBtn = SKNode()
-        replayBtn.name = "replayBtn"
-        replayBtn.position = CGPoint(x: 0, y: -140)
-        panel.addChild(replayBtn)
+        // Bouton Rejouer — masqué en mode Défi (une seule partie par jour).
+        if mode == .normal {
+            let replayBtn = SKNode()
+            replayBtn.name = "replayBtn"
+            replayBtn.position = CGPoint(x: 0, y: -140)
+            panel.addChild(replayBtn)
 
-        let replayBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
-        replayBg.fillColor = UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1)
-        replayBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
-        replayBg.lineWidth = 1
-        replayBtn.addChild(replayBg)
+            let replayBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
+            replayBg.fillColor = UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1)
+            replayBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+            replayBg.lineWidth = 1
+            replayBtn.addChild(replayBg)
 
-        let replayLabel = SKLabelNode(text: String(localized: "game_over.replay"))
-        replayLabel.fontName = "AvenirNext-Medium"
-        replayLabel.fontSize = 24
-        replayLabel.fontColor = UIColor(white: 0.26, alpha: 1)
-        replayLabel.verticalAlignmentMode = .center
-        replayBtn.addChild(replayLabel)
+            let replayLabel = SKLabelNode(text: String(localized: "game_over.replay"))
+            replayLabel.fontName = "AvenirNext-Medium"
+            replayLabel.fontSize = 24
+            replayLabel.fontColor = UIColor(white: 0.26, alpha: 1)
+            replayLabel.verticalAlignmentMode = .center
+            replayBtn.addChild(replayLabel)
+        }
 
-        // Bouton Accueil
+        // Bouton Accueil — action principale en mode Défi (remonte si pas de Rejouer).
         let homeBtn = SKNode()
         homeBtn.name = "homePanelBtn"
-        homeBtn.position = CGPoint(x: 0, y: -204)
+        homeBtn.position = CGPoint(x: 0, y: mode == .daily ? -150 : -204)
         panel.addChild(homeBtn)
 
         let homeBg = SKShapeNode(rectOf: CGSize(width: 200, height: 52), cornerRadius: 26)
@@ -919,7 +971,7 @@ class GameScene: SKScene {
     private func performReset() {
         isAnimating = true
         messageLabel.isHidden = true
-        backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
+        backgroundColor = ThemeManager.shared.active.background
         score = 0
         combosCreated = 0
         longestChain = 0
@@ -950,7 +1002,12 @@ class GameScene: SKScene {
             SKAction.wait(forDuration: 0.25),
             SKAction.run { [weak self] in
                 guard let self = self else { return }
-                self.gridModel = GridModel()
+                // Défi du jour : on rejoue la MÊME grille (déterministe), pas une nouvelle.
+                if self.mode == .daily, let today = self.dailyToday {
+                    self.gridModel = today.grid
+                } else {
+                    self.gridModel = GridModel()
+                }
                 self.bubbleNodes = [[BubbleNode?]](
                     repeating: [BubbleNode?](repeating: nil, count: GridModel.cols),
                     count: GridModel.rows
@@ -961,6 +1018,7 @@ class GameScene: SKScene {
     }
 
     private func setupGridAnimated() {
+        renderObstacles()
         var delay: TimeInterval = 0
         let stagger: TimeInterval = 0.012
 
@@ -969,6 +1027,8 @@ class GameScene: SKScene {
                 guard let model = gridModel.cells[row][col] else { continue }
                 let node = BubbleNode(value: model.value)
                 node.position = scenePos(row: row, col: col)
+                if model.isAnchored { node.setAnchored(true) }
+                if model.isFrozen { node.setFrozen(true) }
                 node.setScale(0)
                 node.alpha = 0
                 addChild(node)
@@ -994,7 +1054,8 @@ class GameScene: SKScene {
     // MARK: - Navigation
 
     private func goBackToMenu() {
-        if !gridModel.isGridEmpty() && !isAnimating {
+        // Le Défi du jour ne se sauvegarde pas dans le slot « Continuer » du mode normal.
+        if mode == .normal && !gridModel.isGridEmpty() && !isAnimating {
             GameState.save(gridModel: gridModel, score: score)
         }
         let rootVC = view?.window?.rootViewController ?? UIViewController()
