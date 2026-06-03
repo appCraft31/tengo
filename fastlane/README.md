@@ -55,6 +55,14 @@ Upload screenshots uniquement (sans build) — toutes les langues
 
 Met à jour MARKETING_VERSION — usage : bundle exec fastlane bump_version version:1.3
 
+### ios release_notes
+
+```sh
+[bundle exec] fastlane ios release_notes
+```
+
+Envoie les métadonnées (notes de version) sur App Store Connect — sans binaire ni screenshots
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
