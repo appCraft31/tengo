@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  Manifeste de confidentialité au niveau de l'app (tenGO).
+  Les SDK (Firebase, Google Mobile Ads) embarquent déjà leur propre .xcprivacy ;
+  ce fichier déclare UNIQUEMENT ce qui relève de l'app elle-même.
+
+  À garder cohérent avec les "Privacy Nutrition Labels" d'App Store Connect.
+  Les types de données ci-dessous reflètent l'usage d'Analytics + AdMob (IDFA).
+  Si tu passes à FirebaseAnalytics/WithoutAdIdSupport et retires AdMob,
+  repasse NSPrivacyTracking à false et retire les entrées de tracking.
+-->
+<plist version="1.0">
+<dict>
+	<!-- L'app utilise des données à des fins de suivi (IDFA via AdMob). -->
+	<key>NSPrivacyTracking</key>
+	<true/>
+
+	<!-- Domaines contactés à des fins de tracking. À VÉRIFIER avec l'outil
+	     Instruments « Network » : seuls les domaines réellement utilisés pour
+	     le suivi doivent figurer ici (sinon ils sont bloqués si l'ATT est refusé). -->
+	<key>NSPrivacyTrackingDomains</key>
+	<array>
+		<string>app-measurement.com</string>
+		<string>googleads.g.doubleclick.net</string>
+		<string>googleadservices.com</string>
+	</array>
+
+	<!-- Types de données collectées. À aligner sur App Store Connect. -->
+	<key>NSPrivacyCollectedDataTypes</key>
+	<array>
+		<!-- Identifiant appareil (IDFA / App Instance ID) -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeDeviceID</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeThirdPartyAdvertising</string>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<!-- Données publicitaires (AdMob) -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeAdvertisingData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<true/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeThirdPartyAdvertising</string>
+			</array>
+		</dict>
+		<!-- Interaction produit (événements Analytics) -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeProductInteraction</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+		<!-- Autres données d'utilisation -->
+		<dict>
+			<key>NSPrivacyCollectedDataType</key>
+			<string>NSPrivacyCollectedDataTypeOtherUsageData</string>
+			<key>NSPrivacyCollectedDataTypeLinked</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypeTracking</key>
+			<false/>
+			<key>NSPrivacyCollectedDataTypePurposes</key>
+			<array>
+				<string>NSPrivacyCollectedDataTypePurposeAnalytics</string>
+			</array>
+		</dict>
+	</array>
+
+	<!-- API « required reason » utilisées par le code de l'app.
+	     UserDefaults : accès aux données de la même app (raison CA92.1). -->
+	<key>NSPrivacyAccessedAPITypes</key>
+	<array>
+		<dict>
+			<key>NSPrivacyAccessedAPIType</key>
+			<string>NSPrivacyAccessedAPICategoryUserDefaults</string>
+			<key>NSPrivacyAccessedAPITypeReasons</key>
+			<array>
+				<string>CA92.1</string>
+			</array>
+		</dict>
+	</array>
+</dict>
+</plist>
