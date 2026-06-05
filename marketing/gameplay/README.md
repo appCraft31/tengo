@@ -43,6 +43,35 @@ marketing/gameplay/edit-social.sh marketing/gameplay/raw-gameplay.mov
 
 Le recadrage 9:16 retire la Dynamic Island en haut et le home-indicator en bas.
 
+## Bumper de transition de marque (UGC → gameplay)
+
+Écran de marque animé (logo TEN•GO « pop + flash ») servant de transition entre
+une séquence UGC et la séquence gameplay dans les publicités.
+
+```bash
+marketing/gameplay/record-brand.sh
+# → raw-brand.mov + brand-transition.mp4 (1080×1920, ~1s)
+```
+
+| Var        | Déf.   | Rôle                                  |
+|------------|--------|---------------------------------------|
+| `DURATION` | `6`    | Durée de capture brute (s)            |
+| `START`    | `2.4`  | Début du cycle isolé (ouvre sur le flash) |
+| `CLIP_DUR` | `1.0`  | Durée du bumper (s)                    |
+| `W` / `H`  | 1080/1920 | Résolution                         |
+
+Le clip ouvre sur un flash blanc puis révèle le logo — fond à bulles identique
+au gameplay, pour un raccord visuel parfait. Rendu par `BrandTransitionScene`
+(env `BRAND_MODE=1`), animation bouclée pour une capture sans timing critique.
+
+### Assembler une pub complète
+
+```bash
+# concaténation : UGC → bumper → gameplay (mêmes dimensions 1080×1920)
+ffmpeg -i ugc.mp4 -i brand-transition.mp4 -i gameplay-social.mp4 \
+  -filter_complex "[0:v][1:v][2:v]concat=n=3:v=1:a=0[v]" -map "[v]" pub.mp4
+```
+
 ## Comment ça marche
 
 - **Mode démo** : `GameScene` initialisé via `GameScene(size:demoSeed:demoSpeed:)`,

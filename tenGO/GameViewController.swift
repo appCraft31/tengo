@@ -26,7 +26,10 @@ class GameViewController: UIViewController {
 
         let scene: SKScene
         let env = ProcessInfo.processInfo.environment
-        if env["DEMO_MODE"] == "1" {
+        if env["BRAND_MODE"] == "1" {
+            // Capture vidéo marketing : écran de marque animé (transition).
+            scene = BrandTransitionScene(size: CGSize(width: 750, height: 1334))
+        } else if env["DEMO_MODE"] == "1" {
             // Capture vidéo marketing : grille déterministe jouée par l'auto-player.
             let seed = UInt64(env["DEMO_SEED"] ?? "") ?? 7
             let speed = Double(env["DEMO_SPEED"] ?? "") ?? 1.0
@@ -68,7 +71,7 @@ class GameViewController: UIViewController {
         // Lien entrant reçu avant que l'observateur ne soit prêt (lancement à froid).
         if DeepLink.pendingDaily { openDaily() }
         let env = ProcessInfo.processInfo.environment
-        guard env["SCREENSHOT_DAILY"] != "1", env["DEMO_MODE"] != "1" else { return }
+        guard env["SCREENSHOT_DAILY"] != "1", env["DEMO_MODE"] != "1", env["BRAND_MODE"] != "1" else { return }
         guard !consentGathered else { return }
         consentGathered = true
 
