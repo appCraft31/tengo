@@ -21,3 +21,8 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/
 fastlane/test_output/
+
+# Marketing — médias de gameplay générés (capture + montage)
+marketing/gameplay/*.mov
+marketing/gameplay/*.mp4
+marketing/gameplay/frames/

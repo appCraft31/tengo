@@ -14,11 +14,19 @@ class GameScene: SKScene {
 
     // MARK: - Init
 
-    enum Mode { case normal, daily }
+    enum Mode { case normal, daily, demo }
 
     private let mode: Mode
     private var dailyToday: DailyChallenge.Today?
     private var obstacleNodes: [SKNode] = []
+
+    // MARK: - Démo (auto-player, capture vidéo marketing)
+    /// Graine de la grille en mode démo (grilles déterministes, reproductibles).
+    private var demoSeed: UInt64 = 0
+    /// Multiplicateur de vitesse du tracé en démo (>1 = plus rapide / énergique).
+    private var demoSpeed: Double = 1.0
+    /// Compteur de grilles enchaînées : décale la graine à chaque relance.
+    private var demoRound = 0
 
     private var savedState: GameState?
     private var homeBubbleNode: SKNode!
@@ -33,6 +41,15 @@ class GameScene: SKScene {
     init(size: CGSize, daily: DailyChallenge.Today) {
         self.mode = .daily
         self.dailyToday = daily
+        super.init(size: size)
+    }
+
+    /// Mode démo : grille déterministe (graine) jouée automatiquement par le
+    /// solveur, pour produire une capture vidéo de gameplay (marketing).
+    init(size: CGSize, demoSeed: UInt64, demoSpeed: Double = 1.0) {
+        self.mode = .demo
+        self.demoSeed = demoSeed
+        self.demoSpeed = max(0.25, demoSpeed)
         super.init(size: size)
     }
 
@@ -102,12 +119,25 @@ class GameScene: SKScene {
         setupUI()
         if mode == .daily, let today = dailyToday {
             gridModel = today.grid
+        } else if mode == .demo {
+            var generator = SeededGenerator(seed: demoSeed)
+            gridModel = GridModel(using: &generator)
         } else if let state = savedState {
             gridModel = GridModel(from: state)
             score = state.score
             scoreLabel.text = "\(score)"
         }
         setupGrid()
+
+        // En démo : pas d'effets de bord (séries, pièces, notifications),
+        // on masque les boutons parasites et on lance l'auto-player.
+        guard mode != .demo else {
+            homeBubbleNode.isHidden = true
+            restartBubbleNode.isHidden = true
+            startDemo()
+            return
+        }
+
         StreakManager.shared.registerPlay()
         CoinManager.shared.awardStreakMilestones(currentStreak: StreakManager.shared.current)
         NotificationManager.shared.registerGameAndMaybeRequest()
@@ -121,6 +151,7 @@ class GameScene: SKScene {
     }
 
     private func setupSettingsButton(in view: SKView) {
+        guard mode != .demo else { return }   // pas de chrome parasite en capture vidéo
         let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
         let visibleW = view.bounds.width / scale
         let visibleH = view.bounds.height / scale
@@ -371,6 +402,7 @@ class GameScene: SKScene {
     // MARK: - Touch handling
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard mode != .demo else { return }   // démo pilotée par l'auto-player
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
 
@@ -658,7 +690,7 @@ class GameScene: SKScene {
 
     private func afterPop() {
         if gridModel.isGridEmpty() {
-            triggerWin()
+            if mode == .demo { demoReseed() } else { triggerWin() }
             return
         }
 
@@ -694,7 +726,7 @@ class GameScene: SKScene {
 
     private func afterGravity() {
         if !gridModel.hasValidMove() {
-            triggerLose()
+            if mode == .demo { demoReseed() } else { triggerLose() }
         } else {
             isAnimating = false
         }
@@ -716,6 +748,8 @@ class GameScene: SKScene {
             }
             DailyChallenge.markCompleted()
             GameCenterManager.shared.submitDailyScore(score)
+        case .demo:
+            break   // démo : aucun score enregistré ni soumis
         }
     }
 
@@ -1057,6 +1091,104 @@ class GameScene: SKScene {
             SKAction.wait(forDuration: delay + 0.15),
             SKAction.run { [weak self] in self?.isAnimating = false }
         ]))
+    }
+
+    // MARK: - Démo / auto-player
+
+    /// Démarre la boucle d'auto-jeu après un court délai (laisse la grille s'installer).
+    private func startDemo() {
+        run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.6),
+            SKAction.run { [weak self] in self?.autoPlayNext() }
+        ]), withKey: "demoLoop")
+    }
+
+    /// Joue le prochain coup : attend la fin des animations, demande un chemin au
+    /// solveur, l'anime « comme un doigt », puis se rappelle. Relance une grille
+    /// quand il n'y a plus de coup.
+    private func autoPlayNext() {
+        guard mode == .demo else { return }
+        if isAnimating {
+            run(SKAction.sequence([
+                SKAction.wait(forDuration: 0.04),
+                SKAction.run { [weak self] in self?.autoPlayNext() }
+            ]), withKey: "demoLoop")
+            return
+        }
+        guard let path = gridModel.showcasePath(maxLen: 5), path.count >= 2 else {
+            demoReseed()
+            return
+        }
+        animateDemoPath(path)
+    }
+
+    /// Anime le tracé du chemin cellule par cellule (sélection + trail + sons),
+    /// valide, puis enchaîne le coup suivant.
+    private func animateDemoPath(_ path: [(row: Int, col: Int)]) {
+        let step = 0.085 / demoSpeed
+        let commitPause = 0.14 / demoSpeed
+
+        var actions: [SKAction] = [
+            SKAction.run { [weak self] in self?.demoBeginPath(at: path[0]) }
+        ]
+        for coord in path.dropFirst() {
+            actions.append(SKAction.wait(forDuration: step))
+            actions.append(SKAction.run { [weak self] in self?.tryAppendCell(coord) })
+        }
+        actions.append(SKAction.wait(forDuration: commitPause))
+        actions.append(SKAction.run { [weak self] in
+            guard let self else { return }
+            if self.gridModel.pathSum(self.currentPath) == 10 {
+                HapticManager.medium()
+                self.commitPath()
+            } else {
+                self.cancelPath()
+            }
+        })
+        // commitPath passe isAnimating à true ; autoPlayNext attendra la fin.
+        actions.append(SKAction.run { [weak self] in self?.autoPlayNext() })
+        run(SKAction.sequence(actions), withKey: "demoLoop")
+    }
+
+    /// Amorce un chemin sur `coord` (équivalent d'un touchesBegan).
+    private func demoBeginPath(at coord: (row: Int, col: Int)) {
+        currentPath = [coord]
+        bubbleNodes[coord.row][coord.col]?.setSelected(true)
+        let value = gridModel.cells[coord.row][coord.col]?.value ?? 1
+        SoundManager.shared.playSelect(bubbleValue: value)
+        updatePathLine()
+    }
+
+    /// Vide la grille et en regénère une nouvelle (graine décalée) pour enchaîner
+    /// les parties en boucle. Le score continue de grimper (effet « ça monte »).
+    private func demoReseed() {
+        guard mode == .demo else { return }
+        isAnimating = true
+        demoRound += 1
+
+        let fadeOut = SKAction.sequence([
+            SKAction.fadeOut(withDuration: 0.18 / demoSpeed),
+            SKAction.removeFromParent()
+        ])
+        for row in 0..<GridModel.rows {
+            for col in 0..<GridModel.cols { bubbleNodes[row][col]?.run(fadeOut) }
+        }
+
+        run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.24 / demoSpeed),
+            SKAction.run { [weak self] in
+                guard let self else { return }
+                var generator = SeededGenerator(seed: self.demoSeed &+ UInt64(self.demoRound))
+                self.gridModel = GridModel(using: &generator)
+                self.bubbleNodes = [[BubbleNode?]](
+                    repeating: [BubbleNode?](repeating: nil, count: GridModel.cols),
+                    count: GridModel.rows
+                )
+                self.setupGridAnimated()   // remet isAnimating à false en fin d'apparition
+            },
+            SKAction.wait(forDuration: 0.2 / demoSpeed),
+            SKAction.run { [weak self] in self?.autoPlayNext() }
+        ]), withKey: "demoLoop")
     }
 
     // MARK: - Navigation
