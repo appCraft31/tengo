@@ -25,7 +25,16 @@ class GameViewController: UIViewController {
         #endif
 
         let scene: SKScene
-        if ProcessInfo.processInfo.environment["SCREENSHOT_DAILY"] == "1" {
+        let env = ProcessInfo.processInfo.environment
+        if env["BRAND_MODE"] == "1" {
+            // Capture vidéo marketing : écran de marque animé (transition).
+            scene = BrandTransitionScene(size: CGSize(width: 750, height: 1334))
+        } else if env["DEMO_MODE"] == "1" {
+            // Capture vidéo marketing : grille déterministe jouée par l'auto-player.
+            let seed = UInt64(env["DEMO_SEED"] ?? "") ?? 7
+            let speed = Double(env["DEMO_SPEED"] ?? "") ?? 1.0
+            scene = GameScene(size: CGSize(width: 750, height: 1334), demoSeed: seed, demoSpeed: speed)
+        } else if env["SCREENSHOT_DAILY"] == "1" {
             scene = GameScene(size: CGSize(width: 750, height: 1334), daily: DailyChallenge.make())
         } else {
             scene = MenuScene(size: CGSize(width: 750, height: 1334))
@@ -61,7 +70,8 @@ class GameViewController: UIViewController {
         super.viewDidAppear(animated)
         // Lien entrant reçu avant que l'observateur ne soit prêt (lancement à froid).
         if DeepLink.pendingDaily { openDaily() }
-        guard ProcessInfo.processInfo.environment["SCREENSHOT_DAILY"] != "1" else { return }
+        let env = ProcessInfo.processInfo.environment
+        guard env["SCREENSHOT_DAILY"] != "1", env["DEMO_MODE"] != "1", env["BRAND_MODE"] != "1" else { return }
         guard !consentGathered else { return }
         consentGathered = true
 
