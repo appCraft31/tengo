@@ -114,8 +114,9 @@ platform :ios do
   end
 
   desc "Envoie les métadonnées (notes de version) sur App Store Connect — sans binaire ni screenshots"
-  lane :release_notes do
-    version = get_version_number(xcodeproj: "tenGO.xcodeproj", target: "tenGO")
+  desc "Usage : bundle exec fastlane release_notes [version:1.8]"
+  lane :release_notes do |options|
+    version = options[:version] || get_version_number(xcodeproj: "tenGO.xcodeproj", target: "tenGO")
     deliver(
       api_key: api_key,
       app_version: version,

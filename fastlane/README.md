@@ -63,6 +63,8 @@ Met à jour MARKETING_VERSION — usage : bundle exec fastlane bump_version vers
 
 Envoie les métadonnées (notes de version) sur App Store Connect — sans binaire ni screenshots
 
+Usage : bundle exec fastlane release_notes [version:1.8]
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
