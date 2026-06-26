@@ -44,14 +44,19 @@ final class CoinManager {
 
     // MARK: - Gains
 
-    /// Pièces gagnées par tranche de score en partie normale (1 pièce / 200 pts).
-    static let scoreCoinDivisor = 200
+    /// Récompense de fin de partie normale : forfait de base + bonus au score,
+    /// plafonné. Garantit un gain motivant même sur une petite partie.
+    /// pièces = min(scoreCoinMax, scoreCoinBase + score / scoreCoinDivisor)
+    static let scoreCoinBase = 5
+    static let scoreCoinDivisor = 120
+    static let scoreCoinMax = 10
 
-    /// Récompense la fin d'une partie normale au prorata du score réalisé.
-    /// Retourne le nombre de pièces créditées (0 si score trop faible).
+    /// Récompense la fin d'une partie normale (base + prorata du score, plafonné).
+    /// Retourne le nombre de pièces créditées.
     @discardableResult
     func awardForScore(_ score: Int) -> Int {
-        let gained = max(0, score / CoinManager.scoreCoinDivisor)
+        let raw = CoinManager.scoreCoinBase + max(0, score) / CoinManager.scoreCoinDivisor
+        let gained = min(CoinManager.scoreCoinMax, raw)
         if gained > 0 { add(gained) }
         return gained
     }
