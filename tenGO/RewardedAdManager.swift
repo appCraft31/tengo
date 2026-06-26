@@ -18,6 +18,37 @@ final class RewardedAdManager: NSObject {
     private var rewardedAd: RewardedInterstitialAd?
     private(set) var isReady = false
 
+    private let defaults = UserDefaults.standard
+
+    // MARK: - Plafond journalier
+
+    /// Nombre maximum de pubs récompensées par jour (reset à minuit local).
+    static let dailyLimit = 5
+
+    private var todayKey: Int {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: Date())
+        return (c.year ?? 0) * 10000 + (c.month ?? 0) * 100 + (c.day ?? 0)
+    }
+
+    /// Nombre de pubs déjà regardées aujourd'hui (0 si on a changé de jour).
+    private var countToday: Int {
+        guard defaults.integer(forKey: AppConfig.UserDefaultsKey.rewardedDayKey) == todayKey else { return 0 }
+        return defaults.integer(forKey: AppConfig.UserDefaultsKey.rewardedDayCount)
+    }
+
+    /// Pubs récompensées encore disponibles aujourd'hui.
+    var remainingToday: Int { max(0, RewardedAdManager.dailyLimit - countToday) }
+
+    /// Le quota du jour n'est pas épuisé.
+    var canWatchToday: Bool { remainingToday > 0 }
+
+    /// Incrémente le compteur du jour (à l'obtention de la récompense).
+    private func recordView() {
+        let current = countToday
+        defaults.set(todayKey, forKey: AppConfig.UserDefaultsKey.rewardedDayKey)
+        defaults.set(current + 1, forKey: AppConfig.UserDefaultsKey.rewardedDayCount)
+    }
+
     // MARK: - Chargement
 
     func loadAd() {
@@ -44,19 +75,27 @@ final class RewardedAdManager: NSObject {
 
     // MARK: - Affichage
 
-    /// Présente la pub. `onReward` est appelé si l'utilisateur gagne la récompense.
-    /// `onUnavailable` est appelé si aucune pub n'est prête (et relance un chargement).
+    /// Présente la pub si le quota du jour n'est pas épuisé et qu'une pub est prête.
+    /// - onReward : l'utilisateur a gagné la récompense (le compteur du jour est incrémenté).
+    /// - onUnavailable : aucune pub prête (relance un chargement).
+    /// - onLimitReached : quota journalier atteint.
     func show(from viewController: UIViewController,
               onReward: @escaping () -> Void,
-              onUnavailable: @escaping () -> Void) {
+              onUnavailable: @escaping () -> Void,
+              onLimitReached: @escaping () -> Void) {
+        guard canWatchToday else {
+            onLimitReached()
+            return
+        }
         guard let ad = rewardedAd, isReady else {
             onUnavailable()
             loadAd()
             return
         }
         isReady = false
-        ad.present(from: viewController) {
+        ad.present(from: viewController) { [weak self] in
             // L'utilisateur a regardé la pub jusqu'au bout : récompense accordée.
+            self?.recordView()
             onReward()
         }
     }

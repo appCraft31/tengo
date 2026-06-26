@@ -74,5 +74,8 @@ enum AppConfig {
         static let activeTrail = "tenGO_activeTrail"
         /// Inventaire des boosters : préfixe + identifiant du booster (ex. "tenGO_booster_hint").
         static let boosterInventoryPrefix = "tenGO_booster_"
+        /// Plafond journalier des pubs récompensées : jour courant (AAAAMMJJ) + compteur.
+        static let rewardedDayKey = "tenGO_rewardedDay"
+        static let rewardedDayCount = "tenGO_rewardedDayCount"
     }
 }

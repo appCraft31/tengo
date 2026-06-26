@@ -15,8 +15,9 @@ class MenuScene: SKScene {
     /// Libellé du solde de pièces (mis à jour après une récompense).
     private var coinLabel: SKLabelNode?
     private var coinChip: SKNode?
-    /// Bouton « regarder une pub pour +10 pièces ».
+    /// Bouton « regarder une pub pour +10 pièces » + badge de quota restant.
     private var watchAdButton: SKNode?
+    private var watchAdBadge: SKLabelNode?
     private static let rewardedCoins = 10
 
     override func didMove(to view: SKView) {
@@ -256,8 +257,36 @@ class MenuScene: SKScene {
         node.addChild(coin)
         node.addChild(label)
 
+        // Badge de quota restant (haut-droite).
+        let badgeBg = SKShapeNode(circleOfRadius: 11)
+        badgeBg.fillColor = UIColor(white: 1.0, alpha: 0.96)
+        badgeBg.strokeColor = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 0.55)
+        badgeBg.lineWidth = 1
+        badgeBg.position = CGPoint(x: 27, y: 27)
+        badgeBg.zPosition = 1
+        node.addChild(badgeBg)
+
+        let badge = SKLabelNode(text: "")
+        badge.fontName = "AvenirNext-Bold"
+        badge.fontSize = 13
+        badge.fontColor = UIColor(red: 0.45, green: 0.34, blue: 0.10, alpha: 1)
+        badge.verticalAlignmentMode = .center
+        badge.horizontalAlignmentMode = .center
+        badge.position = CGPoint(x: 27, y: 27)
+        badge.zPosition = 2
+        node.addChild(badge)
+        watchAdBadge = badge
+
         addChild(node)
         watchAdButton = node
+        refreshWatchAdButton()
+    }
+
+    /// Met à jour le badge (pubs restantes aujourd'hui) et grise le bouton si épuisé.
+    private func refreshWatchAdButton() {
+        let remaining = RewardedAdManager.shared.remainingToday
+        watchAdBadge?.text = "\(remaining)"
+        watchAdButton?.alpha = remaining > 0 ? 1.0 : 0.45
     }
 
     private func addLogo(atY y: CGFloat) {
@@ -417,8 +446,13 @@ class MenuScene: SKScene {
             guard let self = self else { return }
             CoinManager.shared.add(MenuScene.rewardedCoins)
             self.refreshCoins()
+            self.refreshWatchAdButton()
             self.showRewardFeedback()
         }, onUnavailable: { [weak self] in
+            self?.showUnavailableFeedback()
+        }, onLimitReached: { [weak self] in
+            // Quota du jour atteint : feedback + bouton grisé.
+            self?.refreshWatchAdButton()
             self?.showUnavailableFeedback()
         })
     }
