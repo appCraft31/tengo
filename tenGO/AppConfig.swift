@@ -72,5 +72,7 @@ enum AppConfig {
         /// Styles de tracé possédés / actifs (cosmétique).
         static let ownedTrails = "tenGO_ownedTrails"
         static let activeTrail = "tenGO_activeTrail"
+        /// Inventaire des boosters : préfixe + identifiant du booster (ex. "tenGO_booster_hint").
+        static let boosterInventoryPrefix = "tenGO_booster_"
     }
 }
