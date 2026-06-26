@@ -12,6 +12,13 @@ class MenuScene: SKScene {
 
     private var settingsOverlay: SettingsOverlay?
 
+    /// Libellé du solde de pièces (mis à jour après une récompense).
+    private var coinLabel: SKLabelNode?
+    private var coinChip: SKNode?
+    /// Bouton « regarder une pub pour +10 pièces ».
+    private var watchAdButton: SKNode?
+    private static let rewardedCoins = 10
+
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         backgroundColor = ThemeManager.shared.active.background
@@ -120,6 +127,9 @@ class MenuScene: SKScene {
         // Boutique — tertiaire
         addMenuButton(text: String(localized: "menu.shop", defaultValue: "Boutique"), name: "boutique",
                       width: 200, height: 52, at: CGPoint(x: 0, y: stack(52)), fontSize: 18)
+
+        // Bouton « pub récompensée » (gauche, 3/4 de la hauteur).
+        addWatchAdButton()
     }
 
     /// Bouton-icône rond (SF Symbol) pour les coins (classement, paramètres).
@@ -193,6 +203,61 @@ class MenuScene: SKScene {
         container.addChild(coin)
         container.addChild(number)
         addChild(container)
+        coinLabel = number
+        coinChip = container
+    }
+
+    /// Bouton rond « regarder une pub → +10 pièces », à gauche, aux 3/4 de la
+    /// hauteur en partant du bas.
+    private func addWatchAdButton() {
+        guard let v = view else { return }
+        let scale = max(v.bounds.width / size.width, v.bounds.height / size.height)
+        let visibleH = v.bounds.height / scale
+        let visibleW = v.bounds.width / scale
+        let y = -visibleH / 2 + visibleH * 0.75
+        let x = -visibleW / 2 + 52
+
+        let node = SKNode()
+        node.name = "watchAd"
+        node.position = CGPoint(x: x, y: y)
+        node.zPosition = 6
+
+        let r: CGFloat = 38
+        let bg = SKShapeNode(circleOfRadius: r)
+        bg.fillColor = UIColor(red: 0.98, green: 0.92, blue: 0.74, alpha: 0.97)
+        bg.strokeColor = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 0.45)
+        bg.lineWidth = 1.5
+        node.addChild(bg)
+
+        // Triangle « play » (affordance vidéo), partie haute.
+        let triPath = CGMutablePath()
+        triPath.move(to: CGPoint(x: -7, y: 9))
+        triPath.addLine(to: CGPoint(x: -7, y: -9))
+        triPath.addLine(to: CGPoint(x: 10, y: 0))
+        triPath.closeSubpath()
+        let tri = SKShapeNode(path: triPath)
+        tri.fillColor = UIColor(white: 0.34, alpha: 1)
+        tri.strokeColor = .clear
+        tri.position = CGPoint(x: 1, y: 11)
+        node.addChild(tri)
+
+        // « +10 » avec pièce, partie basse.
+        let coin = CoinIcon.make(radius: 7)
+        let label = SKLabelNode(text: "+\(MenuScene.rewardedCoins)")
+        label.fontName = "AvenirNext-Bold"
+        label.fontSize = 15
+        label.fontColor = UIColor(red: 0.45, green: 0.34, blue: 0.10, alpha: 1)
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .left
+        let gap: CGFloat = 4
+        let contentW = 14 + gap + label.frame.width
+        coin.position = CGPoint(x: -contentW / 2 + 7, y: -15)
+        label.position = CGPoint(x: -contentW / 2 + 14 + gap, y: -15)
+        node.addChild(coin)
+        node.addChild(label)
+
+        addChild(node)
+        watchAdButton = node
     }
 
     private func addLogo(atY y: CGFloat) {
@@ -328,6 +393,10 @@ class MenuScene: SKScene {
                     self.navigateToLeaderboard()
                 }
                 return
+            case "watchAd":
+                animateTap(node.parent ?? node)
+                presentRewardedAd()
+                return
             default: break
             }
         }
@@ -337,6 +406,55 @@ class MenuScene: SKScene {
         node.run(SKAction.sequence([
             SKAction.scale(to: 0.93, duration: 0.07),
             SKAction.scale(to: 1.0,  duration: 0.12)
+        ]))
+    }
+
+    // MARK: - Pub récompensée
+
+    private func presentRewardedAd() {
+        guard let vc = view?.window?.rootViewController else { return }
+        RewardedAdManager.shared.show(from: vc, onReward: { [weak self] in
+            guard let self = self else { return }
+            CoinManager.shared.add(MenuScene.rewardedCoins)
+            self.refreshCoins()
+            self.showRewardFeedback()
+        }, onUnavailable: { [weak self] in
+            self?.showUnavailableFeedback()
+        })
+    }
+
+    private func refreshCoins() {
+        coinLabel?.text = "\(CoinManager.shared.balance)"
+        coinChip?.run(SKAction.sequence([
+            SKAction.scale(to: 1.12, duration: 0.08),
+            SKAction.scale(to: 1.0, duration: 0.12)
+        ]))
+    }
+
+    private func showRewardFeedback() {
+        guard let chip = coinChip else { return }
+        let popup = SKLabelNode(text: "+\(MenuScene.rewardedCoins)")
+        popup.fontName = "AvenirNext-Heavy"
+        popup.fontSize = 26
+        popup.fontColor = UIColor(red: 0.85, green: 0.60, blue: 0.15, alpha: 1)
+        popup.verticalAlignmentMode = .center
+        popup.position = CGPoint(x: chip.position.x, y: chip.position.y - 30)
+        popup.zPosition = 30
+        addChild(popup)
+        popup.run(SKAction.sequence([
+            SKAction.group([
+                SKAction.moveBy(x: 0, y: 52, duration: 0.8),
+                SKAction.sequence([SKAction.wait(forDuration: 0.4), SKAction.fadeOut(withDuration: 0.4)])
+            ]),
+            SKAction.removeFromParent()
+        ]))
+    }
+
+    private func showUnavailableFeedback() {
+        watchAdButton?.run(SKAction.sequence([
+            SKAction.moveBy(x: -6, y: 0, duration: 0.05),
+            SKAction.moveBy(x: 12, y: 0, duration: 0.05),
+            SKAction.moveBy(x: -6, y: 0, duration: 0.05)
         ]))
     }
 

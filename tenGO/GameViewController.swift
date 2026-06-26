@@ -24,9 +24,12 @@ class GameViewController: UIViewController {
 
     /// Hiérarchie programmatique : racine UIView simple + SKView plein écran.
     override func loadView() {
-        let root = UIView()
+        let root = UIView(frame: UIScreen.main.bounds)
         root.backgroundColor = .black
-        let skView = SKView()
+        // Frame initiale plein écran : garantit des bounds valides dès le premier
+        // didMove de la scène (avant que les contraintes ne soient résolues), sinon
+        // les éléments positionnés via la géométrie view se retrouvent hors écran.
+        let skView = SKView(frame: UIScreen.main.bounds)
         skView.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(skView)
         gameViewBottom = skView.bottomAnchor.constraint(equalTo: root.bottomAnchor)
@@ -110,6 +113,7 @@ class GameViewController: UIViewController {
                 DispatchQueue.main.async {
                     self.setupBanner()
                     InterstitialAdManager.shared.loadAd()
+                    RewardedAdManager.shared.loadAd()
                 }
             }
             return
@@ -133,6 +137,7 @@ class GameViewController: UIViewController {
                     DispatchQueue.main.async {
                         self?.setupBanner()
                         InterstitialAdManager.shared.loadAd()
+                        RewardedAdManager.shared.loadAd()
                     }
                 }
             }
