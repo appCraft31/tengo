@@ -229,25 +229,44 @@ class GameScene: SKScene {
         let visibleBottom = -(view.bounds.height / scale) / 2
 
         let gridEdgeBottom = gridBottom - BubbleNode.bubbleRadius
-
-        // Le bloc « boosters + rangée de contrôle » est traité comme UN cluster
-        // centré dans la bande sous la grille (entre le bas de la grille et le haut
-        // de la bannière). Évite le vide en bas : marges équilibrées des deux côtés.
+        let band = gridEdgeBottom - visibleBottom
         let bandMid = (gridEdgeBottom + visibleBottom) / 2
 
-        if boosterBar != nil {
-            // Deux rangées : boosters au-dessus, contrôle en dessous, cluster centré.
-            let rowGap: CGFloat = 116   // distance verticale entre les deux rangées
-            boosterBar?.position.y = bandMid + rowGap / 2
+        // Position horizontale par défaut de la rangée de contrôle (⌂ / score / ↺).
+        let sideX: CGFloat = 120
+
+        guard let bar = boosterBar else {
+            // Pas de boosters (Défi/démo) : rangée de contrôle centrée dans la bande.
+            homeBubbleNode.position = CGPoint(x: -sideX, y: bandMid)
+            scoreBubbleNode.position = CGPoint(x: 0, y: bandMid)
+            restartBubbleNode.position = CGPoint(x: sideX, y: bandMid)
+            return
+        }
+
+        // Hauteur nécessaire pour empiler 2 rangées (booster Ø + écart + score Ø).
+        let twoRowNeeded = GameScene.boosterRadius * 2 + 28 + 116
+        if band >= twoRowNeeded {
+            // iPhone : 2 rangées empilées (boosters au-dessus), cluster centré.
+            let rowGap: CGFloat = 116
+            bar.position = CGPoint(x: 0, y: bandMid + rowGap / 2)
+            for (i, item) in boosterButtons.enumerated() {
+                item.node.position = CGPoint(x: CGFloat(i - 1) * 132, y: 0)
+            }
             let rowY = bandMid - rowGap / 2
-            homeBubbleNode.position.y  = rowY
-            scoreBubbleNode.position.y = rowY
-            restartBubbleNode.position.y = rowY
+            homeBubbleNode.position = CGPoint(x: -sideX, y: rowY)
+            scoreBubbleNode.position = CGPoint(x: 0, y: rowY)
+            restartBubbleNode.position = CGPoint(x: sideX, y: rowY)
         } else {
-            // Une seule rangée (Défi/démo : pas de boosters) : centrée dans la bande.
-            homeBubbleNode.position.y  = bandMid
-            scoreBubbleNode.position.y = bandMid
-            restartBubbleNode.position.y = bandMid
+            // iPad (bande courte) : une seule rangée horizontale, boosters à gauche,
+            // contrôles à droite — exploite la largeur disponible, rien n'est masqué.
+            bar.position = CGPoint(x: 0, y: bandMid)
+            let bxs: [CGFloat] = [-288, -200, -112]
+            for (i, item) in boosterButtons.enumerated() {
+                item.node.position = CGPoint(x: bxs[min(i, bxs.count - 1)], y: 0)
+            }
+            homeBubbleNode.position = CGPoint(x: 92, y: bandMid)
+            scoreBubbleNode.position = CGPoint(x: 200, y: bandMid)
+            restartBubbleNode.position = CGPoint(x: 308, y: bandMid)
         }
     }
 
