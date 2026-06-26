@@ -15,29 +15,35 @@ class GameViewController: UIViewController {
     private var bannerView: BannerView?
     private var consentGathered = false
 
-    /// Vue de jeu, bornée au-dessus de la bannière (créée par-dessus la vue racine).
+    /// Vue de jeu (sous-vue d'une racine UIView simple, pas une SKView imbriquée :
+    /// évite les soucis de livraison tactile). Se réduit au-dessus de la bannière.
     private var gameView: SKView!
-    /// Contrainte basse de `gameView` : bord inférieur de l'écran tant qu'il n'y a pas
-    /// de bannière, puis haut de la bannière une fois celle-ci posée.
+    /// Contrainte basse de `gameView` : bas de l'écran sans bannière, puis haut de
+    /// la bannière une fois celle-ci posée — toutes les scènes restent au-dessus.
     private var gameViewBottom: NSLayoutConstraint!
+
+    /// Hiérarchie programmatique : racine UIView simple + SKView plein écran.
+    override func loadView() {
+        let root = UIView()
+        root.backgroundColor = .black
+        let skView = SKView()
+        skView.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(skView)
+        gameViewBottom = skView.bottomAnchor.constraint(equalTo: root.bottomAnchor)
+        NSLayoutConstraint.activate([
+            skView.topAnchor.constraint(equalTo: root.topAnchor),
+            skView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            skView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            gameViewBottom
+        ])
+        self.view = root
+        self.gameView = skView
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // SKView dédiée : occupe tout l'écran, puis se réduit au-dessus de la
-        // bannière pleine largeur une fois celle-ci ajoutée (les éléments de jeu
-        // ne passent jamais sous la pub).
-        let skView = SKView(frame: view.bounds)
-        skView.translatesAutoresizingMaskIntoConstraints = false
-        view.addSubview(skView)
-        gameViewBottom = skView.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        NSLayoutConstraint.activate([
-            skView.topAnchor.constraint(equalTo: view.topAnchor),
-            skView.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            skView.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            gameViewBottom
-        ])
-        gameView = skView
+        let skView = gameView!
 
         #if DEBUG
         MobileAds.shared.requestConfiguration.testDeviceIdentifiers = ["052b09f5dbca790a5d0b42140dcfa503"]
@@ -161,7 +167,8 @@ class GameViewController: UIViewController {
             banner.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
 
-        // Le jeu s'arrête désormais juste au-dessus de la bannière (plus de chevauchement).
+        // La vue de jeu se borne au-dessus de la bannière : toutes les scènes
+        // (menu, tutoriel, jeu, boutique) restent intégralement au-dessus de la pub.
         gameViewBottom.isActive = false
         gameView.bottomAnchor.constraint(equalTo: banner.topAnchor).isActive = true
         view.layoutIfNeeded()
@@ -183,7 +190,7 @@ class GameViewController: UIViewController {
     /// Ouvre directement le Défi du jour (depuis un lien externe / événement intégré).
     private func openDaily() {
         _ = DeepLink.consumePendingDaily()
-        guard let skView = gameView else { return }
+        let skView = gameView!
         let scene = GameScene(size: CGSize(width: 750, height: 1334), daily: DailyChallenge.make())
         scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scene.scaleMode = .aspectFill

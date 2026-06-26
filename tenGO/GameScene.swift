@@ -231,8 +231,9 @@ class GameScene: SKScene {
         let gridEdgeBottom = gridBottom - BubbleNode.bubbleRadius
         let available = gridEdgeBottom - visibleBottom
 
-        // Rangée de contrôle (⌂ / score / ↺) : position d'origine, centrée dans la
-        // bande sous la grille — dégage la bannière AdMob sur iPhone.
+        // Rangée de contrôle (⌂ / score / ↺) centrée dans la bande sous la grille.
+        // La vue de jeu étant bornée au-dessus de la bannière, `visibleBottom`
+        // correspond déjà au sommet de la pub : rien ne passe dessous.
         let rowY = visibleBottom + available / 2
 
         homeBubbleNode.position.y  = rowY
