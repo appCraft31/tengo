@@ -222,11 +222,22 @@ class GameScene: SKScene {
 
         let gridEdgeBottom = gridBottom - BubbleNode.bubbleRadius
         let available = gridEdgeBottom - visibleBottom
+
+        // Rangée de contrôle (⌂ / score / ↺) : position d'origine, centrée dans la
+        // bande sous la grille — dégage la bannière AdMob sur iPhone.
         let rowY = visibleBottom + available / 2
 
         homeBubbleNode.position.y  = rowY
         scoreBubbleNode.position.y = rowY
         restartBubbleNode.position.y = rowY
+
+        // Barre de boosters : centrée dans l'écart entre le bas de la grille et le
+        // haut de la rangée de contrôle. Écart large sur iPhone (placement net),
+        // réduit sur iPad (centrage au mieux, sans empiéter sur la bannière).
+        if let bar = boosterBar {
+            let controlTop = rowY + 44   // rayon de la bulle de contrôle
+            bar.position.y = (gridEdgeBottom + controlTop) / 2
+        }
     }
 
     // MARK: - Background
