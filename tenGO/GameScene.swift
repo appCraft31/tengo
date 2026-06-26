@@ -98,6 +98,8 @@ class GameScene: SKScene {
     private var combosCreated = 0
     private var longestChain = 0
     private var isWinState = false
+    /// Pièces créditées à la fin de cette partie (affiché dans le panel game-over).
+    private var coinsEarnedThisGame = 0
 
     // MARK: - Haptics
     // Haptics via HapticManager (toggle dans les paramètres)
@@ -741,6 +743,7 @@ class GameScene: SKScene {
             GameState.addScore(score)
             GameCenterManager.shared.submitScore(score)
             GameState.clear()
+            coinsEarnedThisGame = CoinManager.shared.awardForScore(score)
             AnalyticsService.levelEnd(mode: "normal", score: score, won: isWinState)
         case .daily:
             // Pièces offertes une seule fois, à la première complétion du jour.

@@ -44,6 +44,18 @@ final class CoinManager {
 
     // MARK: - Gains
 
+    /// Pièces gagnées par tranche de score en partie normale (1 pièce / 200 pts).
+    static let scoreCoinDivisor = 200
+
+    /// Récompense la fin d'une partie normale au prorata du score réalisé.
+    /// Retourne le nombre de pièces créditées (0 si score trop faible).
+    @discardableResult
+    func awardForScore(_ score: Int) -> Int {
+        let gained = max(0, score / CoinManager.scoreCoinDivisor)
+        if gained > 0 { add(gained) }
+        return gained
+    }
+
     /// Récompense de complétion du Défi du jour (à n'appeler qu'une fois par défi).
     func awardDailyChallenge() {
         add(CoinManager.dailyChallengeReward)
