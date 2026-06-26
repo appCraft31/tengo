@@ -1,6 +1,5 @@
-Daily Challenge: a fresh grid every day from 5am, with a surprise twist (stones, anchored or frozen bubbles). One try, can you solve it? Global leaderboard.
-Themes and living backgrounds: Forest, Ocean, Space (stars and planets), Night, Desert, Candy... animated backdrops.
-Shop: earn coins and spend them on themes, bubble materials and path styles.
-Daily streak and gentle reminders.
-Redesigned home menu.
+Boosters: get unstuck with Hint, Shuffle and Hammer when the grid gets tricky.
+Earn coins every game, plus +10 coins by watching a video from the menu (5 per day).
+Shop: a new tab to buy your boosters in bundles.
+Redesigned interface and various fixes.
 Thanks for playing tenGO!

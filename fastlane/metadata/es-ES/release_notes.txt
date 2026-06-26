@@ -1,6 +1,5 @@
-Reto diario: una nueva cuadrícula cada día desde las 5h, con un giro sorpresa (piedras, burbujas ancladas o congeladas). Un solo intento, ¿sabrás resolverlo? Clasificación mundial.
-Temas y fondos animados: Bosque, Océano, Espacio (estrellas y planetas), Noche, Desierto, Caramelo...
-Tienda: gana monedas y gástalas en temas, estilos de burbujas y trazos.
-Racha diaria y recordatorios suaves.
-Nuevo menú de inicio.
+Potenciadores: desatáscate con Pista, Mezclar y Martillo cuando la cuadrícula se complica.
+Gana monedas en cada partida, y +10 monedas viendo un vídeo desde el menú (5 al día).
+Tienda: una nueva pestaña para comprar tus potenciadores en lotes.
+Interfaz rediseñada y varias correcciones.
 ¡Gracias por jugar a tenGO!
