@@ -32,12 +32,12 @@ enum Booster: String, CaseIterable {
     var bundleQuantity: Int { 5 }
     var bundlePrice: Int { price * 4 }
 
-    /// Nom du symbole SF Symbols utilisé pour l'icône du bouton.
-    var symbolName: String {
+    /// Nom de l'asset vectoriel (SVG) de l'icône dans Assets.xcassets.
+    var assetName: String {
         switch self {
-        case .hint:    return "lightbulb.fill"
-        case .shuffle: return "shuffle"
-        case .hammer:  return "hammer.fill"
+        case .hint:    return "BoosterHint"
+        case .shuffle: return "BoosterShuffle"
+        case .hammer:  return "BoosterHammer"
         }
     }
 

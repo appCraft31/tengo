@@ -180,10 +180,7 @@ class BoutiqueScene: SKScene {
         let owned = BoosterManager.shared.count(booster)
 
         let preview = SKNode()
-        let icon = SKLabelNode(text: GameScene.boosterIcons[booster])
-        icon.fontSize = 44
-        icon.verticalAlignmentMode = .center
-        icon.horizontalAlignmentMode = .center
+        let icon = BoosterIcon.make(booster, size: 46, color: theme.logo)
         preview.addChild(icon)
 
         addCardFrame(name: "booster:\(booster.rawValue)", background: theme.background,

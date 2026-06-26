@@ -510,7 +510,7 @@ class GameScene: SKScene {
         if let bar = boosterBar, bar.parent != nil, !bar.isHidden, !isAnimating {
             for (booster, node) in boosterButtons {
                 let p = bar.convert(node.position, to: self)
-                if hypot(point.x - p.x, point.y - p.y) < 30 {
+                if hypot(point.x - p.x, point.y - p.y) < 48 {
                     node.run(SKAction.sequence([
                         SKAction.scale(to: 0.88, duration: 0.08),
                         SKAction.scale(to: 1.0, duration: 0.12)
@@ -794,45 +794,50 @@ class GameScene: SKScene {
 
     // MARK: - Boosters
 
-    static let boosterIcons: [Booster: String] = [
-        .hint: "💡", .shuffle: "🔀", .hammer: "🔨"
-    ]
+    static let boosterRadius: CGFloat = 42
 
-    /// Construit la barre de 3 boosters sous la grille (mode normal uniquement).
+    /// Construit la barre de 3 gros boosters ronds, posée au-dessus de la rangée
+    /// de contrôle (mode normal). Position verticale fixée par repositionBottomRow.
     private func setupBoosters() {
         guard mode == .normal else { return }
         let bar = SKNode()
-        bar.position = CGPoint(x: 0, y: gridBottom - 62)
         bar.zPosition = 8
         addChild(bar)
         boosterBar = bar
 
         let order: [Booster] = [.hint, .shuffle, .hammer]
-        let spacing: CGFloat = 92
+        let spacing: CGFloat = 132
+        let iconColor = UIColor(white: 0.42, alpha: 1)
         for (i, booster) in order.enumerated() {
             let node = SKNode()
             node.position = CGPoint(x: CGFloat(i - 1) * spacing, y: 0)
             bar.addChild(node)
 
-            let circle = SKShapeNode(circleOfRadius: 26)
+            let circle = SKShapeNode(circleOfRadius: GameScene.boosterRadius)
             circle.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 1)
             circle.strokeColor = UIColor(white: 0.70, alpha: 0.55)
             circle.lineWidth = 1.5
             node.addChild(circle)
 
-            let icon = SKLabelNode(text: GameScene.boosterIcons[booster])
-            icon.fontSize = 24
-            icon.verticalAlignmentMode = .center
-            icon.horizontalAlignmentMode = .center
+            let icon = BoosterIcon.make(booster, size: 44, color: iconColor)
             node.addChild(icon)
+
+            // Badge quantité / prix : pastille en bas à droite du bouton.
+            let badgePill = SKShapeNode(circleOfRadius: 17)
+            badgePill.fillColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
+            badgePill.strokeColor = UIColor(white: 0.70, alpha: 0.5)
+            badgePill.lineWidth = 1
+            badgePill.position = CGPoint(x: 31, y: -31)
+            badgePill.zPosition = 1
+            node.addChild(badgePill)
 
             let badge = SKLabelNode(text: "")
             badge.fontName = "AvenirNext-Bold"
-            badge.fontSize = 12
+            badge.fontSize = 14
             badge.verticalAlignmentMode = .center
             badge.horizontalAlignmentMode = .center
-            badge.position = CGPoint(x: 19, y: -19)
-            badge.zPosition = 1
+            badge.position = CGPoint(x: 31, y: -31)
+            badge.zPosition = 2
             node.addChild(badge)
             boosterCountLabels[booster] = badge
 
@@ -841,7 +846,7 @@ class GameScene: SKScene {
         refreshBoosterButtons()
     }
 
-    /// Met à jour les badges (quantité possédée, sinon prix) et l'opacité.
+    /// Met à jour les badges (quantité possédée en sombre, sinon prix en doré) et l'opacité.
     private func refreshBoosterButtons() {
         for (booster, node) in boosterButtons {
             let count = BoosterManager.shared.count(booster)
@@ -851,8 +856,8 @@ class GameScene: SKScene {
                 badge?.fontColor = UIColor(white: 0.30, alpha: 1)
                 node.alpha = 1.0
             } else {
-                badge?.text = "🪙\(booster.price)"
-                badge?.fontColor = UIColor(red: 0.85, green: 0.60, blue: 0.15, alpha: 1)
+                badge?.text = "\(booster.price)"
+                badge?.fontColor = UIColor(red: 0.78, green: 0.55, blue: 0.12, alpha: 1)
                 node.alpha = CoinManager.shared.balance >= booster.price ? 1.0 : 0.45
             }
         }
@@ -1131,14 +1136,23 @@ class GameScene: SKScene {
         panel.addChild(scoreDisplay)
         animateScoreCountUp(label: scoreDisplay, target: score)
 
-        // Pièces gagnées cette partie (mode normal).
+        // Pièces gagnées cette partie (mode normal) : icône pièce + montant (sans emoji).
         if coinsEarnedThisGame > 0 {
-            let coinLine = SKLabelNode(text: "🪙 +\(coinsEarnedThisGame)")
-            coinLine.fontName = "AvenirNext-Bold"
-            coinLine.fontSize = 22
-            coinLine.fontColor = UIColor(red: 0.85, green: 0.60, blue: 0.15, alpha: 1)
-            coinLine.verticalAlignmentMode = .center
+            let coinLine = SKNode()
             coinLine.position = CGPoint(x: 0, y: 118)
+            let label = SKLabelNode(text: "+\(coinsEarnedThisGame)")
+            label.fontName = "AvenirNext-Bold"
+            label.fontSize = 22
+            label.fontColor = UIColor(red: 0.78, green: 0.55, blue: 0.12, alpha: 1)
+            label.verticalAlignmentMode = .center
+            label.horizontalAlignmentMode = .left
+            let coin = CoinIcon.make(radius: 12)
+            let gap: CGFloat = 8
+            let contentW = 24 + gap + label.frame.width
+            coin.position = CGPoint(x: -contentW / 2 + 12, y: 0)
+            label.position = CGPoint(x: -contentW / 2 + 24 + gap, y: 0)
+            coinLine.addChild(coin)
+            coinLine.addChild(label)
             panel.addChild(coinLine)
         }
 
