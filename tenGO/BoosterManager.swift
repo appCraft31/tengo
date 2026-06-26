@@ -28,6 +28,10 @@ enum Booster: String, CaseIterable {
         }
     }
 
+    /// Lot vendu en boutique (quantité + prix remisé : 5 pour le prix de 4).
+    var bundleQuantity: Int { 5 }
+    var bundlePrice: Int { price * 4 }
+
     /// Nom du symbole SF Symbols utilisé pour l'icône du bouton.
     var symbolName: String {
         switch self {
@@ -87,6 +91,14 @@ final class BoosterManager {
         let cost = booster.price * max(quantity, 1)
         guard CoinManager.shared.spend(cost) else { return false }
         grant(booster, quantity: max(quantity, 1))
+        return true
+    }
+
+    /// Achète un lot (quantité remisée) en boutique. Retourne false si solde insuffisant.
+    @discardableResult
+    func purchaseBundle(_ booster: Booster) -> Bool {
+        guard CoinManager.shared.spend(booster.bundlePrice) else { return false }
+        grant(booster, quantity: booster.bundleQuantity)
         return true
     }
 

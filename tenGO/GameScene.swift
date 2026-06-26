@@ -5,6 +5,7 @@
 
 import SpriteKit
 import GameplayKit
+import StoreKit
 
 class GameScene: SKScene {
 
@@ -213,6 +214,13 @@ class GameScene: SKScene {
         }
         overlay.present(in: self)
         settingsOverlay = overlay
+    }
+
+    /// Recalcule la mise en page basse quand la zone de jeu change (ex. apparition
+    /// de la bannière qui réduit la SKView). Appelé par le GameViewController.
+    func relayoutForViewChange() {
+        guard let view = view else { return }
+        repositionBottomRow(in: view)
     }
 
     private func repositionBottomRow(in view: SKView) {
@@ -785,7 +793,7 @@ class GameScene: SKScene {
 
     // MARK: - Boosters
 
-    private static let boosterIcons: [Booster: String] = [
+    static let boosterIcons: [Booster: String] = [
         .hint: "💡", .shuffle: "🔀", .hammer: "🔨"
     ]
 
@@ -1000,6 +1008,24 @@ class GameScene: SKScene {
         recordScore()
         run(SKAction.wait(forDuration: 0.5)) { [weak self] in
             self?.showGameOverPanel()
+        }
+        // Une grille vidée est un moment de satisfaction : on sollicite un avis
+        // (iOS plafonne lui-même la fréquence à ~3×/an).
+        run(SKAction.wait(forDuration: 1.8)) { [weak self] in
+            self?.maybeRequestReview()
+        }
+    }
+
+    /// Demande un avis App Store après un moment positif (victoire), pour les
+    /// joueurs déjà engagés (tutoriel vu) et hors démo. iOS gère le throttling.
+    private func maybeRequestReview() {
+        guard mode != .demo else { return }
+        guard UserDefaults.standard.bool(forKey: AppConfig.UserDefaultsKey.hasSeenTutorial) else { return }
+        guard let scene = view?.window?.windowScene else { return }
+        if #available(iOS 14.0, *) {
+            SKStoreReviewController.requestReview(in: scene)
+        } else {
+            SKStoreReviewController.requestReview()
         }
     }
 

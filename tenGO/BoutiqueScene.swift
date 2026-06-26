@@ -11,7 +11,7 @@ import StoreKit
 
 class BoutiqueScene: SKScene {
 
-    private enum Tab: String { case themes, bubbles, trails, coins }
+    private enum Tab: String { case themes, bubbles, trails, boosters, coins }
     private var tab: Tab = .themes
     private var attemptedProductLoad = false
 
@@ -73,6 +73,10 @@ class BoutiqueScene: SKScene {
                 addCosmeticCard(kind: .trail, id: t.id, price: t.price,
                                 title: trailStyleName(t.id), preview: trailPreview(t), previewY: 36, at: place(i))
             }
+        case .boosters:
+            for (i, booster) in Booster.allCases.enumerated() {
+                addBoosterCard(booster, at: place(i))
+            }
         case .coins:
             let products = StoreManager.shared.products
             if products.isEmpty {
@@ -102,6 +106,7 @@ class BoutiqueScene: SKScene {
             (.themes, String(localized: "shop.tab_themes", defaultValue: "Thèmes")),
             (.bubbles, String(localized: "shop.tab_bubbles", defaultValue: "Matières")),
             (.trails, String(localized: "shop.tab_trails", defaultValue: "Tracés")),
+            (.boosters, String(localized: "shop.tab_boosters", defaultValue: "Boosters")),
             (.coins, String(localized: "shop.tab_coins", defaultValue: "Pièces")),
         ]
         let tabW = (usableWidth - 16) / CGFloat(items.count)
@@ -167,6 +172,58 @@ class BoutiqueScene: SKScene {
             label.position = CGPoint(x: 0, y: -48)
             card.addChild(label)
         }
+    }
+
+    /// Carte d'un lot de booster (achat en pièces).
+    private func addBoosterCard(_ booster: Booster, at position: CGPoint) {
+        let theme = ThemeManager.shared.active
+        let owned = BoosterManager.shared.count(booster)
+
+        let preview = SKNode()
+        let icon = SKLabelNode(text: GameScene.boosterIcons[booster])
+        icon.fontSize = 44
+        icon.verticalAlignmentMode = .center
+        icon.horizontalAlignmentMode = .center
+        preview.addChild(icon)
+
+        addCardFrame(name: "booster:\(booster.rawValue)", background: theme.background,
+                     border: theme.logo.withAlphaComponent(0.18), borderWidth: 1,
+                     title: "\(boosterName(booster)) ×\(booster.bundleQuantity)", titleColor: theme.logo,
+                     preview: preview, previewY: 40, at: position)
+
+        guard let card = childNode(withName: "booster:\(booster.rawValue)") else { return }
+
+        // Stock possédé.
+        let stock = SKLabelNode(text: String(format: String(localized: "shop.booster_stock",
+                                                             defaultValue: "en stock : %d"), owned))
+        stock.fontName = "AvenirNext-Medium"
+        stock.fontSize = 13
+        stock.fontColor = theme.logo.withAlphaComponent(0.6)
+        stock.verticalAlignmentMode = .center
+        stock.position = CGPoint(x: 0, y: 20)
+        card.addChild(stock)
+
+        // Pilule prix (pièces).
+        let priceLabel = SKLabelNode(text: "\(booster.bundlePrice)")
+        priceLabel.fontName = "AvenirNext-Bold"
+        priceLabel.fontSize = 17
+        priceLabel.fontColor = theme.logo
+        priceLabel.verticalAlignmentMode = .center
+        priceLabel.horizontalAlignmentMode = .left
+        let coin = CoinIcon.make(radius: 9)
+        let gap: CGFloat = 6
+        let contentW = 18 + gap + priceLabel.frame.width
+        let pill = SKShapeNode(rectOf: CGSize(width: contentW + 28, height: 32), cornerRadius: 16)
+        pill.fillColor = theme.logo.withAlphaComponent(0.06)
+        pill.strokeColor = theme.logo.withAlphaComponent(0.18)
+        pill.lineWidth = 1
+        pill.position = CGPoint(x: 0, y: -48)
+        card.addChild(pill)
+        let startX = -contentW / 2
+        coin.position = CGPoint(x: startX + 9, y: -48)
+        priceLabel.position = CGPoint(x: startX + 18 + gap, y: -48)
+        card.addChild(coin)
+        card.addChild(priceLabel)
     }
 
     // MARK: - Cartes
@@ -397,6 +454,14 @@ class BoutiqueScene: SKScene {
         }
     }
 
+    private func boosterName(_ booster: Booster) -> String {
+        switch booster {
+        case .hint:    return String(localized: "booster.hint", defaultValue: "Indice")
+        case .shuffle: return String(localized: "booster.shuffle", defaultValue: "Mélange")
+        case .hammer:  return String(localized: "booster.hammer", defaultValue: "Marteau")
+        }
+    }
+
     private func trailStyleName(_ id: String) -> String {
         switch id {
         case "classic": return String(localized: "trail.classic", defaultValue: "Classique")
@@ -437,6 +502,19 @@ class BoutiqueScene: SKScene {
             if name.hasPrefix("pack:") {
                 handleCoinPack(String(name.dropFirst("pack:".count))); return
             }
+            if name.hasPrefix("booster:") {
+                handleBoosterPurchase(String(name.dropFirst("booster:".count)),
+                                      card: childNode(withName: name)); return
+            }
+        }
+    }
+
+    private func handleBoosterPurchase(_ id: String, card: SKNode?) {
+        guard let booster = Booster(rawValue: id) else { return }
+        if BoosterManager.shared.purchaseBundle(booster) {
+            HapticManager.medium(); rebuild()
+        } else {
+            shake(card)
         }
     }
 
