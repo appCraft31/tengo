@@ -36,6 +36,9 @@ class GameViewController: UIViewController {
             scene = GameScene(size: CGSize(width: 750, height: 1334), demoSeed: seed, demoSpeed: speed)
         } else if env["SCREENSHOT_DAILY"] == "1" {
             scene = GameScene(size: CGSize(width: 750, height: 1334), daily: DailyChallenge.make())
+        } else if env["GAME_NORMAL"] == "1" {
+            // Démarre directement une partie normale (test/QA + captures gameplay).
+            scene = GameScene(size: CGSize(width: 750, height: 1334), savedState: nil)
         } else {
             scene = MenuScene(size: CGSize(width: 750, height: 1334))
         }

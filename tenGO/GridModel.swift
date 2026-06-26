@@ -207,6 +207,37 @@ struct GridModel {
 
     // MARK: - Mutations
 
+    /// Booster « Mélange » : réattribue une valeur aléatoire (1–9) à chaque bulle
+    /// existante, en conservant positions, obstacles, ancrages et givre. Réessaie
+    /// jusqu'à obtenir une grille jouable (≥1 coup), avec repli garanti.
+    mutating func reshuffleValues() {
+        var generator = SystemRandomNumberGenerator()
+        let positions = bubblePositions()
+
+        // `value` est immuable : on recrée la bulle en conservant son état (ancrage, givre).
+        func setValue(_ value: Int, at pos: GridPos) {
+            guard let old = cells[pos.row][pos.col] else { return }
+            var b = BubbleModel(value: value, row: pos.row, col: pos.col)
+            b.isAnchored = old.isAnchored
+            b.isFrozen = old.isFrozen
+            cells[pos.row][pos.col] = b
+        }
+
+        for _ in 0..<100 {
+            for pos in positions {
+                setValue(Int.random(in: 1...9, using: &generator), at: pos)
+            }
+            if hasValidMove() { return }
+        }
+        // Repli : force une paire 5+5 adjacente parmi les bulles existantes.
+        if let first = positions.first(where: { p in
+            positions.contains { isAdjacent((p.row, p.col), ($0.row, $0.col)) }
+        }), let second = positions.first(where: { isAdjacent((first.row, first.col), ($0.row, $0.col)) }) {
+            setValue(5, at: first)
+            setValue(5, at: second)
+        }
+    }
+
     mutating func removeBubbles(at path: [(row: Int, col: Int)]) {
         for pos in path {
             cells[pos.row][pos.col] = nil

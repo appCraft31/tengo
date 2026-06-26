@@ -101,6 +101,13 @@ class GameScene: SKScene {
     /// Pièces créditées à la fin de cette partie (affiché dans le panel game-over).
     private var coinsEarnedThisGame = 0
 
+    // MARK: - Boosters
+    private var boosterBar: SKNode?
+    private var boosterButtons: [(booster: Booster, node: SKNode)] = []
+    private var boosterCountLabels: [Booster: SKLabelNode] = [:]
+    /// Marteau armé : le prochain tap sur une bulle la détruit.
+    private var hammerArmed = false
+
     // MARK: - Haptics
     // Haptics via HapticManager (toggle dans les paramètres)
 
@@ -143,6 +150,7 @@ class GameScene: SKScene {
         StreakManager.shared.registerPlay()
         CoinManager.shared.awardStreakMilestones(currentStreak: StreakManager.shared.current)
         NotificationManager.shared.registerGameAndMaybeRequest()
+        setupBoosters()
     }
 
     override func didMove(to view: SKView) {
@@ -478,6 +486,36 @@ class GameScene: SKScene {
             return
         }
 
+        // Boutons boosters (mode normal uniquement)
+        if let bar = boosterBar, bar.parent != nil, !bar.isHidden, !isAnimating {
+            for (booster, node) in boosterButtons {
+                let p = bar.convert(node.position, to: self)
+                if hypot(point.x - p.x, point.y - p.y) < 30 {
+                    node.run(SKAction.sequence([
+                        SKAction.scale(to: 0.88, duration: 0.08),
+                        SKAction.scale(to: 1.0, duration: 0.12)
+                    ]))
+                    handleBoosterTap(booster)
+                    return
+                }
+            }
+        }
+
+        // Marteau armé : le prochain tap sur une bulle la détruit.
+        if hammerArmed {
+            hammerArmed = false
+            messageLabel.isHidden = true
+            if !isAnimating, let coord = gridCoord(for: point),
+               gridModel.cells[coord.row][coord.col]?.isFrozen != true {
+                if BoosterManager.shared.consume(.hammer)
+                    || (BoosterManager.shared.purchase(.hammer) && BoosterManager.shared.consume(.hammer)) {
+                    refreshBoosterButtons()
+                    performHammer(at: coord)
+                }
+            }
+            return
+        }
+
         guard !isAnimating else { return }
         guard let coord = gridCoord(for: point) else { return }
         // Une bulle gelée est intraversable tant que le givre n'a pas fondu.
@@ -734,6 +772,187 @@ class GameScene: SKScene {
         }
     }
 
+    // MARK: - Boosters
+
+    private static let boosterIcons: [Booster: String] = [
+        .hint: "💡", .shuffle: "🔀", .hammer: "🔨"
+    ]
+
+    /// Construit la barre de 3 boosters sous la grille (mode normal uniquement).
+    private func setupBoosters() {
+        guard mode == .normal else { return }
+        let bar = SKNode()
+        bar.position = CGPoint(x: 0, y: gridBottom - 62)
+        bar.zPosition = 8
+        addChild(bar)
+        boosterBar = bar
+
+        let order: [Booster] = [.hint, .shuffle, .hammer]
+        let spacing: CGFloat = 92
+        for (i, booster) in order.enumerated() {
+            let node = SKNode()
+            node.position = CGPoint(x: CGFloat(i - 1) * spacing, y: 0)
+            bar.addChild(node)
+
+            let circle = SKShapeNode(circleOfRadius: 26)
+            circle.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 1)
+            circle.strokeColor = UIColor(white: 0.70, alpha: 0.55)
+            circle.lineWidth = 1.5
+            node.addChild(circle)
+
+            let icon = SKLabelNode(text: GameScene.boosterIcons[booster])
+            icon.fontSize = 24
+            icon.verticalAlignmentMode = .center
+            icon.horizontalAlignmentMode = .center
+            node.addChild(icon)
+
+            let badge = SKLabelNode(text: "")
+            badge.fontName = "AvenirNext-Bold"
+            badge.fontSize = 12
+            badge.verticalAlignmentMode = .center
+            badge.horizontalAlignmentMode = .center
+            badge.position = CGPoint(x: 19, y: -19)
+            badge.zPosition = 1
+            node.addChild(badge)
+            boosterCountLabels[booster] = badge
+
+            boosterButtons.append((booster, node))
+        }
+        refreshBoosterButtons()
+    }
+
+    /// Met à jour les badges (quantité possédée, sinon prix) et l'opacité.
+    private func refreshBoosterButtons() {
+        for (booster, node) in boosterButtons {
+            let count = BoosterManager.shared.count(booster)
+            let badge = boosterCountLabels[booster]
+            if count > 0 {
+                badge?.text = "×\(count)"
+                badge?.fontColor = UIColor(white: 0.30, alpha: 1)
+                node.alpha = 1.0
+            } else {
+                badge?.text = "🪙\(booster.price)"
+                badge?.fontColor = UIColor(red: 0.85, green: 0.60, blue: 0.15, alpha: 1)
+                node.alpha = CoinManager.shared.balance >= booster.price ? 1.0 : 0.45
+            }
+        }
+    }
+
+    private func handleBoosterTap(_ booster: Booster) {
+        guard !isAnimating else { return }
+        switch booster {
+        case .hammer:
+            // Arme le ciblage si disponible (consommation différée au tap sur la bulle).
+            if BoosterManager.shared.count(booster) > 0 || CoinManager.shared.balance >= booster.price {
+                hammerArmed = true
+                messageLabel.text = String(localized: "booster.hammer_prompt",
+                                           defaultValue: "Touche une bulle à détruire")
+                messageLabel.isHidden = false
+            } else { denyBooster(booster) }
+        case .hint:
+            disarmHammer()
+            if acquireBooster(booster) { showHint() } else { denyBooster(booster) }
+        case .shuffle:
+            disarmHammer()
+            if acquireBooster(booster) { performShuffle() } else { denyBooster(booster) }
+        }
+    }
+
+    private func disarmHammer() {
+        guard hammerArmed else { return }
+        hammerArmed = false
+        messageLabel.isHidden = true
+    }
+
+    /// Consomme une unité (depuis l'inventaire, sinon achat immédiat). Met à jour les badges.
+    private func acquireBooster(_ booster: Booster) -> Bool {
+        if BoosterManager.shared.consume(booster) {
+            refreshBoosterButtons()
+            return true
+        }
+        if BoosterManager.shared.purchase(booster), BoosterManager.shared.consume(booster) {
+            refreshBoosterButtons()
+            return true
+        }
+        return false
+    }
+
+    /// Feedback « solde insuffisant » : secousse du bouton.
+    private func denyBooster(_ booster: Booster) {
+        guard let node = boosterButtons.first(where: { $0.booster == booster })?.node else { return }
+        node.run(SKAction.sequence([
+            SKAction.moveBy(x: -6, y: 0, duration: 0.05),
+            SKAction.moveBy(x: 12, y: 0, duration: 0.05),
+            SKAction.moveBy(x: -6, y: 0, duration: 0.05)
+        ]))
+    }
+
+    /// Indice : met en valeur un chemin valide (somme 10) sans rien consommer de la grille.
+    private func showHint() {
+        guard let path = gridModel.showcasePath() else { return }
+        isAnimating = true
+        let pulse = SKAction.sequence([
+            SKAction.scale(to: 1.28, duration: 0.24),
+            SKAction.scale(to: 1.0, duration: 0.24)
+        ])
+        for coord in path {
+            bubbleNodes[coord.row][coord.col]?.run(SKAction.repeat(pulse, count: 2))
+        }
+        run(SKAction.sequence([
+            SKAction.wait(forDuration: 1.05),
+            SKAction.run { [weak self] in self?.isAnimating = false }
+        ]))
+    }
+
+    /// Mélange : réattribue les valeurs de la grille (toujours jouable) et reconstruit les bulles.
+    private func performShuffle() {
+        cancelPath()
+        isAnimating = true
+        gridModel.reshuffleValues()
+        rebuildGridNodes()
+        HapticManager.medium()
+        run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.25),
+            SKAction.run { [weak self] in self?.isAnimating = false }
+        ]))
+    }
+
+    /// Reconstruit tous les nœuds de bulles à partir du modèle (après un mélange).
+    private func rebuildGridNodes() {
+        for row in 0..<GridModel.rows {
+            for col in 0..<GridModel.cols {
+                bubbleNodes[row][col]?.removeFromParent()
+                bubbleNodes[row][col] = nil
+            }
+        }
+        for row in 0..<GridModel.rows {
+            for col in 0..<GridModel.cols {
+                guard let model = gridModel.cells[row][col] else { continue }
+                let node = BubbleNode(value: model.value)
+                node.position = scenePos(row: row, col: col)
+                if model.isAnchored { node.setAnchored(true) }
+                if model.isFrozen { node.setFrozen(true) }
+                node.setScale(0.2)
+                addChild(node)
+                node.run(SKAction.scale(to: 1.0, duration: 0.2))
+                bubbleNodes[row][col] = node
+            }
+        }
+    }
+
+    /// Marteau : détruit une bulle puis applique la gravité (réutilise le flux post-pop).
+    private func performHammer(at coord: (row: Int, col: Int)) {
+        guard gridModel.cells[coord.row][coord.col] != nil else { return }
+        isAnimating = true
+        bubbleNodes[coord.row][coord.col]?.playPopAnimation(completion: {})
+        bubbleNodes[coord.row][coord.col] = nil
+        gridModel.removeBubbles(at: [coord])
+        run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.26),
+            SKAction.run { [weak self] in self?.afterPop() }
+        ]))
+    }
+
     // MARK: - Win / Lose
 
     /// Enregistre le score de fin de partie selon le mode.
@@ -803,6 +1022,11 @@ class GameScene: SKScene {
     }
 
     private func showGameOverPanel() {
+        // Boosters indisponibles pendant l'écran de fin.
+        hammerArmed = false
+        messageLabel.isHidden = true
+        boosterBar?.isHidden = true
+
         let panelW: CGFloat = 500
         let panelH: CGFloat = 480
         let cornerR: CGFloat = 36
@@ -868,6 +1092,17 @@ class GameScene: SKScene {
         scoreDisplay.position = CGPoint(x: 0, y: 80)
         panel.addChild(scoreDisplay)
         animateScoreCountUp(label: scoreDisplay, target: score)
+
+        // Pièces gagnées cette partie (mode normal).
+        if coinsEarnedThisGame > 0 {
+            let coinLine = SKLabelNode(text: "🪙 +\(coinsEarnedThisGame)")
+            coinLine.fontName = "AvenirNext-Bold"
+            coinLine.fontSize = 22
+            coinLine.fontColor = UIColor(red: 0.85, green: 0.60, blue: 0.15, alpha: 1)
+            coinLine.verticalAlignmentMode = .center
+            coinLine.position = CGPoint(x: 0, y: 118)
+            panel.addChild(coinLine)
+        }
 
         // Record
         let scores = GameState.highScores()
@@ -1061,6 +1296,10 @@ class GameScene: SKScene {
                     count: GridModel.rows
                 )
                 self.setupGridAnimated()
+                self.coinsEarnedThisGame = 0
+                self.hammerArmed = false
+                self.boosterBar?.isHidden = false
+                self.refreshBoosterButtons()
             }
         ]))
     }
