@@ -229,23 +229,25 @@ class GameScene: SKScene {
         let visibleBottom = -(view.bounds.height / scale) / 2
 
         let gridEdgeBottom = gridBottom - BubbleNode.bubbleRadius
-        let available = gridEdgeBottom - visibleBottom
 
-        // Rangée de contrôle (⌂ / score / ↺) centrée dans la bande sous la grille.
-        // La vue de jeu étant bornée au-dessus de la bannière, `visibleBottom`
-        // correspond déjà au sommet de la pub : rien ne passe dessous.
-        let rowY = visibleBottom + available / 2
+        // Le bloc « boosters + rangée de contrôle » est traité comme UN cluster
+        // centré dans la bande sous la grille (entre le bas de la grille et le haut
+        // de la bannière). Évite le vide en bas : marges équilibrées des deux côtés.
+        let bandMid = (gridEdgeBottom + visibleBottom) / 2
 
-        homeBubbleNode.position.y  = rowY
-        scoreBubbleNode.position.y = rowY
-        restartBubbleNode.position.y = rowY
-
-        // Barre de boosters : centrée dans l'écart entre le bas de la grille et le
-        // haut de la rangée de contrôle. Écart large sur iPhone (placement net),
-        // réduit sur iPad (centrage au mieux, sans empiéter sur la bannière).
-        if let bar = boosterBar {
-            let controlTop = rowY + 44   // rayon de la bulle de contrôle
-            bar.position.y = (gridEdgeBottom + controlTop) / 2
+        if boosterBar != nil {
+            // Deux rangées : boosters au-dessus, contrôle en dessous, cluster centré.
+            let rowGap: CGFloat = 116   // distance verticale entre les deux rangées
+            boosterBar?.position.y = bandMid + rowGap / 2
+            let rowY = bandMid - rowGap / 2
+            homeBubbleNode.position.y  = rowY
+            scoreBubbleNode.position.y = rowY
+            restartBubbleNode.position.y = rowY
+        } else {
+            // Une seule rangée (Défi/démo : pas de boosters) : centrée dans la bande.
+            homeBubbleNode.position.y  = bandMid
+            scoreBubbleNode.position.y = bandMid
+            restartBubbleNode.position.y = bandMid
         }
     }
 
