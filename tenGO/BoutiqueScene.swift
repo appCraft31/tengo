@@ -192,7 +192,7 @@ class BoutiqueScene: SKScene {
 
         // Stock possédé.
         let stock = SKLabelNode(text: String(format: String(localized: "shop.booster_stock",
-                                                             defaultValue: "en stock : %d"), owned))
+                                                             defaultValue: "en stock : %lld"), owned))
         stock.fontName = "AvenirNext-Medium"
         stock.fontSize = 13
         stock.fontColor = theme.logo.withAlphaComponent(0.6)
