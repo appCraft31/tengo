@@ -107,6 +107,10 @@ class GameViewController: UIViewController {
         #endif
         banner.rootViewController = self
         banner.delegate = self
+        let bannerUnitID = banner.adUnitID ?? "banner"
+        banner.paidEventHandler = { adValue in
+            AnalyticsService.adImpression(adValue: adValue, format: "banner", unitName: bannerUnitID)
+        }
         banner.translatesAutoresizingMaskIntoConstraints = false
         view.addSubview(banner)
 

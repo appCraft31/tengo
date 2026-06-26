@@ -61,6 +61,7 @@ final class StoreManager {
             case .success(let verification):
                 guard case .verified(let transaction) = verification else { return false }
                 credit(transaction)
+                AnalyticsService.purchase(product: product, transaction: transaction)
                 await transaction.finish()
                 return true
             case .userCancelled, .pending:

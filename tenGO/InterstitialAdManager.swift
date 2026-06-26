@@ -54,6 +54,9 @@ final class InterstitialAdManager: NSObject {
             }
             self.interstitial = ad
             self.interstitial?.fullScreenContentDelegate = self
+            self.interstitial?.paidEventHandler = { adValue in
+                AnalyticsService.adImpression(adValue: adValue, format: "interstitial", unitName: adUnitID)
+            }
             self.isReady = true
             print("[AdMob] Interstitiel prêt")
         }

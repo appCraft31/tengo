@@ -741,6 +741,7 @@ class GameScene: SKScene {
             GameState.addScore(score)
             GameCenterManager.shared.submitScore(score)
             GameState.clear()
+            AnalyticsService.levelEnd(mode: "normal", score: score, won: isWinState)
         case .daily:
             // Pièces offertes une seule fois, à la première complétion du jour.
             if !DailyChallenge.isCompletedToday() {
@@ -748,6 +749,8 @@ class GameScene: SKScene {
             }
             DailyChallenge.markCompleted()
             GameCenterManager.shared.submitDailyScore(score)
+            AnalyticsService.levelEnd(mode: "daily", score: score, won: isWinState)
+            AnalyticsService.dailyChallengePlayed(score: score)
         case .demo:
             break   // démo : aucun score enregistré ni soumis
         }
