@@ -503,6 +503,7 @@ class TutorialScene: SKScene {
                     showStep(currentStep, animated: true)
                 } else {
                     UserDefaults.standard.set(true, forKey: "hasSeenTutorial")
+                    AnalyticsService.tutorialComplete()
                     navigateToNewGame()
                 }
             case "prev":
