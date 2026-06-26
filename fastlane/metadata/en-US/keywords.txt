@@ -1,1 +1,1 @@
-free,trainer,practice,arithmetic,addition,subtraction,multiplication,sum,quick,challenge,easy,games
+free,sum,ten,merge,connect,numbers,matching,zen,relaxing,daily,challenge,quick,easy,score
