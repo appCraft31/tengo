@@ -1,0 +1,52 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="ad.size" content="width=480,height=320">
+<title>TEN·GO</title>
+<script>var clickTag="https://apps.apple.com/app/ten-go-calcul-mental/id0000000000";</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+body{font-family:-apple-system,"Segoe UI",system-ui,Roboto,"Helvetica Neue",sans-serif}
+.stage{position:relative;display:flex;width:100%;height:100%;overflow:hidden;
+  text-decoration:none;cursor:pointer;color:var(--ink);
+  background:linear-gradient(150deg,var(--bg1),var(--bg2));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.logo{font-weight:800;letter-spacing:.5px;line-height:1}
+.logo .d{color:var(--accent)}
+.bub{border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
+  color:#fff;font-weight:800;box-shadow:0 4px 10px rgba(0,0,0,.14);
+  text-shadow:0 1px 2px rgba(0,0,0,.18)}
+.deco{position:absolute;border-radius:50%;opacity:.3;filter:blur(2px);pointer-events:none}
+.cta{display:inline-block;background:var(--accent);color:var(--oa,#fff);font-weight:800;
+  border-radius:999px;white-space:nowrap;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+@keyframes fin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-10%)}}
+@keyframes draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes shine{0%{transform:translateX(-120%)}60%,100%{transform:translateX(220%)}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important;animation-delay:0s!important}}
+
+
+.piano{flex-direction:column;align-items:center;justify-content:flex-start;padding:7vmin 6vmin 0;gap:3vmin}
+.piano .logo{font-size:6vmin;animation:fin .6s both}
+.piano h1{font-size:7.4vmin;line-height:1.05;font-weight:800;text-align:center;animation:fin .6s .15s both}
+.piano .hi{color:var(--accent)}
+.piano .notes{display:flex;align-items:flex-end;gap:2.4vmin;height:24vmin;animation:fin .6s .3s both}
+.piano .nt{width:12vmin;height:12vmin;font-size:5.6vmin;animation:drift 2.4s ease-in-out infinite}
+.piano .nt:nth-child(1){background:var(--b0);animation-delay:0s}
+.piano .nt:nth-child(2){background:var(--b1);animation-delay:.3s}
+.piano .nt:nth-child(3){background:var(--b2);animation-delay:.6s}
+.piano .nt:nth-child(4){background:var(--b3);animation-delay:.9s}
+.piano .sub{font-size:3.7vmin;opacity:.72;text-align:center;animation:fin .6s .4s both}
+.piano .cta{font-size:4.4vmin;padding:3vmin 6.5vmin;animation:fin .6s .55s both,pulse 1.8s 1.8s ease-in-out 6}
+.piano .keys{position:absolute;bottom:0;left:0;right:0;height:16vmin;display:flex;gap:.6vmin;padding:0 1vmin}
+.piano .wk{flex:1;background:#fff;border-radius:0 0 1.6vmin 1.6vmin;box-shadow:inset 0 0 0 1px rgba(0,0,0,.08)}
+.piano .keys{opacity:.9}
+</style></head>
+<body><a class="stage piano" id="exit" target="_blank" rel="noopener" href="#" style="--bg1:#272246;--bg2:#1A2046;--ink:#F4F2FF;--accent:#7CF5C8;--oa:#10242B;--b0:#FF8FA3;--b1:#7CF5C8;--b2:#FFD56B;--b3:#8FB8FF;--b4:#C8A8FF">
+<span class="logo">TEN<span class="d">·</span>GO</span><h1>Vos chiffres <span class="hi">font la musique</span></h1>
+<div class="notes"><span class="bub nt">6</span><span class="bub nt">4</span><span class="bub nt">7</span><span class="bub nt">3</span></div>
+<p class="sub">Chaque chaîne devient mélodie</p><span class="cta">Jouer gratuitement</span>
+<div class="keys"><span class="wk"></span><span class="wk"></span><span class="wk"></span><span class="wk"></span><span class="wk"></span><span class="wk"></span><span class="wk"></span><span class="wk"></span></div>
+</a><script>document.getElementById('exit').href=window.clickTag||'#';</script></body></html>

@@ -1,0 +1,46 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="ad.size" content="width=320,height=480">
+<title>TEN·GO</title>
+<script>var clickTag="https://apps.apple.com/app/ten-go-calcul-mental/id0000000000";</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+body{font-family:-apple-system,"Segoe UI",system-ui,Roboto,"Helvetica Neue",sans-serif}
+.stage{position:relative;display:flex;width:100%;height:100%;overflow:hidden;
+  text-decoration:none;cursor:pointer;color:var(--ink);
+  background:linear-gradient(150deg,var(--bg1),var(--bg2));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.logo{font-weight:800;letter-spacing:.5px;line-height:1}
+.logo .d{color:var(--accent)}
+.bub{border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
+  color:#fff;font-weight:800;box-shadow:0 4px 10px rgba(0,0,0,.14);
+  text-shadow:0 1px 2px rgba(0,0,0,.18)}
+.deco{position:absolute;border-radius:50%;opacity:.3;filter:blur(2px);pointer-events:none}
+.cta{display:inline-block;background:var(--accent);color:var(--oa,#fff);font-weight:800;
+  border-radius:999px;white-space:nowrap;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+@keyframes fin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-10%)}}
+@keyframes draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes shine{0%{transform:translateX(-120%)}60%,100%{transform:translateX(220%)}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important;animation-delay:0s!important}}
+
+
+.celebrate{align-items:center;justify-content:center}
+.celebrate .cf{position:absolute;width:10vmin;height:10vmin;font-size:4.6vmin;transform:scale(0);
+  animation:pop .5s both,drift 3s ease-in-out infinite}
+.celebrate .wrap{position:relative;z-index:2;display:flex;flex-direction:column;align-items:center;text-align:center;gap:3vmin;padding:7vmin}
+.celebrate .logo{font-size:6vmin;animation:fin .6s both}
+.celebrate .big{font-size:11vmin;font-weight:800;color:var(--accent);line-height:1;animation:pop .5s .3s both}
+.celebrate .plus{font-size:7vmin;font-weight:800;animation:fin .6s .5s both}
+.celebrate h1{font-size:6.6vmin;line-height:1.05;font-weight:800;animation:fin .6s .6s both}
+.celebrate .hi{color:var(--accent)}
+.celebrate .cta{font-size:4.4vmin;padding:3vmin 6.5vmin;animation:fin .6s .8s both,pulse 1.8s 2s ease-in-out 5}
+</style></head>
+<body><a class="stage celebrate" id="exit" target="_blank" rel="noopener" href="#" style="--bg1:#E6F2FF;--bg2:#ECE9FF;--ink:#22304A;--accent:#3B82F6;--oa:#fff;--b0:#8FD0FF;--b1:#5FD9C0;--b2:#FFD56B;--b3:#FFB4A2;--b4:#C8A8FF">
+<span class="bub cf" style="left:12%;top:18%;background:#8FD0FF;animation-delay:0.00s">1</span><span class="bub cf" style="left:82%;top:14%;background:#5FD9C0;animation-delay:0.08s">2</span><span class="bub cf" style="left:20%;top:70%;background:#FFD56B;animation-delay:0.16s">3</span><span class="bub cf" style="left:78%;top:74%;background:#FFB4A2;animation-delay:0.24s">4</span><span class="bub cf" style="left:50%;top:10%;background:#C8A8FF;animation-delay:0.32s">5</span><span class="bub cf" style="left:8%;top:46%;background:#8FD0FF;animation-delay:0.40s">6</span><span class="bub cf" style="left:90%;top:48%;background:#5FD9C0;animation-delay:0.48s">7</span><span class="bub cf" style="left:40%;top:82%;background:#FFD56B;animation-delay:0.56s">8</span><span class="bub cf" style="left:62%;top:30%;background:#FFB4A2;animation-delay:0.64s">9</span><span class="bub cf" style="left:30%;top:38%;background:#C8A8FF;animation-delay:0.72s">1</span><div class="wrap"><span class="logo">TEN<span class="d">·</span>GO</span>
+<div class="big">PARFAIT</div><div class="plus">+100 ✨</div>
+<h1>Réveillez <span class="hi">votre cerveau</span></h1><span class="cta">Entraîner mon cerveau</span></div>
+</a><script>document.getElementById('exit').href=window.clickTag||'#';</script></body></html>

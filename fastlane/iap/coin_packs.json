@@ -1,5 +1,5 @@
 {
-  "_comment": "Fiche des achats in-app (packs de pièces, consommables). Source de vérité pour la création/mise à jour sur App Store Connect via la lane fastlane `iap_sync`. Les productID doivent correspondre exactement à StoreManager.coinAmounts et à tenGO/tenGO.storekit.",
+  "_comment": "Fiche des achats in-app (packs de pièces, consommables). Source de vérité pour la création/mise à jour sur App Store Connect via la lane fastlane `iap_sync`. Les productID doivent correspondre exactement à StoreManager.coinAmounts.",
   "app": {
     "bundleId": "AppCraft31.tenGO",
     "teamId": "JDKABK93UH"

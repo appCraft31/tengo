@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- OBLIGATOIRE Google Ads : doit correspondre exactement aux dimensions du ZIP -->
+<meta name="ad.size" content="width={{AD_W}},height={{AD_H}}">
+<title>TEN·GO</title>
+<!-- clickTag standard Google Ads : remplacer l'URL de destination dans generate.py -->
+<script>var clickTag = "{{CLICKTAG}}";</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+:root{
+  --ink:#2E2A3A;
+  --violet:#6C63FF;
+  --bg1:#FFF3E9; --bg2:#E9F1FF;
+  --peach:#FFB4A2; --mint:#5FD9C0; --sun:#FFD56B; --sky:#8FD0FF;
+  --bub:clamp(26px,15vmin,62px);
+  --logo:clamp(15px,8vmin,38px);
+  --tag:clamp(9px,3.4vmin,16px);
+}
+body{font-family:-apple-system,"Segoe UI",system-ui,Roboto,"Helvetica Neue",sans-serif;color:var(--ink)}
+
+.ad{position:relative;width:100%;height:100%;
+  background:linear-gradient(135deg,var(--bg1),var(--bg2));
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:clamp(3px,2.2vmin,14px);text-decoration:none;color:inherit;
+  overflow:hidden;cursor:pointer;
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)} /* bord léger conseillé par Google */
+
+/* bulles décoratives floues en fond */
+.deco{position:absolute;border-radius:50%;opacity:.32;filter:blur(2px);pointer-events:none}
+.d1{width:42%;height:42%;background:var(--peach);top:-14%;left:-12%}
+.d2{width:36%;height:36%;background:var(--sky);bottom:-16%;right:-12%}
+.d3{width:16%;height:16%;background:var(--sun);top:8%;right:7%}
+
+.left{display:flex;flex-direction:column;align-items:center;
+  gap:clamp(3px,1.8vmin,10px);z-index:2}
+
+.logo{font-weight:800;font-size:var(--logo);letter-spacing:.5px;line-height:1;
+  opacity:0;transform:translateY(-30%);animation:fin .6s .1s forwards}
+.logo .dot{color:var(--violet)}
+
+.scene{display:flex;align-items:center;gap:clamp(4px,2.5vmin,12px)}
+.bub{width:var(--bub);height:var(--bub);border-radius:50%;
+  display:flex;align-items:center;justify-content:center;flex:none;
+  font-weight:800;font-size:calc(var(--bub)*.46);color:#fff;
+  box-shadow:0 4px 10px rgba(0,0,0,.12);transform:scale(0);
+  text-shadow:0 1px 2px rgba(0,0,0,.18)}
+.b6{background:var(--peach);animation:pop .5s .6s cubic-bezier(.2,1.4,.4,1) forwards}
+.b4{background:var(--mint);animation:pop .5s .85s cubic-bezier(.2,1.4,.4,1) forwards}
+.link{width:clamp(10px,4vmin,26px);height:clamp(3px,1.1vmin,6px);border-radius:4px;
+  background:var(--violet);transform:scaleX(0);transform-origin:left;
+  animation:draw .4s 1.35s forwards}
+.badge{padding:clamp(2px,1.2vmin,6px) clamp(5px,2.4vmin,12px);border-radius:999px;
+  background:var(--violet);color:#fff;font-weight:800;font-size:calc(var(--bub)*.34);
+  white-space:nowrap;transform:scale(0);
+  animation:pop .5s 1.9s cubic-bezier(.2,1.4,.4,1) forwards}
+
+.tag{font-size:var(--tag);font-weight:600;text-align:center;padding:0 6px;
+  opacity:0;z-index:2;animation:fin .5s 2.5s forwards}
+
+.cta{margin-top:clamp(2px,1vmin,6px);
+  padding:clamp(6px,2.6vmin,12px) clamp(12px,5vmin,26px);border-radius:999px;
+  background:var(--violet);color:#fff;font-weight:800;white-space:nowrap;z-index:2;
+  font-size:clamp(11px,3.6vmin,17px);box-shadow:0 6px 16px rgba(108,99,255,.4);
+  opacity:0;transform:translateY(40%);
+  animation:fin .5s 3s forwards, pulse 1.6s 3.6s ease-in-out 8}
+
+@keyframes fin{to{opacity:1;transform:translateY(0)}}
+@keyframes pop{to{transform:scale(1)}}
+@keyframes draw{to{transform:scaleX(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+
+/* —— bannières horizontales (728x90, 970x250, 320x100, 320x50) : layout en ligne —— */
+@media (min-aspect-ratio:2/1){
+  .ad{flex-direction:row;gap:clamp(8px,4vw,40px);justify-content:space-around;padding:0 3%}
+  :root{--bub:clamp(20px,40vh,58px);--logo:clamp(13px,22vh,32px);--tag:clamp(8px,11vh,15px)}
+  .cta{margin-top:0}
+}
+/* —— hauteur faible : on masque la tagline —— */
+@media (max-height:118px){ .tag{display:none} }
+/* —— très faible (320x50) : on masque aussi le badge —— */
+@media (max-height:70px){ .badge{display:none} }
+
+@media (prefers-reduced-motion:reduce){
+  *{animation-duration:.001s!important;animation-delay:0s!important}
+}
+</style>
+</head>
+<body>
+<a class="ad" id="exit" target="_blank" rel="noopener" href="#">
+  <span class="deco d1"></span><span class="deco d2"></span><span class="deco d3"></span>
+  <div class="left">
+    <div class="logo">TEN<span class="dot">·</span>GO</div>
+    <div class="scene">
+      <span class="bub b6">6</span>
+      <span class="link"></span>
+      <span class="bub b4">4</span>
+      <span class="badge">= 10</span>
+    </div>
+  </div>
+  <div class="tag">Calcul mental zen — sans chrono</div>
+  <div class="cta">Jouer gratuitement</div>
+</a>
+<script>document.getElementById('exit').href = (window.clickTag || '#');</script>
+</body>
+</html>

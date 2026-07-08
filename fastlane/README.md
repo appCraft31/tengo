@@ -65,6 +65,18 @@ Envoie les métadonnées (notes de version) sur App Store Connect — sans binai
 
 Usage : bundle exec fastlane release_notes [version:1.8]
 
+### ios iap_sync
+
+```sh
+[bundle exec] fastlane ios iap_sync
+```
+
+Crée / met à jour les achats in-app (packs de pièces) depuis fastlane/iap/coin_packs.json
+
+Lecture seule par défaut. Pour appliquer : bundle exec fastlane iap_sync apply:true
+
+Note : `deliver` ne gère pas les IAP — on passe par l'API App Store Connect (Spaceship).
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
