@@ -1,5 +1,3 @@
-Potenciadores: desatáscate con Pista, Mezclar y Martillo cuando la cuadrícula se complica.
-Gana monedas en cada partida, y +10 monedas viendo un vídeo desde el menú (5 al día).
-Tienda: una nueva pestaña para comprar tus potenciadores en lotes.
-Interfaz rediseñada y varias correcciones.
+Ahora puedes volver a gestionar tus preferencias de privacidad directamente desde los ajustes.
+Mejoras técnicas y varias correcciones para una experiencia más fluida.
 ¡Gracias por jugar a tenGO!

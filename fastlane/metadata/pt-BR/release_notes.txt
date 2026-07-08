@@ -1,5 +1,3 @@
-Boosters: saia do impasse com Dica, Embaralhar e Martelo quando a grade complica.
-Ganhe moedas a cada partida, e +10 moedas assistindo a um vídeo no menu (5 por dia).
-Loja: uma nova aba para comprar seus boosters em pacotes.
-Interface repaginada e diversas correções.
+Agora você pode gerenciar suas preferências de privacidade novamente direto nos ajustes.
+Melhorias técnicas e diversas correções para uma experiência mais fluida.
 Obrigado por jogar tenGO!

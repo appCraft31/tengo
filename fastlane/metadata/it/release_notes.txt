@@ -1,5 +1,3 @@
-Potenziamenti: sbloccati con Indizio, Mescola e Martello quando la griglia si complica.
-Guadagna monete a ogni partita, e +10 monete guardando un video dal menu (5 al giorno).
-Negozio: una nuova scheda per acquistare i potenziamenti in pacchetti.
-Interfaccia ridisegnata e varie correzioni.
-Grazie per aver giocato a tenGO!
+Ora puoi gestire di nuovo le tue preferenze sulla privacy direttamente dalle impostazioni.
+Miglioramenti tecnici e varie correzioni per un'esperienza più fluida.
+Grazie per giocare a tenGO!

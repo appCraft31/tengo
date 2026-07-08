@@ -1,5 +1,3 @@
-Boosters: get unstuck with Hint, Shuffle and Hammer when the grid gets tricky.
-Earn coins every game, plus +10 coins by watching a video from the menu (5 per day).
-Shop: a new tab to buy your boosters in bundles.
-Redesigned interface and various fixes.
+You can now manage your privacy preferences again, right from Settings.
+Technical improvements and various fixes for a smoother experience.
 Thanks for playing tenGO!

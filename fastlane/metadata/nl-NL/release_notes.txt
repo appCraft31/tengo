@@ -1,5 +1,3 @@
-Boosters: kom verder met Hint, Schudden en Hamer als het raster lastig wordt.
-Verdien munten in elke ronde, plus +10 munten door een video te bekijken vanuit het menu (5 per dag).
-Winkel: een nieuw tabblad om je boosters per pakket te kopen.
-Vernieuwde interface en diverse correcties.
-Bedankt voor het spelen van tenGO!
+Je kunt je privacyvoorkeuren nu weer rechtstreeks in de instellingen beheren.
+Technische verbeteringen en diverse oplossingen voor een soepelere ervaring.
+Bedankt dat je tenGO speelt!
