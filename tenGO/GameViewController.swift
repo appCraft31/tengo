@@ -67,6 +67,9 @@ class GameViewController: UIViewController {
         } else if env["GAME_NORMAL"] == "1" {
             // Démarre directement une partie normale (test/QA + captures gameplay).
             scene = GameScene(size: CGSize(width: 750, height: 1334), savedState: nil)
+        } else if env["SHOP_MODE"] == "1" {
+            // Ouvre directement la boutique (capture de review App Store des achats in-app).
+            scene = BoutiqueScene(size: CGSize(width: 750, height: 1334))
         } else {
             scene = MenuScene(size: CGSize(width: 750, height: 1334))
         }
@@ -102,7 +105,7 @@ class GameViewController: UIViewController {
         // Lien entrant reçu avant que l'observateur ne soit prêt (lancement à froid).
         if DeepLink.pendingDaily { openDaily() }
         let env = ProcessInfo.processInfo.environment
-        guard env["SCREENSHOT_DAILY"] != "1", env["DEMO_MODE"] != "1", env["BRAND_MODE"] != "1" else { return }
+        guard env["SCREENSHOT_DAILY"] != "1", env["DEMO_MODE"] != "1", env["BRAND_MODE"] != "1", env["SHOP_MODE"] != "1" else { return }
 
         // QA (GAME_NORMAL) : démarre les pubs sans le flux de consentement, pour
         // tester le layout de la bannière au simulateur sans boîtes système bloquantes.

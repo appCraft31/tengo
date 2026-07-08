@@ -25,6 +25,8 @@ class BoutiqueScene: SKScene {
         let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
         usableWidth = view.bounds.width / scale
         cardW = usableWidth / 2 - 16
+        // Capture de review App Store des achats in-app : ouvre directement l'onglet Pièces.
+        if ProcessInfo.processInfo.environment["SHOP_MODE"] == "1" { tab = .coins }
         rebuild()
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
     }
@@ -79,7 +81,13 @@ class BoutiqueScene: SKScene {
             }
         case .coins:
             let products = StoreManager.shared.products
-            if products.isEmpty {
+            if ProcessInfo.processInfo.environment["SHOP_MODE"] == "1" && products.isEmpty {
+                // Rendu déterministe pour la capture App Store (sans dépendance réseau StoreKit).
+                let mocks: [(Int, String)] = [(500, "$0.99"), (1200, "$1.99"), (3000, "$3.99"), (6500, "$7.99")]
+                for (i, m) in mocks.enumerated() {
+                    addCoinPackMock(amount: m.0, priceText: m.1, at: place(i))
+                }
+            } else if products.isEmpty {
                 let msg = attemptedProductLoad
                     ? String(localized: "shop.coins_unavailable", defaultValue: "Indisponible pour le moment")
                     : String(localized: "shop.coins_loading", defaultValue: "Chargement…")
@@ -172,6 +180,30 @@ class BoutiqueScene: SKScene {
             label.position = CGPoint(x: 0, y: -48)
             card.addChild(label)
         }
+    }
+
+    /// Carte de pack de pièces factice (capture de review App Store, sans StoreKit).
+    private func addCoinPackMock(amount: Int, priceText: String, at position: CGPoint) {
+        let theme = ThemeManager.shared.active
+        let preview = SKNode()
+        preview.addChild(CoinIcon.make(radius: 24))
+        addCardFrame(name: "packmock:\(amount)", background: theme.background,
+                     border: theme.logo.withAlphaComponent(0.18), borderWidth: 1,
+                     title: "\(amount)", titleColor: theme.logo,
+                     preview: preview, previewY: 40, at: position)
+        guard let card = childNode(withName: "packmock:\(amount)") else { return }
+        let pill = SKShapeNode(rectOf: CGSize(width: 110, height: 34), cornerRadius: 17)
+        pill.fillColor = theme.accent
+        pill.strokeColor = .clear
+        pill.position = CGPoint(x: 0, y: -48)
+        card.addChild(pill)
+        let label = SKLabelNode(text: priceText)
+        label.fontName = "AvenirNext-Bold"
+        label.fontSize = 16
+        label.fontColor = contrastingText(on: theme.accent)
+        label.verticalAlignmentMode = .center
+        label.position = CGPoint(x: 0, y: -48)
+        card.addChild(label)
     }
 
     /// Carte d'un lot de booster (achat en pièces).
