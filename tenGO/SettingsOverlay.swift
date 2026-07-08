@@ -43,7 +43,7 @@ final class SettingsOverlay: SKNode {
     private var hapticStatus: SKLabelNode!
 
     private static let cardW: CGFloat = 490
-    private static let cardH: CGFloat = 620
+    private static let cardH: CGFloat = 680
 
     // MARK: - Init
 
@@ -86,6 +86,8 @@ final class SettingsOverlay: SKNode {
                     self?.onAction?(.replayTutorial)
                 }
                 return true
+            case "row_privacy":
+                animateRow(named: "row_privacy"); presentPrivacyOptions(); return true
             case "row_rate":
                 animateRow(named: "row_rate"); requestReview(); return true
             case "row_share":
@@ -180,6 +182,7 @@ final class SettingsOverlay: SKNode {
         y -= 10
 
         addActionRow(name: "row_tutorial", title: String(localized: "settings.replay_tutorial"), y: y); y -= rowStep
+        addActionRow(name: "row_privacy", title: String(localized: "settings.privacy_options"), y: y); y -= rowStep
 
         addSeparator(y: y + 8)
         y -= 10
@@ -386,6 +389,15 @@ final class SettingsOverlay: SKNode {
         let url = URL(string: "mailto:\(AppConfig.supportEmail)?subject=\(enc(subject))&body=\(enc(body))")
         guard let url = url else { return }
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
+    }
+
+    private func presentPrivacyOptions() {
+        guard let vc = presenter else { return }
+        ConsentManager.shared.presentPrivacyOptions(from: vc) { error in
+            if let error = error {
+                print("[Privacy] \(error.localizedDescription)")
+            }
+        }
     }
 
 }
