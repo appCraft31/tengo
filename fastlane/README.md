@@ -77,6 +77,32 @@ Lecture seule par défaut. Pour appliquer : bundle exec fastlane iap_sync apply:
 
 Note : `deliver` ne gère pas les IAP — on passe par l'API App Store Connect (Spaceship).
 
+### ios iap_audit
+
+```sh
+[bundle exec] fastlane ios iap_audit
+```
+
+Audit lecture seule des IAP sur App Store Connect (état, type, prix, localisations)
+
+### ios iap_screenshot
+
+```sh
+[bundle exec] fastlane ios iap_screenshot
+```
+
+Attache la capture de review aux 4 IAP. Usage : fastlane iap_screenshot [path:/chemin.png]
+
+### ios iap_fix
+
+```sh
+[bundle exec] fastlane ios iap_fix
+```
+
+Corrige les IAP mal configurés (localisations + prix + review note) depuis coin_packs.json
+
+Lecture seule par défaut. Pour appliquer : bundle exec fastlane iap_fix apply:true
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.
