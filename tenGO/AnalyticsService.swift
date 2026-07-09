@@ -10,9 +10,11 @@
 //  ad_impression…) utilisent les constantes Firebase afin d'être reconnus
 //  automatiquement par la console et par Google Ads.
 //
-//  NB : la collecte ne démarre réellement qu'après le consentement
-//  (UMP + ATT, cf. ConsentManager). Firebase respecte le statut ATT pour
-//  l'usage publicitaire des données.
+//  NB : consent mode Google. Par défaut (Info.plist GOOGLE_ANALYTICS_DEFAULT_ALLOW_*),
+//  analytics_storage est accordé mais ad_storage / ad_user_data /
+//  ad_personalization sont refusés. ConsentManager n'accorde les signaux
+//  publicitaires que si l'utilisateur a autorisé l'ATT (et le consentement
+//  UMP le cas échéant).
 //
 
 import Foundation

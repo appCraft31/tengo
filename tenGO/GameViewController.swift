@@ -8,7 +8,6 @@ import SpriteKit
 import GameplayKit
 import GameKit
 import GoogleMobileAds
-import UserMessagingPlatform
 
 class GameViewController: UIViewController {
 
@@ -112,6 +111,8 @@ class GameViewController: UIViewController {
         if env["GAME_NORMAL"] == "1" {
             guard !consentGathered else { return }
             consentGathered = true
+            // Aucun consentement recueilli dans ce mode → non personnalisé.
+            MobileAds.shared.requestConfiguration.publisherPrivacyPersonalizationState = .disabled
             MobileAds.shared.start { _ in
                 DispatchQueue.main.async {
                     self.setupBanner()
@@ -131,11 +132,12 @@ class GameViewController: UIViewController {
         // requestTrackingAuthorization est ignoré si la fenêtre n'est pas encore active.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard let self else { return }
-            ConsentManager.shared.gatherConsent(from: self) { [weak self] in
-                guard ConsentInformation.shared.canRequestAds else {
-                    print("[AdMob] Consentement refusé — pas de bannière")
+            ConsentManager.shared.gatherConsent(from: self) { [weak self] outcome in
+                guard outcome != .noAds else {
+                    print("[AdMob] Pas de consentement exploitable — pas de pub")
                     return
                 }
+                print("[AdMob] Démarrage pubs — mode \(outcome == .personalizedAds ? "personnalisé" : "non personnalisé")")
                 MobileAds.shared.start { _ in
                     DispatchQueue.main.async {
                         self?.setupBanner()
@@ -182,7 +184,7 @@ class GameViewController: UIViewController {
         view.layoutIfNeeded()
         (gameView.scene as? GameScene)?.relayoutForViewChange()
 
-        banner.load(Request())
+        banner.load(.consentAware())
         bannerView = banner
     }
 
