@@ -45,7 +45,7 @@ final class InterstitialAdManager: NSObject {
         adUnitID = "ca-app-pub-4352408747876735/5201754193"
         #endif
 
-        InterstitialAd.load(with: adUnitID, request: Request()) { [weak self] ad, error in
+        InterstitialAd.load(with: adUnitID, request: .consentAware()) { [weak self] ad, error in
             guard let self else { return }
             if let error {
                 print("[AdMob] Interstitiel échec chargement : \(error.localizedDescription)")

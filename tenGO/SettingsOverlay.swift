@@ -393,10 +393,16 @@ final class SettingsOverlay: SKNode {
 
     private func presentPrivacyOptions() {
         guard let vc = presenter else { return }
-        ConsentManager.shared.presentPrivacyOptions(from: vc) { error in
-            if let error = error {
-                print("[Privacy] \(error.localizedDescription)")
+        if ConsentManager.shared.isPrivacyOptionsRequired {
+            ConsentManager.shared.presentPrivacyOptions(from: vc) { error in
+                if let error = error {
+                    print("[Privacy] \(error.localizedDescription)")
+                }
             }
+        } else if let url = URL(string: UIApplication.openSettingsURLString) {
+            // Pas de formulaire UMP disponible (ATT refusé ou hors EEA) :
+            // réglages système de l'app, où vit le toggle « Autoriser le suivi ».
+            UIApplication.shared.open(url, options: [:], completionHandler: nil)
         }
     }
 

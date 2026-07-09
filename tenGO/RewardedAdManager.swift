@@ -59,7 +59,7 @@ final class RewardedAdManager: NSObject {
         adUnitID = "ca-app-pub-4352408747876735/2440159179"
         #endif
 
-        RewardedInterstitialAd.load(with: adUnitID, request: Request()) { [weak self] ad, error in
+        RewardedInterstitialAd.load(with: adUnitID, request: .consentAware()) { [weak self] ad, error in
             guard let self else { return }
             if let error {
                 print("[AdMob] Récompensée échec chargement : \(error.localizedDescription)")
