@@ -1,0 +1,55 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="ad.size" content="width=320,height=480">
+<title>TEN·GO</title>
+<script>var clickTag="https://apps.apple.com/app/ten-go-calcul-mental/id0000000000";</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+body{font-family:-apple-system,"Segoe UI",system-ui,Roboto,"Helvetica Neue",sans-serif}
+.stage{position:relative;display:flex;width:100%;height:100%;overflow:hidden;
+  text-decoration:none;cursor:pointer;color:var(--ink);
+  background:linear-gradient(150deg,var(--bg1),var(--bg2));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.logo{font-weight:800;letter-spacing:.5px;line-height:1}
+.logo .d{color:var(--accent)}
+.bub{border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
+  color:#fff;font-weight:800;box-shadow:0 4px 10px rgba(0,0,0,.14);
+  text-shadow:0 1px 2px rgba(0,0,0,.18)}
+.deco{position:absolute;border-radius:50%;opacity:.3;filter:blur(2px);pointer-events:none}
+.cta{display:inline-block;background:var(--accent);color:var(--oa,#fff);font-weight:800;
+  border-radius:999px;white-space:nowrap;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+@keyframes fin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-10%)}}
+@keyframes draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes shine{0%{transform:translateX(-120%)}60%,100%{transform:translateX(220%)}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important;animation-delay:0s!important}}
+
+
+.score{align-items:center;justify-content:center}
+.score .wrap{display:flex;flex-direction:column;align-items:center;text-align:center;gap:3vmin;padding:7vmin}
+.score .logo{font-size:6vmin;animation:fin .6s both}
+.score .num{font-size:20vmin;font-weight:800;line-height:1;color:var(--accent);
+  position:relative;animation:fin .6s .1s both}
+.score .num .sh{position:absolute;inset:0;overflow:hidden}
+.score .chips{display:flex;gap:2vmin}
+.score .chip{background:var(--b1);color:#fff;font-weight:800;font-size:4.4vmin;
+  padding:1.4vmin 3vmin;border-radius:999px;transform:scale(0)}
+.score .chip:nth-child(1){animation:pop .4s .5s both}
+.score .chip:nth-child(2){animation:pop .4s .8s both}
+.score .chip:nth-child(3){animation:pop .4s 1.1s both}
+.score .rec{font-size:3.8vmin;font-weight:700;opacity:.75;animation:fin .6s 1.3s both}
+.score h1{font-size:7vmin;line-height:1.05;font-weight:800;animation:fin .6s .3s both}
+.score .hi{color:var(--accent)}
+.score .cta{font-size:4.4vmin;padding:3vmin 6.5vmin;animation:fin .6s 1.5s both,pulse 1.8s 2.4s ease-in-out 5}
+.score .d1{width:50vmin;height:50vmin;background:var(--b2);top:-16vmin;right:-14vmin}
+</style></head>
+<body><a class="stage score" id="exit" target="_blank" rel="noopener" href="#" style="--bg1:#FFE8D6;--bg2:#FFD9E6;--ink:#3A2030;--accent:#FF5E8A;--oa:#fff;--b0:#FF8FA3;--b1:#FFB36B;--b2:#FFD56B;--b3:#C8A8FF;--b4:#8FD0FF">
+<i class="deco d1"></i><div class="wrap"><span class="logo">TEN<span class="d">·</span>GO</span>
+<div class="num">9 540</div>
+<div class="chips"><span class="chip">+10</span><span class="chip">+30</span><span class="chip">+50</span></div>
+<div class="rec">★ Nouveau record</div>
+<h1>Réveillez <span class="hi">votre cerveau</span></h1><span class="cta">Entraîner mon cerveau</span></div>
+</a><script>document.getElementById('exit').href=window.clickTag||'#';</script></body></html>

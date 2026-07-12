@@ -1,0 +1,89 @@
+{
+  "_comment": "Fiche des achats in-app (packs de pièces, consommables). Source de vérité pour la création/mise à jour sur App Store Connect via la lane fastlane `iap_sync`. Les productID doivent correspondre exactement à StoreManager.coinAmounts.",
+  "app": {
+    "bundleId": "AppCraft31.tenGO",
+    "teamId": "JDKABK93UH"
+  },
+  "products": [
+    {
+      "productId": "com.tengo.coins.tier1",
+      "referenceName": "Coins 500",
+      "type": "CONSUMABLE",
+      "coins": 500,
+      "priceUSD": "0.99",
+      "reviewNote": "Consumable coin pack. Credits 500 in-game coins, spent on cosmetics and boosters. No account or login required.",
+      "localizations": {
+        "fr-FR": { "name": "500 pièces", "description": "Petit sac de pièces" },
+        "en-US": { "name": "500 coins", "description": "Small bag of coins" },
+        "de-DE": { "name": "500 Münzen", "description": "Kleiner Münzbeutel" },
+        "es-ES": { "name": "500 monedas", "description": "Bolsa pequeña de monedas" },
+        "it":    { "name": "500 monete", "description": "Sacchetto di monete" },
+        "ja":    { "name": "500 コイン", "description": "コインの小袋" },
+        "ko":    { "name": "코인 500개", "description": "작은 코인 주머니" },
+        "nl-NL": { "name": "500 munten", "description": "Klein zakje munten" },
+        "pt-BR": { "name": "500 moedas", "description": "Saco pequeno de moedas" },
+        "zh-Hans": { "name": "500 金币", "description": "小袋金币" }
+      }
+    },
+    {
+      "productId": "com.tengo.coins.tier2",
+      "referenceName": "Coins 1200",
+      "type": "CONSUMABLE",
+      "coins": 1200,
+      "priceUSD": "1.99",
+      "reviewNote": "Consumable coin pack. Credits 1200 in-game coins, spent on cosmetics and boosters. No account or login required.",
+      "localizations": {
+        "fr-FR": { "name": "1200 pièces", "description": "Sac de pièces" },
+        "en-US": { "name": "1200 coins", "description": "Bag of coins" },
+        "de-DE": { "name": "1200 Münzen", "description": "Münzbeutel" },
+        "es-ES": { "name": "1200 monedas", "description": "Bolsa de monedas" },
+        "it":    { "name": "1200 monete", "description": "Sacco di monete" },
+        "ja":    { "name": "1200 コイン", "description": "コインの袋" },
+        "ko":    { "name": "코인 1200개", "description": "코인 주머니" },
+        "nl-NL": { "name": "1200 munten", "description": "Zakje munten" },
+        "pt-BR": { "name": "1200 moedas", "description": "Saco de moedas" },
+        "zh-Hans": { "name": "1200 金币", "description": "一袋金币" }
+      }
+    },
+    {
+      "productId": "com.tengo.coins.tier3",
+      "referenceName": "Coins 3000",
+      "type": "CONSUMABLE",
+      "coins": 3000,
+      "priceUSD": "3.99",
+      "reviewNote": "Consumable coin pack. Credits 3000 in-game coins, spent on cosmetics and boosters. No account or login required.",
+      "localizations": {
+        "fr-FR": { "name": "3000 pièces", "description": "Grand sac de pièces" },
+        "en-US": { "name": "3000 coins", "description": "Large bag of coins" },
+        "de-DE": { "name": "3000 Münzen", "description": "Großer Münzbeutel" },
+        "es-ES": { "name": "3000 monedas", "description": "Bolsa grande de monedas" },
+        "it":    { "name": "3000 monete", "description": "Grande sacco di monete" },
+        "ja":    { "name": "3000 コイン", "description": "コインの大袋" },
+        "ko":    { "name": "코인 3000개", "description": "큰 코인 주머니" },
+        "nl-NL": { "name": "3000 munten", "description": "Grote zak munten" },
+        "pt-BR": { "name": "3000 moedas", "description": "Saco grande de moedas" },
+        "zh-Hans": { "name": "3000 金币", "description": "大袋金币" }
+      }
+    },
+    {
+      "productId": "com.tengo.coins.tier4",
+      "referenceName": "Coins 6500",
+      "type": "CONSUMABLE",
+      "coins": 6500,
+      "priceUSD": "7.99",
+      "reviewNote": "Consumable coin pack. Credits 6500 in-game coins, spent on cosmetics and boosters. No account or login required.",
+      "localizations": {
+        "fr-FR": { "name": "6500 pièces", "description": "Coffre de pièces" },
+        "en-US": { "name": "6500 coins", "description": "Chest of coins" },
+        "de-DE": { "name": "6500 Münzen", "description": "Münztruhe" },
+        "es-ES": { "name": "6500 monedas", "description": "Cofre de monedas" },
+        "it":    { "name": "6500 monete", "description": "Forziere di monete" },
+        "ja":    { "name": "6500 コイン", "description": "コインの宝箱" },
+        "ko":    { "name": "코인 6500개", "description": "코인 상자" },
+        "nl-NL": { "name": "6500 munten", "description": "Kist met munten" },
+        "pt-BR": { "name": "6500 moedas", "description": "Baú de moedas" },
+        "zh-Hans": { "name": "6500 金币", "description": "金币宝箱" }
+      }
+    }
+  ]
+}

@@ -8,17 +8,44 @@ import SpriteKit
 import GameplayKit
 import GameKit
 import GoogleMobileAds
-import UserMessagingPlatform
 
 class GameViewController: UIViewController {
 
     private var bannerView: BannerView?
     private var consentGathered = false
 
+    /// Vue de jeu (sous-vue d'une racine UIView simple, pas une SKView imbriquée :
+    /// évite les soucis de livraison tactile). Se réduit au-dessus de la bannière.
+    private var gameView: SKView!
+    /// Contrainte basse de `gameView` : bas de l'écran sans bannière, puis haut de
+    /// la bannière une fois celle-ci posée — toutes les scènes restent au-dessus.
+    private var gameViewBottom: NSLayoutConstraint!
+
+    /// Hiérarchie programmatique : racine UIView simple + SKView plein écran.
+    override func loadView() {
+        let root = UIView(frame: UIScreen.main.bounds)
+        root.backgroundColor = .black
+        // Frame initiale plein écran : garantit des bounds valides dès le premier
+        // didMove de la scène (avant que les contraintes ne soient résolues), sinon
+        // les éléments positionnés via la géométrie view se retrouvent hors écran.
+        let skView = SKView(frame: UIScreen.main.bounds)
+        skView.translatesAutoresizingMaskIntoConstraints = false
+        root.addSubview(skView)
+        gameViewBottom = skView.bottomAnchor.constraint(equalTo: root.bottomAnchor)
+        NSLayoutConstraint.activate([
+            skView.topAnchor.constraint(equalTo: root.topAnchor),
+            skView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
+            skView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
+            gameViewBottom
+        ])
+        self.view = root
+        self.gameView = skView
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        guard let skView = self.view as? SKView else { return }
+        let skView = gameView!
 
         #if DEBUG
         MobileAds.shared.requestConfiguration.testDeviceIdentifiers = ["052b09f5dbca790a5d0b42140dcfa503"]
@@ -36,6 +63,12 @@ class GameViewController: UIViewController {
             scene = GameScene(size: CGSize(width: 750, height: 1334), demoSeed: seed, demoSpeed: speed)
         } else if env["SCREENSHOT_DAILY"] == "1" {
             scene = GameScene(size: CGSize(width: 750, height: 1334), daily: DailyChallenge.make())
+        } else if env["GAME_NORMAL"] == "1" {
+            // Démarre directement une partie normale (test/QA + captures gameplay).
+            scene = GameScene(size: CGSize(width: 750, height: 1334), savedState: nil)
+        } else if env["SHOP_MODE"] == "1" {
+            // Ouvre directement la boutique (capture de review App Store des achats in-app).
+            scene = BoutiqueScene(size: CGSize(width: 750, height: 1334))
         } else {
             scene = MenuScene(size: CGSize(width: 750, height: 1334))
         }
@@ -71,7 +104,25 @@ class GameViewController: UIViewController {
         // Lien entrant reçu avant que l'observateur ne soit prêt (lancement à froid).
         if DeepLink.pendingDaily { openDaily() }
         let env = ProcessInfo.processInfo.environment
-        guard env["SCREENSHOT_DAILY"] != "1", env["DEMO_MODE"] != "1", env["BRAND_MODE"] != "1" else { return }
+        guard env["SCREENSHOT_DAILY"] != "1", env["DEMO_MODE"] != "1", env["BRAND_MODE"] != "1", env["SHOP_MODE"] != "1" else { return }
+
+        // QA (GAME_NORMAL) : démarre les pubs sans le flux de consentement, pour
+        // tester le layout de la bannière au simulateur sans boîtes système bloquantes.
+        if env["GAME_NORMAL"] == "1" {
+            guard !consentGathered else { return }
+            consentGathered = true
+            // Aucun consentement recueilli dans ce mode → non personnalisé.
+            MobileAds.shared.requestConfiguration.publisherPrivacyPersonalizationState = .disabled
+            MobileAds.shared.start { _ in
+                DispatchQueue.main.async {
+                    self.setupBanner()
+                    InterstitialAdManager.shared.loadAd()
+                    RewardedAdManager.shared.loadAd()
+                }
+            }
+            return
+        }
+
         guard !consentGathered else { return }
         consentGathered = true
 
@@ -81,15 +132,17 @@ class GameViewController: UIViewController {
         // requestTrackingAuthorization est ignoré si la fenêtre n'est pas encore active.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard let self else { return }
-            ConsentManager.shared.gatherConsent(from: self) { [weak self] in
-                guard ConsentInformation.shared.canRequestAds else {
-                    print("[AdMob] Consentement refusé — pas de bannière")
+            ConsentManager.shared.gatherConsent(from: self) { [weak self] outcome in
+                guard outcome != .noAds else {
+                    print("[AdMob] Pas de consentement exploitable — pas de pub")
                     return
                 }
+                print("[AdMob] Démarrage pubs — mode \(outcome == .personalizedAds ? "personnalisé" : "non personnalisé")")
                 MobileAds.shared.start { _ in
                     DispatchQueue.main.async {
                         self?.setupBanner()
                         InterstitialAdManager.shared.loadAd()
+                        RewardedAdManager.shared.loadAd()
                     }
                 }
             }
@@ -99,7 +152,10 @@ class GameViewController: UIViewController {
     // MARK: - Bannière AdMob
 
     private func setupBanner() {
-        let banner = BannerView(adSize: AdSizeBanner)
+        // Bannière adaptative ancrée, calée sur toute la largeur de l'écran.
+        let width = view.frame.inset(by: view.safeAreaInsets).width
+        let adSize = currentOrientationAnchoredAdaptiveBanner(width: width)
+        let banner = BannerView(adSize: adSize)
         #if DEBUG
         banner.adUnitID = "ca-app-pub-3940256099942544/2934735716"
         #else
@@ -107,15 +163,28 @@ class GameViewController: UIViewController {
         #endif
         banner.rootViewController = self
         banner.delegate = self
+        let bannerUnitID = banner.adUnitID ?? "banner"
+        banner.paidEventHandler = { adValue in
+            AnalyticsService.adImpression(adValue: adValue, format: "banner", unitName: bannerUnitID)
+        }
         banner.translatesAutoresizingMaskIntoConstraints = false
+        banner.backgroundColor = .systemBackground
         view.addSubview(banner)
 
         NSLayoutConstraint.activate([
-            banner.centerXAnchor.constraint(equalTo: view.centerXAnchor),
+            banner.leadingAnchor.constraint(equalTo: view.leadingAnchor),
+            banner.trailingAnchor.constraint(equalTo: view.trailingAnchor),
             banner.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
         ])
 
-        banner.load(Request())
+        // La vue de jeu se borne au-dessus de la bannière : toutes les scènes
+        // (menu, tutoriel, jeu, boutique) restent intégralement au-dessus de la pub.
+        gameViewBottom.isActive = false
+        gameView.bottomAnchor.constraint(equalTo: banner.topAnchor).isActive = true
+        view.layoutIfNeeded()
+        (gameView.scene as? GameScene)?.relayoutForViewChange()
+
+        banner.load(.consentAware())
         bannerView = banner
     }
 
@@ -131,7 +200,7 @@ class GameViewController: UIViewController {
     /// Ouvre directement le Défi du jour (depuis un lien externe / événement intégré).
     private func openDaily() {
         _ = DeepLink.consumePendingDaily()
-        guard let skView = self.view as? SKView else { return }
+        let skView = gameView!
         let scene = GameScene(size: CGSize(width: 750, height: 1334), daily: DailyChallenge.make())
         scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scene.scaleMode = .aspectFill
@@ -139,10 +208,9 @@ class GameViewController: UIViewController {
     }
 
     @objc private func sceneDidChange(_ notification: Notification) {
-        let isMenu = notification.userInfo?["isMenu"] as? Bool ?? false
-        UIView.animate(withDuration: 0.25) {
-            self.bannerView?.alpha = isMenu ? 1 : 0
-        }
+        // La bannière reste visible en permanence : la vue de jeu est bornée
+        // au-dessus d'elle, donc aucun élément de jeu n'est masqué.
+        bannerView?.alpha = 1
     }
 
     // MARK: - Orientations

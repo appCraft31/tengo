@@ -129,4 +129,290 @@ platform :ios do
     )
   end
 
+  desc "Crée / met à jour les achats in-app (packs de pièces) depuis fastlane/iap/coin_packs.json"
+  desc "Lecture seule par défaut. Pour appliquer : bundle exec fastlane iap_sync apply:true"
+  desc "Note : `deliver` ne gère pas les IAP — on passe par l'API App Store Connect (Spaceship)."
+  lane :iap_sync do |options|
+    require "spaceship"
+    require "json"
+
+    apply = options[:apply].to_s == "true"
+    fiche = JSON.parse(File.read(File.expand_path("iap/coin_packs.json", __dir__)))
+    products = fiche["products"]
+
+    # Authentification API (même clé que les autres lanes).
+    token = Spaceship::ConnectAPI::Token.create(
+      key_id:    "U5B34558L6",
+      issuer_id: "69a6de88-d732-47e3-e053-5b8c7c11a4d1",
+      filepath:  File.expand_path("AuthKey_U5B34558L6.p8", __dir__)
+    )
+    Spaceship::ConnectAPI.token = token
+
+    app = Spaceship::ConnectAPI::App.find(fiche["app"]["bundleId"])
+    UI.user_error!("App introuvable : #{fiche['app']['bundleId']}") if app.nil?
+
+    existing = app.get_in_app_purchases.to_a
+    existing_ids = existing.map(&:product_id)
+    UI.message("IAP existants sur App Store Connect : #{existing_ids.empty? ? '(aucun)' : existing_ids.join(', ')}")
+
+    products.each do |p|
+      pid = p["productId"]
+      already = existing.find { |e| e.product_id == pid }
+
+      if already
+        UI.success("✓ #{pid} existe déjà (#{p['referenceName']}) — prix cible #{p['priceUSD']} USD")
+      elsif apply
+        UI.message("→ Création de #{pid} (#{p['referenceName']})…")
+        iap = Spaceship::ConnectAPI::InAppPurchaseV2.create(
+          app_id: app.id,
+          name: p["referenceName"],
+          product_id: pid,
+          in_app_purchase_type: p["type"],   # CONSUMABLE
+          review_note: p["reviewNote"]
+        )
+        p["localizations"].each do |locale, loc|
+          begin
+            iap.create_localization(locale: locale, name: loc["name"], description: loc["description"])
+          rescue => e
+            UI.important("  ! localisation #{locale} non appliquée : #{e.message}")
+          end
+        end
+        UI.success("✓ #{pid} créé. ⚠️ Définir le prix #{p['priceUSD']} USD dans App Store Connect (price points).")
+      else
+        UI.important("[dry-run] créerait #{pid} (#{p['referenceName']}, #{p['type']}, #{p['priceUSD']} USD) + #{p['localizations'].size} locales")
+      end
+    end
+
+    UI.message("Terminé. #{apply ? 'Modifications appliquées.' : 'Lecture seule (relancer avec apply:true pour créer).'}")
+    UI.important("Le prix (price points) et la disponibilité par territoire restent à confirmer dans App Store Connect.")
+  end
+
+  # --- Helpers API REST App Store Connect (Spaceship ConnectAPI 2.236.x ne gère pas les IAP) ---
+  def asc_jwt
+    require "spaceship"
+    Spaceship::ConnectAPI::Token.create(
+      key_id:    "U5B34558L6",
+      issuer_id: "69a6de88-d732-47e3-e053-5b8c7c11a4d1",
+      filepath:  File.expand_path("AuthKey_U5B34558L6.p8", __dir__)
+    ).text
+  end
+
+  def asc_req(method, path, jwt, body = nil)
+    require "net/http"; require "json"
+    uri = URI("https://api.appstoreconnect.apple.com#{path}")
+    klass = { get: Net::HTTP::Get, post: Net::HTTP::Post, patch: Net::HTTP::Patch, delete: Net::HTTP::Delete }[method]
+    req = klass.new(uri)
+    req["Authorization"] = "Bearer #{jwt}"
+    req["Content-Type"] = "application/json"
+    req.body = body.to_json if body
+    res = Net::HTTP.start(uri.host, uri.port, use_ssl: true) { |h| h.request(req) }
+    parsed = res.body.to_s.empty? ? {} : JSON.parse(res.body)
+    [res.code.to_i, parsed]
+  end
+
+  desc "Audit lecture seule des IAP sur App Store Connect (état, type, prix, localisations)"
+  lane :iap_audit do
+    jwt = asc_jwt
+    bundle = "AppCraft31.tenGO"
+    _, apps = asc_req(:get, "/v1/apps?filter[bundleId]=#{bundle}", jwt)
+    app_id = apps.dig("data", 0, "id")
+    UI.user_error!("App introuvable pour #{bundle}") unless app_id
+    UI.success("App id = #{app_id}")
+
+    _, iaps = asc_req(:get, "/v1/apps/#{app_id}/inAppPurchasesV2?limit=200&include=appStoreReviewScreenshot&fields[inAppPurchases]=name,productId,inAppPurchaseType,state,reviewNote,appStoreReviewScreenshot&fields[inAppPurchaseAppStoreReviewScreenshots]=assetDeliveryState,fileName", jwt)
+    included = iaps["included"] || []
+    report = []
+    (iaps["data"] || []).each do |iap|
+      a = iap["attributes"]
+      iap_id = iap["id"]
+      ss_ref = iap.dig("relationships", "appStoreReviewScreenshot", "data")
+      ss = ss_ref && included.find { |i| i["type"] == "inAppPurchaseAppStoreReviewScreenshots" && i["id"] == ss_ref["id"] }
+      ss_state = ss && ss.dig("attributes", "assetDeliveryState", "state")
+      # Localisations : lecture directe de la sous-ressource.
+      _, locres = asc_req(:get, "/v1/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations?limit=50", jwt)
+      loc_details = (locres["data"] || []).map { |l| l["attributes"]["locale"] }
+      # Prix : le price schedule partage l'id de l'IAP ; on lit le customerPrice via les price points.
+      pcode, sched = asc_req(:get, "/v1/inAppPurchasePriceSchedules/#{iap_id}?include=manualPrices,manualPrices.inAppPurchasePricePoint", jwt)
+      price = (sched["included"] || []).select { |i| i["type"] == "inAppPurchasePricePoints" }
+                                       .map { |i| i.dig("attributes", "customerPrice") }.compact.first
+      report << {
+        productId: a["productId"], name: a["name"], type: a["inAppPurchaseType"],
+        state: a["state"], reviewNote: (a["reviewNote"].nil? ? nil : "présent"),
+        localizations: loc_details.sort, loc_count: loc_details.size,
+        priceUSD: price, hasPriceSchedule: (pcode == 200 && !sched["data"].nil?),
+        screenshot: ss_state
+      }
+    end
+    out = File.expand_path("iap/asc_audit.json", __dir__)
+    File.write(out, JSON.pretty_generate({ app_id: app_id, count: report.size, iaps: report }))
+    UI.success("Audit écrit dans #{out}")
+    report.each { |r| UI.message("#{r[:productId]} | state=#{r[:state]} | screenshot=#{r[:screenshot] || '—'} | reviewNote=#{r[:reviewNote] || '—'}") }
+  end
+
+  # Suit links.next pour agréger toutes les pages d'un endpoint.
+  def asc_get_all(path, jwt)
+    all = []
+    nxt = path
+    while nxt
+      code, page = asc_req(:get, nxt, jwt)
+      break unless code == 200
+      all.concat(page["data"] || [])
+      link = page.dig("links", "next")
+      nxt = link ? link.sub("https://api.appstoreconnect.apple.com", "") : nil
+    end
+    all
+  end
+
+  # Upload binaire (PUT) vers une uploadOperation d'un asset ASC.
+  def asc_upload(op, bytes)
+    require "net/http"
+    uri = URI(op["url"])
+    req = Net::HTTP::Put.new(uri)
+    (op["requestHeaders"] || []).each { |h| req[h["name"]] = h["value"] }
+    off = op["offset"] || 0
+    len = op["length"] || bytes.bytesize
+    req.body = bytes.byteslice(off, len)
+    res = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") { |h| h.request(req) }
+    res.code.to_i
+  end
+
+  desc "Attache la capture de review aux 4 IAP. Usage : fastlane iap_screenshot [path:/chemin.png]"
+  lane :iap_screenshot do |options|
+    require "digest"
+    img = options[:path] || File.expand_path("iap/iap_review.png", __dir__)
+    UI.user_error!("Image introuvable : #{img}") unless File.exist?(img)
+    bytes = File.binread(img)
+    fname = File.basename(img)
+    md5 = Digest::MD5.hexdigest(bytes)
+    jwt = asc_jwt
+    fiche = JSON.parse(File.read(File.expand_path("iap/coin_packs.json", __dir__)))
+    _, apps = asc_req(:get, "/v1/apps?filter[bundleId]=#{fiche['app']['bundleId']}", jwt)
+    app_id = apps.dig("data", 0, "id")
+    _, iaps = asc_req(:get, "/v1/apps/#{app_id}/inAppPurchasesV2?limit=200&include=appStoreReviewScreenshot&fields[inAppPurchases]=productId,appStoreReviewScreenshot", jwt)
+    by_pid = {}
+    (iaps["data"] || []).each do |i|
+      ss = i.dig("relationships", "appStoreReviewScreenshot", "data")
+      by_pid[i["attributes"]["productId"]] = { id: i["id"], ss: ss && ss["id"] }
+    end
+
+    fiche["products"].each do |p|
+      pid = p["productId"]
+      info = by_pid[pid]
+      iap_id = info && info[:id]
+      unless iap_id
+        UI.important("#{pid} absent — ignoré")
+        next
+      end
+      # 0) Remplacement : supprime le screenshot existant.
+      if info[:ss]
+        dc, _dr = asc_req(:delete, "/v1/inAppPurchaseAppStoreReviewScreenshots/#{info[:ss]}", jwt)
+        UI.message("   ancien screenshot #{info[:ss]} supprimé (#{dc})")
+      end
+      # 1) Réservation
+      body = { data: { type: "inAppPurchaseAppStoreReviewScreenshots",
+        attributes: { fileName: fname, fileSize: bytes.bytesize },
+        relationships: { inAppPurchaseV2: { data: { type: "inAppPurchases", id: iap_id } } } } }
+      code, resp = asc_req(:post, "/v1/inAppPurchaseAppStoreReviewScreenshots", jwt, body)
+      unless code.between?(200, 299)
+        UI.important("! #{pid} réservation : #{code} #{resp.dig('errors', 0, 'detail')}")
+        next
+      end
+      sid = resp.dig("data", "id")
+      ops = resp.dig("data", "attributes", "uploadOperations") || []
+      # 2) Upload binaire
+      codes = ops.map { |op| asc_upload(op, bytes) }
+      unless codes.all? { |c| c.between?(200, 299) }
+        UI.important("! #{pid} upload PUT : #{codes.inspect}")
+        next
+      end
+      # 3) Commit
+      pcode, presp = asc_req(:patch, "/v1/inAppPurchaseAppStoreReviewScreenshots/#{sid}", jwt,
+        { data: { type: "inAppPurchaseAppStoreReviewScreenshots", id: sid,
+          attributes: { uploaded: true, sourceFileChecksum: md5 } } })
+      UI.message(pcode.between?(200, 299) ? "✓ #{pid} capture attachée" : "! #{pid} commit : #{pcode} #{presp.dig('errors', 0, 'detail')}")
+    end
+  end
+
+  desc "Corrige les IAP mal configurés (localisations + prix + review note) depuis coin_packs.json"
+  desc "Lecture seule par défaut. Pour appliquer : bundle exec fastlane iap_fix apply:true"
+  lane :iap_fix do |options|
+    apply = options[:apply].to_s == "true"
+    jwt = asc_jwt
+    fiche = JSON.parse(File.read(File.expand_path("iap/coin_packs.json", __dir__)))
+    bundle = fiche["app"]["bundleId"]
+    _, apps = asc_req(:get, "/v1/apps?filter[bundleId]=#{bundle}", jwt)
+    app_id = apps.dig("data", 0, "id")
+    UI.user_error!("App introuvable pour #{bundle}") unless app_id
+
+    _, iaps = asc_req(:get, "/v1/apps/#{app_id}/inAppPurchasesV2?limit=200&fields[inAppPurchases]=productId", jwt)
+    by_pid = {}
+    (iaps["data"] || []).each { |i| by_pid[i["attributes"]["productId"]] = i["id"] }
+
+    UI.important(apply ? "=== MODE APPLY (écriture ASC) ===" : "=== DRY-RUN (lecture seule) ===")
+
+    fiche["products"].each do |p|
+      pid = p["productId"]
+      iap_id = by_pid[pid]
+      unless iap_id
+        UI.important("#{pid} absent sur ASC — ignoré")
+        next
+      end
+      UI.message("→ #{pid} (#{iap_id})")
+
+      # 1) Review note (PATCH sur /v2 — /v1 est en lecture seule)
+      if apply
+        code, resp = asc_req(:patch, "/v2/inAppPurchases/#{iap_id}", jwt,
+          { data: { type: "inAppPurchases", id: iap_id, attributes: { reviewNote: p["reviewNote"] } } })
+        UI.message(code.between?(200, 299) ? "   ✓ review note" : "   ! review note : #{code} #{resp.dig('errors', 0, 'detail')}")
+      else
+        UI.message("   [dry] review note")
+      end
+
+      # 2) Localisations manquantes
+      _, exloc = asc_req(:get, "/v1/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations?limit=50", jwt)
+      existing = (exloc["data"] || []).map { |l| l["attributes"]["locale"] }
+      p["localizations"].each do |locale, loc|
+        if existing.include?(locale)
+          UI.message("   = loc #{locale} déjà présente")
+          next
+        end
+        if apply
+          body = { data: { type: "inAppPurchaseLocalizations",
+            attributes: { locale: locale, name: loc["name"], description: loc["description"] },
+            relationships: { inAppPurchaseV2: { data: { type: "inAppPurchases", id: iap_id } } } } }
+          code, resp = asc_req(:post, "/v1/inAppPurchaseLocalizations", jwt, body)
+          UI.message(code.between?(200, 299) ? "   ✓ loc #{locale}" : "   ! loc #{locale} : #{code} #{resp.dig('errors', 0, 'detail')}")
+        else
+          UI.message("   [dry] + loc #{locale} (#{loc['name']})")
+        end
+      end
+
+      # 3) Prix (price schedule) si absent
+      _, sched = asc_req(:get, "/v1/inAppPurchases/#{iap_id}/iapPriceSchedule", jwt)
+      if sched["data"]
+        UI.message("   = prix déjà défini")
+      else
+        points = asc_get_all("/v2/inAppPurchases/#{iap_id}/pricePoints?filter[territory]=USA&limit=200", jwt)
+        pp = points.find { |x| x["attributes"]["customerPrice"].to_f == p["priceUSD"].to_f }
+        if pp.nil?
+          UI.important("   ! price point #{p['priceUSD']} USD introuvable (#{points.size} points scannés)")
+        elsif apply
+          body = { data: { type: "inAppPurchasePriceSchedules",
+            relationships: {
+              inAppPurchase: { data: { type: "inAppPurchases", id: iap_id } },
+              baseTerritory: { data: { type: "territories", id: "USA" } },
+              manualPrices: { data: [{ type: "inAppPurchasePrices", id: "${p1}" }] } } },
+            included: [{ type: "inAppPurchasePrices", id: "${p1}",
+              attributes: { startDate: nil },
+              relationships: { inAppPurchasePricePoint: { data: { type: "inAppPurchasePricePoints", id: pp["id"] } } } }] }
+          code, resp = asc_req(:post, "/v1/inAppPurchasePriceSchedules", jwt, body)
+          UI.message(code.between?(200, 299) ? "   ✓ prix #{p['priceUSD']} USD" : "   ! prix : #{code} #{resp.dig('errors', 0, 'detail')}")
+        else
+          UI.message("   [dry] $ prix #{p['priceUSD']} USD (price point #{pp['id']})")
+        end
+      end
+    end
+    UI.success(apply ? "Correction appliquée. ⚠️ La capture d'écran de review IAP reste à ajouter dans ASC." : "Dry-run terminé. Relancer avec apply:true pour écrire.")
+  end
+
 end

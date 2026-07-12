@@ -1,0 +1,51 @@
+<!doctype html><html lang="fr"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="ad.size" content="width=320,height=480">
+<title>TEN·GO</title>
+<script>var clickTag="https://apps.apple.com/app/ten-go-calcul-mental/id0000000000";</script>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;overflow:hidden}
+body{font-family:-apple-system,"Segoe UI",system-ui,Roboto,"Helvetica Neue",sans-serif}
+.stage{position:relative;display:flex;width:100%;height:100%;overflow:hidden;
+  text-decoration:none;cursor:pointer;color:var(--ink);
+  background:linear-gradient(150deg,var(--bg1),var(--bg2));
+  box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.logo{font-weight:800;letter-spacing:.5px;line-height:1}
+.logo .d{color:var(--accent)}
+.bub{border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none;
+  color:#fff;font-weight:800;box-shadow:0 4px 10px rgba(0,0,0,.14);
+  text-shadow:0 1px 2px rgba(0,0,0,.18)}
+.deco{position:absolute;border-radius:50%;opacity:.3;filter:blur(2px);pointer-events:none}
+.cta{display:inline-block;background:var(--accent);color:var(--oa,#fff);font-weight:800;
+  border-radius:999px;white-space:nowrap;text-align:center;box-shadow:0 8px 20px rgba(0,0,0,.2)}
+@keyframes fin{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@keyframes pop{from{transform:scale(0)}to{transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes drift{0%,100%{transform:translateY(0)}50%{transform:translateY(-10%)}}
+@keyframes draw{from{transform:scaleX(0)}to{transform:scaleX(1)}}
+@keyframes shine{0%{transform:translateX(-120%)}60%,100%{transform:translateX(220%)}}
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001s!important;animation-delay:0s!important}}
+
+
+.chain{align-items:center;justify-content:center}
+.chain .wrap{display:flex;flex-direction:column;align-items:center;text-align:center;gap:3vmin;padding:7vmin}
+.chain .logo{font-size:7vmin;animation:fin .6s both}
+.chain .scene{display:flex;align-items:center;gap:2.3vmin;animation:fin .6s .15s both}
+.chain .bub{width:15vmin;height:15vmin;font-size:7vmin}
+.chain .b6{background:var(--b0)}.chain .b4{background:var(--b1)}
+.chain .lnk{width:5vmin;height:1.4vmin;border-radius:4px;background:var(--accent);transform-origin:left;animation:draw .4s .5s both}
+.chain .eq{background:var(--accent);color:var(--oa,#fff);font-weight:800;font-size:4.6vmin;padding:1.2vmin 2.6vmin;border-radius:999px}
+.chain h1{font-size:8.4vmin;line-height:1.04;font-weight:800;animation:fin .6s .3s both}
+.chain .hi{color:var(--accent)}
+.chain .sub{font-size:3.8vmin;opacity:.72;animation:fin .6s .45s both}
+.chain .cta{font-size:4.4vmin;padding:3vmin 6.5vmin;margin-top:1vmin;animation:fin .6s .65s both,pulse 1.8s 1.8s ease-in-out 6}
+.chain .d1{width:55vmin;height:55vmin;background:var(--b0);top:-18vmin;left:-16vmin}
+.chain .d2{width:42vmin;height:42vmin;background:var(--b3);bottom:-15vmin;right:-13vmin}
+</style></head>
+<body><a class="stage chain" id="exit" target="_blank" rel="noopener" href="#" style="--bg1:#FFF3E9;--bg2:#E9F1FF;--ink:#2E2A3A;--accent:#6C63FF;--oa:#fff;--b0:#FFB4A2;--b1:#5FD9C0;--b2:#FFD56B;--b3:#8FD0FF;--b4:#C8A8FF">
+<i class="deco d1"></i><i class="deco d2"></i><div class="wrap"><span class="logo">TEN<span class="d">·</span>GO</span>
+<div class="scene"><span class="bub b6">6</span><span class="lnk"></span><span class="bub b4">4</span><span class="eq">=10</span></div>
+<h1>Calcul mental<br><span class="hi">zen</span></h1>
+<p class="sub">Sans chrono, sans pression</p><span class="cta">Jouer gratuitement</span></div>
+</a><script>document.getElementById('exit').href=window.clickTag||'#';</script></body></html>

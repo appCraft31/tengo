@@ -1,6 +1,3 @@
-Desafio do dia: uma nova grade todos os dias a partir das 5h, com um toque surpresa (pedras, bolhas ancoradas ou congeladas). Uma única tentativa, você consegue resolver? Ranking mundial.
-Temas e fundos animados: Floresta, Oceano, Espaço (estrelas e planetas), Noite, Deserto, Doce...
-Loja: ganhe moedas e gaste-as em temas, estilos de bolhas e traços.
-Sequência diária e lembretes suaves.
-Novo menu inicial.
+Agora você pode gerenciar suas preferências de privacidade novamente direto nos ajustes.
+Melhorias técnicas e diversas correções para uma experiência mais fluida.
 Obrigado por jogar tenGO!

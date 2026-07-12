@@ -21,6 +21,7 @@ fastlane/report.xml
 fastlane/Preview.html
 fastlane/screenshots/
 fastlane/test_output/
+fastlane/iap/asc_audit.json
 
 # Marketing — médias de gameplay générés (capture + montage)
 marketing/gameplay/*.mov
