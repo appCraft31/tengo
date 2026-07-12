@@ -61,6 +61,21 @@
       "productID" : "com.tengo.coins.tier4",
       "referenceName" : "Coins 6500",
       "type" : "Consumable"
+    },
+    {
+      "displayPrice" : "3.99",
+      "familyShareable" : false,
+      "internalID" : "A1B2C3D4-0000-4000-8000-000000000105",
+      "localizations" : [
+        {
+          "description" : "Supprime définitivement la bannière et les publicités plein écran.",
+          "displayName" : "Sans publicité",
+          "locale" : "fr"
+        }
+      ],
+      "productID" : "com.tengo.noads",
+      "referenceName" : "Remove Ads",
+      "type" : "NonConsumable"
     }
   ],
   "settings" : {

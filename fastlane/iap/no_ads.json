@@ -1,0 +1,32 @@
+{
+  "_comment": "Achat in-app NON-CONSOMMABLE « Sans pub ». Prix de base en EUR (territoire FRA) : Apple dérive les autres pays. Le productId doit correspondre exactement à AdFreeManager.productID (tenGO/AdFreeManager.swift) et au fichier tenGO/tenGO.storekit.",
+  "app": {
+    "bundleId": "AppCraft31.tenGO",
+    "teamId": "JDKABK93UH"
+  },
+  "products": [
+    {
+      "productId": "com.tengo.noads",
+      "referenceName": "Remove Ads",
+      "type": "NON_CONSUMABLE",
+      "basePrice": {
+        "territory": "FRA",
+        "customerPrice": "3.99"
+      },
+      "reviewNote": "Non-consumable. Permanently removes the banner ad and the full-screen interstitial ads. The OPTIONAL rewarded video (circular button on the main menu, grants +10 in-game coins) is intentionally kept available after purchase: it is a voluntary opt-in reward the user taps himself, not an intrusive ad. This is stated in the product description (\"banner and full-screen ads\"). The purchase is restorable from Settings > Restore purchases. No account or login required. To test: on the main menu, tap the mint circular button (\"Sans pub\", 3,99 EUR) located just below the golden rewarded-video button.",
+      "_comment_desc": "ASC limite la description à 55 caractères (et le nom à 30).",
+      "localizations": {
+        "fr-FR": { "name": "Sans publicité", "description": "Supprime la bannière et les pubs plein écran." },
+        "en-US": { "name": "Remove Ads", "description": "Permanently removes the banner and full-screen ads." },
+        "de-DE": { "name": "Ohne Werbung", "description": "Entfernt das Banner und Vollbildwerbung dauerhaft." },
+        "es-ES": { "name": "Sin anuncios", "description": "Elimina el banner y los anuncios a pantalla completa." },
+        "it": { "name": "Senza pubblicità", "description": "Rimuove il banner e le pubblicità a schermo intero." },
+        "ja": { "name": "広告なし", "description": "バナー広告と全画面広告を永久に削除します。" },
+        "ko": { "name": "광고 제거", "description": "배너 광고와 전면 광고를 영구적으로 제거합니다." },
+        "nl-NL": { "name": "Geen advertenties", "description": "Verwijdert de banner en schermvullende advertenties." },
+        "pt-BR": { "name": "Sem anúncios", "description": "Remove o banner e os anúncios em tela cheia." },
+        "zh-Hans": { "name": "无广告", "description": "永久移除横幅广告和全屏广告。" }
+      }
+    }
+  ]
+}

@@ -77,5 +77,9 @@ enum AppConfig {
         /// Plafond journalier des pubs récompensées : jour courant (AAAAMMJJ) + compteur.
         static let rewardedDayKey = "tenGO_rewardedDay"
         static let rewardedDayCount = "tenGO_rewardedDayCount"
+        /// Cache local du mod « sans pub » (non-consommable). Sert à couper les
+        /// pubs dès le lancement, avant la réponse de StoreKit ; la source de
+        /// vérité reste Transaction.currentEntitlements (voir AdFreeManager).
+        static let noAdsPurchased = "tenGO_noAdsPurchased"
     }
 }

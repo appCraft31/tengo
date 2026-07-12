@@ -4,6 +4,7 @@
 //
 
 import SpriteKit
+import StoreKit
 
 class MenuScene: SKScene {
 
@@ -19,6 +20,11 @@ class MenuScene: SKScene {
     private var watchAdButton: SKNode?
     private var watchAdBadge: SKLabelNode?
     private static let rewardedCoins = 10
+    /// Bouton « sans pub » (achat non-consommable) + son libellé de prix.
+    private var noAdsButton: SKNode?
+    private var noAdsPriceLabel: SKLabelNode?
+    /// Prix affiché tant que StoreKit n'a pas répondu.
+    private static let noAdsFallbackPrice = "3,99 €"
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
@@ -28,6 +34,13 @@ class MenuScene: SKScene {
         // Le bouton « regarder une pub » vient d'apparaître : c'est ici que la
         // récompensée a une chance d'être vue, donc ici qu'on la précharge.
         RewardedAdManager.shared.preloadIfNeeded()
+        // Le prix du mod sans pub vient de StoreKit : on l'affiche dès qu'il arrive.
+        if !AdFreeManager.shared.isPurchased, StoreManager.shared.adFreeProduct == nil {
+            Task { @MainActor in
+                await StoreManager.shared.loadProducts()
+                refreshNoAdsPrice()
+            }
+        }
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
     }
 
@@ -86,25 +99,29 @@ class MenuScene: SKScene {
         addIconButton(systemName: "gearshape.fill", name: "parametres", at: CGPoint(x: edgeX, y: topRowY))
         addCoinChip(atY: topRowY - 70)
 
-        // Pile de boutons hiérarchisée, centrée
+        // Pile de boutons centrée : tous de même gabarit, la hiérarchie passe
+        // par la couleur et la graisse du texte, pas par la taille.
         let theme = ThemeManager.shared.active
-        let gap: CGFloat = 26
+        let buttonWidth: CGFloat = 290
+        let buttonHeight: CGFloat = 64
+        let gap: CGFloat = 22
         var topCursor: CGFloat = centerY * 0.06
-        func stack(_ h: CGFloat) -> CGFloat {
-            let c = topCursor - h / 2
-            topCursor -= (h + gap)
+        func stack() -> CGFloat {
+            let c = topCursor - buttonHeight / 2
+            topCursor -= (buttonHeight + gap)
             return c
         }
 
-        // Jouer — action primaire (grand bouton accentué)
+        // Jouer — action primaire (accentuée)
         addMenuButton(text: String(localized: "menu.new_game"), name: "newGame",
-                      width: 290, height: 72, at: CGPoint(x: 0, y: stack(72)),
+                      width: buttonWidth, height: buttonHeight, at: CGPoint(x: 0, y: stack()),
                       accent: theme.accent, fontSize: 25, bold: true)
 
         // Continuer — sous Jouer si une partie est en cours
         if GameState.exists {
             addMenuButton(text: String(localized: "menu.continue"), name: "continuer",
-                          width: 210, height: 52, at: CGPoint(x: 0, y: stack(52)), fontSize: 18)
+                          width: buttonWidth, height: buttonHeight,
+                          at: CGPoint(x: 0, y: stack()), fontSize: 20)
         }
 
         // Défi du jour — secondaire
@@ -112,7 +129,7 @@ class MenuScene: SKScene {
         let dailyButton = addMenuButton(
             text: String(localized: "menu.daily", defaultValue: "Défi du jour"),
             name: "dailyChallenge",
-            width: 240, height: 60, at: CGPoint(x: 0, y: stack(60)),
+            width: buttonWidth, height: buttonHeight, at: CGPoint(x: 0, y: stack()),
             accent: dailyDone
                 ? UIColor(red: 0.90, green: 0.90, blue: 0.89, alpha: 1)
                 : UIColor(red: 0.86, green: 0.82, blue: 0.97, alpha: 1),
@@ -124,16 +141,19 @@ class MenuScene: SKScene {
             check.fontSize = 22
             check.fontColor = UIColor(red: 0.45, green: 0.55, blue: 0.48, alpha: 1)
             check.verticalAlignmentMode = .center
-            check.position = CGPoint(x: 98, y: 0)
+            check.position = CGPoint(x: buttonWidth / 2 - 30, y: 0)
             dailyButton.addChild(check)
         }
 
         // Boutique — tertiaire
         addMenuButton(text: String(localized: "menu.shop", defaultValue: "Boutique"), name: "boutique",
-                      width: 200, height: 52, at: CGPoint(x: 0, y: stack(52)), fontSize: 18)
+                      width: buttonWidth, height: buttonHeight,
+                      at: CGPoint(x: 0, y: stack()), fontSize: 20)
 
-        // Bouton « pub récompensée » (gauche, 3/4 de la hauteur).
+        // Bouton « pub récompensée » (gauche, 3/4 de la hauteur), puis le mod
+        // « sans pub » juste en dessous.
         addWatchAdButton()
+        addNoAdsButton()
     }
 
     /// Bouton-icône rond (SF Symbol) pour les coins (classement, paramètres).
@@ -292,6 +312,135 @@ class MenuScene: SKScene {
         watchAdButton?.alpha = remaining > 0 ? 1.0 : 0.45
     }
 
+    /// Bouton rond « sans pub » (achat non-consommable), juste sous le bouton
+    /// « regarder une pub ». Même gabarit, mais accentué et pulsant : c'est la
+    /// seule offre payante mise en avant hors boutique.
+    private func addNoAdsButton() {
+        // Déjà acheté → le bouton n'existe pas (le watchAd, au-dessus, ne bouge pas).
+        guard !AdFreeManager.shared.isPurchased, let v = view else { return }
+
+        let scale = max(v.bounds.width / size.width, v.bounds.height / size.height)
+        let visibleH = v.bounds.height / scale
+        let visibleW = v.bounds.width / scale
+        let r: CGFloat = 38
+        // Sous le watchAd (même x), espacés d'un diamètre + une marge.
+        let y = -visibleH / 2 + visibleH * 0.75 - (r * 2 + 12)
+        let x = -visibleW / 2 + 52
+
+        let theme = ThemeManager.shared.active
+        let node = SKNode()
+        node.name = "noAds"
+        node.position = CGPoint(x: x, y: y)
+        node.zPosition = 6
+
+        // Halo pulsant : accroche l'œil sans masquer le fond.
+        let halo = SKShapeNode(circleOfRadius: r + 4)
+        halo.fillColor = theme.accent.withAlphaComponent(0.28)
+        halo.strokeColor = .clear
+        halo.zPosition = -1
+        halo.run(.repeatForever(.sequence([
+            .group([.scale(to: 1.14, duration: 1.1), .fadeAlpha(to: 0.25, duration: 1.1)]),
+            .group([.scale(to: 1.0, duration: 1.1), .fadeAlpha(to: 1.0, duration: 1.1)]),
+        ])))
+        node.addChild(halo)
+
+        let bg = SKShapeNode(circleOfRadius: r)
+        bg.fillColor = theme.accent
+        bg.strokeColor = theme.logo.withAlphaComponent(0.30)
+        bg.lineWidth = 1.5
+        node.addChild(bg)
+
+        let ink = contrastingText(on: theme.accent)
+
+        // Pictogramme « pas de pub » : l'écran publicitaire (rectangle) barré.
+        let screen = SKShapeNode(rectOf: CGSize(width: 30, height: 21), cornerRadius: 4)
+        screen.fillColor = .clear
+        screen.strokeColor = ink.withAlphaComponent(0.85)
+        screen.lineWidth = 2.5
+        screen.position = CGPoint(x: 0, y: 13)
+        node.addChild(screen)
+
+        // La barre oblique est doublée : un liseré de la couleur du bouton en
+        // dessous, pour qu'elle se détache nettement du rectangle qu'elle croise.
+        for (width, color) in [(6.0, theme.accent), (3.0, ink)] {
+            let path = CGMutablePath()
+            path.move(to: CGPoint(x: -17, y: 2))
+            path.addLine(to: CGPoint(x: 17, y: 24))
+            let slash = SKShapeNode(path: path)
+            slash.strokeColor = color
+            slash.lineWidth = CGFloat(width)
+            slash.lineCap = .round
+            node.addChild(slash)
+        }
+
+        // Prix (StoreKit si disponible, sinon repli).
+        let price = SKLabelNode(text: StoreManager.shared.adFreeProduct?.displayPrice
+                                ?? MenuScene.noAdsFallbackPrice)
+        price.fontName = "AvenirNext-Bold"
+        price.fontSize = 14
+        price.fontColor = ink
+        price.verticalAlignmentMode = .center
+        price.horizontalAlignmentMode = .center
+        price.position = CGPoint(x: 0, y: -17)
+        node.addChild(price)
+        noAdsPriceLabel = price
+
+        // Étiquette « Sans pub » sous le cercle.
+        let caption = SKLabelNode(text: String(localized: "menu.remove_ads", defaultValue: "Sans pub"))
+        caption.fontName = "AvenirNext-DemiBold"
+        caption.fontSize = 12
+        caption.fontColor = theme.logo.withAlphaComponent(0.75)
+        caption.verticalAlignmentMode = .center
+        caption.horizontalAlignmentMode = .center
+        caption.position = CGPoint(x: 0, y: -(r + 13))
+        node.addChild(caption)
+
+        addChild(node)
+        noAdsButton = node
+    }
+
+    /// Le prix StoreKit est arrivé après la construction du bouton.
+    private func refreshNoAdsPrice() {
+        guard let price = StoreManager.shared.adFreeProduct?.displayPrice else { return }
+        noAdsPriceLabel?.text = price
+    }
+
+    /// Achat du mod « sans pub ». Succès → le bouton s'efface, les pubs sont
+    /// coupées (GameViewController retire la bannière sur .tenGOAdFreeChanged).
+    private func purchaseNoAds() {
+        guard let product = StoreManager.shared.adFreeProduct else {
+            // StoreKit n'a pas encore répondu : on retente le chargement.
+            showUnavailableFeedback()
+            Task { @MainActor in
+                await StoreManager.shared.loadProducts()
+                refreshNoAdsPrice()
+            }
+            return
+        }
+        HapticManager.light()
+        Task { @MainActor in
+            let success = await StoreManager.shared.purchase(product)
+            if success {
+                HapticManager.medium()
+                dismissNoAdsButton()
+            } else {
+                showUnavailableFeedback()
+            }
+        }
+    }
+
+    /// Retrait animé du bouton après achat.
+    private func dismissNoAdsButton() {
+        guard let node = noAdsButton else { return }
+        noAdsButton = nil
+        noAdsPriceLabel = nil
+        node.removeAllActions()
+        node.run(.sequence([
+            .group([.scale(to: 1.15, duration: 0.14), .fadeOut(withDuration: 0.28)]),
+            .removeFromParent(),
+        ]))
+    }
+
     private func addLogo(atY y: CGFloat) {
         // "TEN" à gauche
         let ten = SKLabelNode(text: "TEN")
@@ -428,6 +577,10 @@ class MenuScene: SKScene {
             case "watchAd":
                 animateTap(node.parent ?? node)
                 presentRewardedAd()
+                return
+            case "noAds":
+                animateTap(node.parent ?? node)
+                purchaseNoAds()
                 return
             default: break
             }

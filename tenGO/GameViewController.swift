@@ -20,6 +20,8 @@ class GameViewController: UIViewController {
     /// Contrainte basse de `gameView` : bas de l'écran sans bannière, puis haut de
     /// la bannière une fois celle-ci posée — toutes les scènes restent au-dessus.
     private var gameViewBottom: NSLayoutConstraint!
+    /// Ancrage de la vue de jeu au-dessus de la bannière (nil sans bannière).
+    private var gameViewBottomToBanner: NSLayoutConstraint?
 
     /// Hiérarchie programmatique : racine UIView simple + SKView plein écran.
     override func loadView() {
@@ -97,6 +99,17 @@ class GameViewController: UIViewController {
             name: .tenGOOpenDaily,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(adFreeDidChange),
+            name: .tenGOAdFreeChanged,
+            object: nil
+        )
+
+        // Source de vérité StoreKit du mod sans pub (le cache local a déjà été
+        // lu ; ceci le corrige après réinstallation, changement d'appareil ou
+        // remboursement).
+        Task { await AdFreeManager.shared.refreshEntitlements() }
     }
 
     override func viewDidAppear(_ animated: Bool) {
@@ -150,6 +163,10 @@ class GameViewController: UIViewController {
     // MARK: - Bannière AdMob
 
     private func setupBanner() {
+        // Mod « sans pub » : aucune bannière, et surtout on laisse gameViewBottom
+        // actif pour que la vue de jeu occupe toute la hauteur.
+        guard !AdFreeManager.shared.isPurchased else { return }
+
         // Bannière adaptative ancrée, calée sur toute la largeur de l'écran.
         let width = view.frame.inset(by: view.safeAreaInsets).width
         let adSize = currentOrientationAnchoredAdaptiveBanner(width: width)
@@ -177,8 +194,12 @@ class GameViewController: UIViewController {
 
         // La vue de jeu se borne au-dessus de la bannière : toutes les scènes
         // (menu, tutoriel, jeu, boutique) restent intégralement au-dessus de la pub.
+        // La contrainte est retenue : il faut pouvoir la désactiver si l'utilisateur
+        // achète le mod sans pub en cours de session (sinon conflit avec gameViewBottom).
         gameViewBottom.isActive = false
-        gameView.bottomAnchor.constraint(equalTo: banner.topAnchor).isActive = true
+        let toBanner = gameView.bottomAnchor.constraint(equalTo: banner.topAnchor)
+        toBanner.isActive = true
+        gameViewBottomToBanner = toBanner
         view.layoutIfNeeded()
         (gameView.scene as? GameScene)?.relayoutForViewChange()
 
@@ -203,6 +224,21 @@ class GameViewController: UIViewController {
         scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scene.scaleMode = .aspectFill
         skView.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
+    }
+
+    /// Mod « sans pub » acheté ou restauré : retire la bannière à chaud et rend
+    /// sa hauteur à la vue de jeu, sans redémarrer l'app.
+    @objc private func adFreeDidChange() {
+        guard AdFreeManager.shared.isPurchased, let banner = bannerView else { return }
+        bannerView = nil
+        // Libérer l'ancrage à la bannière AVANT de réactiver la contrainte pleine
+        // hauteur, sinon les deux coexistent et le layout part en conflit.
+        gameViewBottomToBanner?.isActive = false
+        gameViewBottomToBanner = nil
+        banner.removeFromSuperview()
+        gameViewBottom.isActive = true
+        view.layoutIfNeeded()
+        (gameView.scene as? GameScene)?.relayoutForViewChange()
     }
 
     @objc private func sceneDidChange(_ notification: Notification) {

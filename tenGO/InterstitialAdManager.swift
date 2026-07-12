@@ -39,6 +39,8 @@ final class InterstitialAdManager: NSObject {
     // MARK: - Chargement
 
     func loadAd() {
+        guard !AdFreeManager.shared.isPurchased else { return }
+
         let adUnitID: String
         #if DEBUG
         adUnitID = "ca-app-pub-3940256099942544/4411468910"
@@ -93,6 +95,7 @@ final class InterstitialAdManager: NSObject {
     }
 
     private func shouldShow(for trigger: AdTrigger) -> Bool {
+        guard !AdFreeManager.shared.isPurchased else { return false }
         guard isReady, interstitial != nil else { return false }
         guard Date().timeIntervalSince(lastShownAt) >= Self.cooldownSeconds else { return false }
 

@@ -228,8 +228,8 @@ platform :ios do
       ss_ref = iap.dig("relationships", "appStoreReviewScreenshot", "data")
       ss = ss_ref && included.find { |i| i["type"] == "inAppPurchaseAppStoreReviewScreenshots" && i["id"] == ss_ref["id"] }
       ss_state = ss && ss.dig("attributes", "assetDeliveryState", "state")
-      # Localisations : lecture directe de la sous-ressource.
-      _, locres = asc_req(:get, "/v1/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations?limit=50", jwt)
+      # Localisations : sous-ressource lisible uniquement sur /v2 (le /v1 → 404).
+      _, locres = asc_req(:get, "/v2/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations?limit=50", jwt)
       loc_details = (locres["data"] || []).map { |l| l["attributes"]["locale"] }
       # Prix : le price schedule partage l'id de l'IAP ; on lit le customerPrice via les price points.
       pcode, sched = asc_req(:get, "/v1/inAppPurchasePriceSchedules/#{iap_id}?include=manualPrices,manualPrices.inAppPurchasePricePoint", jwt)
@@ -276,16 +276,18 @@ platform :ios do
     res.code.to_i
   end
 
-  desc "Attache la capture de review aux 4 IAP. Usage : fastlane iap_screenshot [path:/chemin.png]"
+  desc "Attache la capture de review aux IAP d'une fiche."
+  desc "Usage : fastlane iap_screenshot [file:coin_packs.json] [path:/chemin.png]"
   lane :iap_screenshot do |options|
     require "digest"
+    require "json"
     img = options[:path] || File.expand_path("iap/iap_review.png", __dir__)
     UI.user_error!("Image introuvable : #{img}") unless File.exist?(img)
     bytes = File.binread(img)
     fname = File.basename(img)
     md5 = Digest::MD5.hexdigest(bytes)
     jwt = asc_jwt
-    fiche = JSON.parse(File.read(File.expand_path("iap/coin_packs.json", __dir__)))
+    fiche = JSON.parse(File.read(File.expand_path("iap/#{options[:file] || 'coin_packs.json'}", __dir__)))
     _, apps = asc_req(:get, "/v1/apps?filter[bundleId]=#{fiche['app']['bundleId']}", jwt)
     app_id = apps.dig("data", 0, "id")
     _, iaps = asc_req(:get, "/v1/apps/#{app_id}/inAppPurchasesV2?limit=200&include=appStoreReviewScreenshot&fields[inAppPurchases]=productId,appStoreReviewScreenshot", jwt)
@@ -333,6 +335,114 @@ platform :ios do
     end
   end
 
+  desc "Crée un IAP depuis une fiche JSON, via l'API REST (Spaceship ne gère pas les IAP)."
+  desc "Usage : fastlane iap_create [file:no_ads.json] [apply:true]"
+  desc "Idempotent : un productId déjà présent n'est jamais recréé."
+  lane :iap_create do |options|
+    require "json"
+
+    apply = options[:apply].to_s == "true"
+    file  = options[:file] || "no_ads.json"
+    fiche = JSON.parse(File.read(File.expand_path("iap/#{file}", __dir__)))
+    jwt   = asc_jwt
+
+    _, apps = asc_req(:get, "/v1/apps?filter[bundleId]=#{fiche['app']['bundleId']}", jwt)
+    app_id = apps.dig("data", 0, "id")
+    UI.user_error!("App introuvable : #{fiche['app']['bundleId']}") unless app_id
+
+    _, existing = asc_req(:get, "/v1/apps/#{app_id}/inAppPurchasesV2?limit=200&fields[inAppPurchases]=productId", jwt)
+    by_pid = {}
+    (existing["data"] || []).each { |i| by_pid[i["attributes"]["productId"]] = i["id"] }
+
+    UI.important(apply ? "=== MODE APPLY (écriture ASC) ===" : "=== DRY-RUN (lecture seule) ===")
+
+    fiche["products"].each do |p|
+      pid = p["productId"]
+      iap_id = by_pid[pid]
+
+      # 1) Création — POST sur /v2 (le /v1 est en lecture seule).
+      if iap_id
+        UI.message("= #{pid} existe déjà (#{iap_id})")
+      elsif apply
+        # NB : pas d'attribut availableInAllTerritories ici — l'API le rejette
+        # (409). La disponibilité par territoire découle du price schedule.
+        body = { data: { type: "inAppPurchases",
+          attributes: { name: p["referenceName"], productId: pid,
+                        inAppPurchaseType: p["type"],
+                        reviewNote: p["reviewNote"],
+                        familySharable: false },
+          relationships: { app: { data: { type: "apps", id: app_id } } } } }
+        code, resp = asc_req(:post, "/v2/inAppPurchases", jwt, body)
+        UI.user_error!("Création #{pid} : #{code} #{resp.dig('errors', 0, 'detail')}") unless code.between?(200, 299)
+        iap_id = resp.dig("data", "id")
+        UI.success("✓ #{pid} créé (#{iap_id})")
+      else
+        UI.important("[dry-run] créerait #{pid} (#{p['type']}, #{p['localizations'].size} locales, #{p.dig('basePrice', 'customerPrice')} #{p.dig('basePrice', 'territory')})")
+        next
+      end
+
+      # 2) Localisations — la relation s'appelle « inAppPurchaseV2 ».
+      # ⚠️ Lecture sur /v2 : le chemin /v1/inAppPurchases/{id}/... renvoie 404.
+      _, exloc = asc_req(:get, "/v2/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations?limit=50", jwt)
+      existing_loc = (exloc["data"] || []).map { |l| l["attributes"]["locale"] }
+      p["localizations"].each do |locale, loc|
+        if existing_loc.include?(locale)
+          UI.message("   = loc #{locale} déjà présente")
+          next
+        end
+        body = { data: { type: "inAppPurchaseLocalizations",
+          attributes: { locale: locale, name: loc["name"], description: loc["description"] },
+          relationships: { inAppPurchaseV2: { data: { type: "inAppPurchases", id: iap_id } } } } }
+        code, resp = asc_req(:post, "/v1/inAppPurchaseLocalizations", jwt, body)
+        UI.message(code.between?(200, 299) ? "   ✓ loc #{locale}" : "   ! loc #{locale} : #{code} #{resp.dig('errors', 0, 'detail')}")
+      end
+
+      # 3) Prix — price point du territoire de base (EUR/FRA ici, pas USD).
+      # ⚠️ Le price schedule partage l'id de l'IAP ; le chemin en sous-ressource
+      # (/v1/inAppPurchases/{id}/iapPriceSchedule) renvoie 404.
+      base = p["basePrice"]
+      _, sched = asc_req(:get, "/v1/inAppPurchasePriceSchedules/#{iap_id}", jwt)
+      if sched["data"]
+        UI.message("   = prix déjà défini")
+      else
+        points = asc_get_all("/v2/inAppPurchases/#{iap_id}/pricePoints?filter[territory]=#{base['territory']}&limit=200", jwt)
+        pp = points.find { |x| x["attributes"]["customerPrice"].to_f == base["customerPrice"].to_f }
+        if pp.nil?
+          UI.important("   ! price point #{base['customerPrice']} #{base['territory']} introuvable (#{points.size} scannés)")
+        else
+          body = { data: { type: "inAppPurchasePriceSchedules",
+            relationships: {
+              inAppPurchase: { data: { type: "inAppPurchases", id: iap_id } },
+              baseTerritory: { data: { type: "territories", id: base["territory"] } },
+              manualPrices: { data: [{ type: "inAppPurchasePrices", id: "${p1}" }] } } },
+            included: [{ type: "inAppPurchasePrices", id: "${p1}",
+              attributes: { startDate: nil },
+              relationships: { inAppPurchasePricePoint: { data: { type: "inAppPurchasePricePoints", id: pp["id"] } } } }] }
+          code, resp = asc_req(:post, "/v1/inAppPurchasePriceSchedules", jwt, body)
+          UI.message(code.between?(200, 299) ? "   ✓ prix #{base['customerPrice']} #{base['territory']}" : "   ! prix : #{code} #{resp.dig('errors', 0, 'detail')}")
+        end
+      end
+
+      # 4) Disponibilité par territoire — SANS elle, l'IAP reste bloqué en
+      # MISSING_METADATA (relation inAppPurchaseAvailability absente).
+      code, _ = asc_req(:get, "/v1/inAppPurchaseAvailabilities/#{iap_id}", jwt)
+      if code == 200
+        UI.message("   = disponibilité déjà définie")
+      else
+        territories = asc_get_all("/v1/territories?limit=200", jwt).map { |t| t["id"] }
+        body = { data: { type: "inAppPurchaseAvailabilities",
+          attributes: { availableInNewTerritories: true },
+          relationships: {
+            inAppPurchase: { data: { type: "inAppPurchases", id: iap_id } },
+            availableTerritories: { data: territories.map { |t| { type: "territories", id: t } } } } } }
+        code, resp = asc_req(:post, "/v1/inAppPurchaseAvailabilities", jwt, body)
+        UI.message(code.between?(200, 299) ? "   ✓ disponibilité (#{territories.size} territoires)" : "   ! disponibilité : #{code} #{resp.dig('errors', 0, 'detail')}")
+      end
+    end
+
+    UI.success(apply ? "Terminé. Ajouter la capture de review : fastlane iap_screenshot file:#{file} path:…" : "Dry-run terminé. Relancer avec apply:true pour écrire.")
+  end
+
   desc "Corrige les IAP mal configurés (localisations + prix + review note) depuis coin_packs.json"
   desc "Lecture seule par défaut. Pour appliquer : bundle exec fastlane iap_fix apply:true"
   lane :iap_fix do |options|
@@ -368,8 +478,8 @@ platform :ios do
         UI.message("   [dry] review note")
       end
 
-      # 2) Localisations manquantes
-      _, exloc = asc_req(:get, "/v1/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations?limit=50", jwt)
+      # 2) Localisations manquantes (lecture sur /v2 : le /v1 renvoie 404)
+      _, exloc = asc_req(:get, "/v2/inAppPurchases/#{iap_id}/inAppPurchaseLocalizations?limit=50", jwt)
       existing = (exloc["data"] || []).map { |l| l["attributes"]["locale"] }
       p["localizations"].each do |locale, loc|
         if existing.include?(locale)
@@ -387,8 +497,8 @@ platform :ios do
         end
       end
 
-      # 3) Prix (price schedule) si absent
-      _, sched = asc_req(:get, "/v1/inAppPurchases/#{iap_id}/iapPriceSchedule", jwt)
+      # 3) Prix (price schedule) si absent — il partage l'id de l'IAP.
+      _, sched = asc_req(:get, "/v1/inAppPurchasePriceSchedules/#{iap_id}", jwt)
       if sched["data"]
         UI.message("   = prix déjà défini")
       else

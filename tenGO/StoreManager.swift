@@ -22,9 +22,15 @@ final class StoreManager {
         "com.tengo.coins.tier3": 3000,
         "com.tengo.coins.tier4": 6500,
     ]
-    static var productIDs: [String] { Array(coinAmounts.keys) }
+    /// Mod « sans pub » (non-consommable).
+    static let adFreeProductID = AdFreeManager.productID
 
+    static var productIDs: [String] { Array(coinAmounts.keys) + [adFreeProductID] }
+
+    /// Packs de pièces uniquement (consommés par la boutique).
     private(set) var products: [Product] = []
+    /// Mod « sans pub », tenu à part pour ne pas polluer l'onglet Pièces.
+    private(set) var adFreeProduct: Product?
     private var updatesTask: Task<Void, Never>?
 
     private init() {
@@ -40,16 +46,33 @@ final class StoreManager {
     }
 
     /// Charge les produits depuis l'App Store (ou la config StoreKit locale).
-    /// Triés par quantité de pièces croissante.
+    /// Les packs de pièces sont triés par quantité croissante ; le mod sans pub
+    /// est mis de côté (il ne s'affiche pas dans l'onglet Pièces).
     func loadProducts() async {
         do {
             let fetched = try await Product.products(for: StoreManager.productIDs)
-            products = fetched.sorted {
-                (StoreManager.coinAmounts[$0.id] ?? 0) < (StoreManager.coinAmounts[$1.id] ?? 0)
-            }
+            adFreeProduct = fetched.first { $0.id == StoreManager.adFreeProductID }
+            products = fetched
+                .filter { StoreManager.coinAmounts[$0.id] != nil }
+                .sorted {
+                    (StoreManager.coinAmounts[$0.id] ?? 0) < (StoreManager.coinAmounts[$1.id] ?? 0)
+                }
         } catch {
             print("[Store] Échec chargement produits : \(error.localizedDescription)")
         }
+    }
+
+    /// Restaure les achats non-consommables (obligatoire Apple pour le mod sans pub).
+    /// - Returns: true si le mod est possédé à l'issue de la restauration.
+    @discardableResult
+    func restorePurchases() async -> Bool {
+        do {
+            try await AppStore.sync()
+        } catch {
+            print("[Store] Échec restauration : \(error.localizedDescription)")
+        }
+        await AdFreeManager.shared.refreshEntitlements()
+        return AdFreeManager.shared.isPurchased
     }
 
     /// Lance l'achat. Crédite les pièces et finalise la transaction si succès.
@@ -77,7 +100,15 @@ final class StoreManager {
 
     // MARK: - Privé
 
+    /// Applique le contenu d'une transaction vérifiée : pièces ou mod sans pub.
+    /// Utilisé aussi bien à l'achat que pour les transactions reçues hors de
+    /// l'app (autre appareil, restauration) — d'où le cas non-consommable ici.
     private func credit(_ transaction: Transaction) {
+        if transaction.productID == StoreManager.adFreeProductID {
+            // Une transaction révoquée (remboursement) arrive aussi par ici.
+            AdFreeManager.shared.setPurchased(transaction.revocationDate == nil)
+            return
+        }
         let amount = StoreManager.coinAmounts[transaction.productID] ?? 0
         if amount > 0 { CoinManager.shared.add(amount) }
     }

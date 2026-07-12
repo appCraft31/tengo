@@ -43,7 +43,7 @@ final class SettingsOverlay: SKNode {
     private var hapticStatus: SKLabelNode!
 
     private static let cardW: CGFloat = 490
-    private static let cardH: CGFloat = 680
+    private static let cardH: CGFloat = 738
 
     // MARK: - Init
 
@@ -88,6 +88,8 @@ final class SettingsOverlay: SKNode {
                 return true
             case "row_privacy":
                 animateRow(named: "row_privacy"); presentPrivacyOptions(); return true
+            case "row_restore":
+                animateRow(named: "row_restore"); restorePurchases(); return true
             case "row_rate":
                 animateRow(named: "row_rate"); requestReview(); return true
             case "row_share":
@@ -183,6 +185,11 @@ final class SettingsOverlay: SKNode {
 
         addActionRow(name: "row_tutorial", title: String(localized: "settings.replay_tutorial"), y: y); y -= rowStep
         addActionRow(name: "row_privacy", title: String(localized: "settings.privacy_options"), y: y); y -= rowStep
+        // Restauration des achats : exigée par Apple pour le mod « sans pub »
+        // (non-consommable), guideline 3.1.1.
+        addActionRow(name: "row_restore",
+                     title: String(localized: "settings.restore_purchases",
+                                   defaultValue: "Restaurer les achats"), y: y); y -= rowStep
 
         addSeparator(y: y + 8)
         y -= 10
@@ -389,6 +396,26 @@ final class SettingsOverlay: SKNode {
         let url = URL(string: "mailto:\(AppConfig.supportEmail)?subject=\(enc(subject))&body=\(enc(body))")
         guard let url = url else { return }
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
+    }
+
+    /// Restaure les achats non-consommables (mod « sans pub »).
+    private func restorePurchases() {
+        Task { @MainActor in
+            let restored = await StoreManager.shared.restorePurchases()
+            let message = restored
+                ? String(localized: "settings.restore_done",
+                         defaultValue: "Le mod sans publicité a été restauré.")
+                : String(localized: "settings.restore_none",
+                         defaultValue: "Aucun achat à restaurer sur ce compte.")
+            guard let vc = presenter else { return }
+            let alert = UIAlertController(
+                title: String(localized: "settings.restore_purchases",
+                              defaultValue: "Restaurer les achats"),
+                message: message,
+                preferredStyle: .alert)
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            vc.present(alert, animated: true)
+        }
     }
 
     private func presentPrivacyOptions() {
