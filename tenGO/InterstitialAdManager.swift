@@ -18,6 +18,7 @@ final class InterstitialAdManager: NSObject {
 
     private var interstitial: InterstitialAd?
     private var isReady = false
+    private var isLoading = false
 
     // MARK: - Garde-fous
 
@@ -45,8 +46,10 @@ final class InterstitialAdManager: NSObject {
         adUnitID = "ca-app-pub-4352408747876735/5201754193"
         #endif
 
+        isLoading = true
         InterstitialAd.load(with: adUnitID, request: .consentAware()) { [weak self] ad, error in
             guard let self else { return }
+            self.isLoading = false
             if let error {
                 print("[AdMob] Interstitiel échec chargement : \(error.localizedDescription)")
                 self.isReady = false
@@ -67,6 +70,12 @@ final class InterstitialAdManager: NSObject {
     /// À appeler à la fin de chaque partie (win/lose).
     func markGameCompleted() {
         gamesCompletedThisSession += 1
+        // Préchargement paresseux : la première interstitielle n'est demandée
+        // qu'une fois qu'une partie a été jouée (condition minimale de
+        // shouldShow), pour ne pas consommer d'annonce servie jamais affichée.
+        if !isReady && !isLoading {
+            loadAd()
+        }
     }
 
     // MARK: - Affichage conditionnel

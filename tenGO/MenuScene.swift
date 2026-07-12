@@ -25,6 +25,9 @@ class MenuScene: SKScene {
         backgroundColor = ThemeManager.shared.active.background
         setupBackground()
         setupUI()
+        // Le bouton « regarder une pub » vient d'apparaître : c'est ici que la
+        // récompensée a une chance d'être vue, donc ici qu'on la précharge.
+        RewardedAdManager.shared.preloadIfNeeded()
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
     }
 

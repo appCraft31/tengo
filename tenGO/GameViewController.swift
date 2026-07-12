@@ -116,8 +116,8 @@ class GameViewController: UIViewController {
             MobileAds.shared.start { _ in
                 DispatchQueue.main.async {
                     self.setupBanner()
-                    InterstitialAdManager.shared.loadAd()
-                    RewardedAdManager.shared.loadAd()
+                    RewardedAdManager.shared.isAdsSessionStarted = true
+                    RewardedAdManager.shared.preloadIfNeeded()
                 }
             }
             return
@@ -132,17 +132,15 @@ class GameViewController: UIViewController {
         // requestTrackingAuthorization est ignoré si la fenêtre n'est pas encore active.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
             guard let self else { return }
-            ConsentManager.shared.gatherConsent(from: self) { [weak self] outcome in
-                guard outcome != .noAds else {
-                    print("[AdMob] Pas de consentement exploitable — pas de pub")
-                    return
-                }
+            ConsentManager.shared.gatherConsent { [weak self] outcome in
                 print("[AdMob] Démarrage pubs — mode \(outcome == .personalizedAds ? "personnalisé" : "non personnalisé")")
                 MobileAds.shared.start { _ in
                     DispatchQueue.main.async {
                         self?.setupBanner()
-                        InterstitialAdManager.shared.loadAd()
-                        RewardedAdManager.shared.loadAd()
+                        // Le menu est déjà affiché à ce stade : c'est ici que
+                        // le premier préchargement de la récompensée se joue.
+                        RewardedAdManager.shared.isAdsSessionStarted = true
+                        RewardedAdManager.shared.preloadIfNeeded()
                     }
                 }
             }

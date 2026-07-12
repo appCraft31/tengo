@@ -17,6 +17,13 @@ final class RewardedAdManager: NSObject {
 
     private var rewardedAd: RewardedInterstitialAd?
     private(set) var isReady = false
+    private var isLoading = false
+
+    /// Posé par GameViewController une fois MobileAds.start terminé (après le
+    /// flux de consentement). Tant que c'est faux, preloadIfNeeded ne fait
+    /// rien : le menu apparaît sous l'alerte ATT, il ne doit pas déclencher
+    /// de requête avant que le mode publicitaire soit connu.
+    var isAdsSessionStarted = false
 
     private let defaults = UserDefaults.standard
 
@@ -51,6 +58,15 @@ final class RewardedAdManager: NSObject {
 
     // MARK: - Chargement
 
+    /// Précharge une pub si le quota du jour le permet et qu'aucune n'est déjà
+    /// prête ou en cours de chargement. À appeler quand le bouton « regarder
+    /// une pub » devient visible (menu), pour ne demander une annonce que
+    /// lorsqu'elle a une chance d'être regardée.
+    func preloadIfNeeded() {
+        guard isAdsSessionStarted, canWatchToday, !isReady, !isLoading else { return }
+        loadAd()
+    }
+
     func loadAd() {
         let adUnitID: String
         #if DEBUG
@@ -59,8 +75,10 @@ final class RewardedAdManager: NSObject {
         adUnitID = "ca-app-pub-4352408747876735/2440159179"
         #endif
 
+        isLoading = true
         RewardedInterstitialAd.load(with: adUnitID, request: .consentAware()) { [weak self] ad, error in
             guard let self else { return }
+            self.isLoading = false
             if let error {
                 print("[AdMob] Récompensée échec chargement : \(error.localizedDescription)")
                 self.isReady = false
@@ -107,12 +125,12 @@ extension RewardedAdManager: FullScreenContentDelegate {
 
     func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
         rewardedAd = nil
-        loadAd()   // précharge la suivante
+        preloadIfNeeded()   // précharge la suivante, sauf quota du jour épuisé
     }
 
     func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
         print("[AdMob] Récompensée échec affichage : \(error.localizedDescription)")
         rewardedAd = nil
-        loadAd()
+        preloadIfNeeded()
     }
 }
