@@ -1,3 +1,4 @@
-Vous pouvez à nouveau gérer vos préférences de confidentialité directement depuis les réglages.
-Améliorations techniques et corrections diverses pour une expérience plus fluide.
+Nouveau : l'option « Sans publicité » supprime définitivement la bannière et les publicités plein écran.
+Vous pouvez restaurer vos achats à tout moment depuis les réglages.
+Améliorations techniques et corrections diverses.
 Merci de jouer à tenGO !

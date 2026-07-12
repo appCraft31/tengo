@@ -1,3 +1,4 @@
-You can now manage your privacy preferences again, right from Settings.
-Technical improvements and various fixes for a smoother experience.
+New: the "Remove Ads" option permanently removes the banner and full-screen ads.
+You can restore your purchases at any time from Settings.
+Technical improvements and various fixes.
 Thanks for playing tenGO!
