@@ -27,3 +27,18 @@ fastlane/iap/asc_audit.json
 marketing/gameplay/*.mov
 marketing/gameplay/*.mp4
 marketing/gameplay/frames/
+
+# Projet Android — dépôt git séparé (imbriqué), historique propre
+/android/
+
+# Clés API App Store Connect — jamais versionner
+*.p8
+ios/fastlane/iap/asc_audit.json
+# Dépendances Ruby vendorées (le motif racine vendor/bundle ne couvre pas ios/)
+**/vendor/bundle/
+# Artefacts fastlane non versionnés
+ios/fastlane/screenshots/
+ios/fastlane/metadata_backup_*/
+ios/fastlane/report.xml
+ios/fastlane/Preview.html
+ios/fastlane/.env.default

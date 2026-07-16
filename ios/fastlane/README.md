@@ -91,7 +91,21 @@ Audit lecture seule des IAP sur App Store Connect (état, type, prix, localisati
 [bundle exec] fastlane ios iap_screenshot
 ```
 
-Attache la capture de review aux 4 IAP. Usage : fastlane iap_screenshot [path:/chemin.png]
+Attache la capture de review aux IAP d'une fiche.
+
+Usage : fastlane iap_screenshot [file:coin_packs.json] [path:/chemin.png]
+
+### ios iap_create
+
+```sh
+[bundle exec] fastlane ios iap_create
+```
+
+Crée un IAP depuis une fiche JSON, via l'API REST (Spaceship ne gère pas les IAP).
+
+Usage : fastlane iap_create [file:no_ads.json] [apply:true]
+
+Idempotent : un productId déjà présent n'est jamais recréé.
 
 ### ios iap_fix
 

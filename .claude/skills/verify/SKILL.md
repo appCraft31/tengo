@@ -8,7 +8,7 @@ description: Vérifier un changement tenGO iOS de bout en bout dans le simulateu
 ## Build
 
 ```bash
-xcodebuild -workspace tenGO.xcworkspace -scheme tenGO -configuration Debug \
+cd ios && xcodebuild -workspace tenGO.xcworkspace -scheme tenGO -configuration Debug \
   -destination 'generic/platform=iOS Simulator' build
 ```
 
@@ -41,6 +41,8 @@ xcrun simctl spawn $UD log show --last 5m --predicate 'process == "tenGO"' | gre
 ## Pièges
 
 - Le prompt ATT ne se re-déclenche pas après désinstallation ; il faut un simulateur vierge (« Erase All Content and Settings ») pour retester le premier lancement.
+- **Supprimer le prompt ATT sans souris** : insérer un refus dans TCC.db (`INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) VALUES ('kTCCServiceUserTracking','AppCraft31.tenGO',0,2,0,1);`) **puis redémarrer le simulateur** (`simctl shutdown` + `boot`) — atrackingd garde un cache en mémoire, la ligne seule ne suffit pas.
+- **UserDefaults : deux emplacements.** `simctl spawn $UD defaults write AppCraft31.tenGO …` écrit dans le plist *device-level* (`data/Library/Preferences/`) ; l'app écrit dans le plist de son **conteneur** (`get_app_container … data` → `Library/Preferences/`), qui a priorité en lecture. Pour réinitialiser une clé posée par l'app (ex. `hasSeenShopPurchaseGuide`) : app arrêtée, `plutil -remove <clé>` sur le plist du conteneur, et penser au cache cfprefsd (kickstart ou reboot du sim si la valeur revient).
 - Un simulateur non connecté à Game Center affiche une sheet « Se connecter à Game Center » au lancement qui masque le flux de consentement — l'annuler via cliclick (bouton Annuler en haut à gauche).
 - Mode QA sans consentement : `SIMCTL_CHILD_GAME_NORMAL=1 xcrun simctl launch ...` charge la bannière directement (non personnalisée).
 
