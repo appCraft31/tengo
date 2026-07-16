@@ -2,7 +2,8 @@
 //  BoutiqueScene.swift
 //  tenGO
 //
-//  Boutique à onglets : Thèmes, Matières de bulles, Styles de tracé.
+//  Boutique en une seule page défilante, classée par sections : Thèmes,
+//  Matières de bulles, Styles de tracé, Boosters, Pièces (dont « Sans pub »).
 //  Achat avec les pièces gagnées, sélection du cosmétique actif. Tout est non bloquant.
 //
 
@@ -11,24 +12,60 @@ import StoreKit
 
 class BoutiqueScene: SKScene {
 
-    private enum Tab: String { case themes, bubbles, trails, boosters, coins }
-    private var tab: Tab = .themes
     private var attemptedProductLoad = false
+
+    /// Mode guidé (premier achat) : défile jusqu'aux Boosters et met en avant
+    /// la carte du lot d'indices jusqu'à l'achat ou une autre interaction.
+    var guidedPurchase = false
+    private var purchaseGuide: CoachMarkOverlay?
 
     private let cardH: CGFloat = 150
     private var usableWidth: CGFloat = 600
+    private var usableHeight: CGFloat = 800
     private var cardW: CGFloat = 280
+    /// Marge haute réellement sûre (encoche / Dynamic Island), en points scène.
+    private var safeTop: CGFloat = 47
+
+    // MARK: - Défilement (page unique)
+
+    /// Contenu défilant (toutes les sections), masqué à la zone visible.
+    private var contentNode = SKNode()
+    private var contentHeight: CGFloat = 0
+    private var viewportTop: CGFloat = 0
+    private var viewportBottom: CGFloat = 0
+    /// Décalage de défilement appliqué (0 = haut de page).
+    private var scrollOffset: CGFloat = 0
+    /// Position y (relative au contenu) du haut de chaque section.
+    private var sectionTops: [String: CGFloat] = [:]
+    private var dragStartY: CGFloat?
+    private var dragStartOffset: CGFloat = 0
+    private var isDragging = false
+
+    private var maxScroll: CGFloat {
+        max(0, contentHeight - (viewportTop - viewportBottom))
+    }
 
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scaleMode = .aspectFill
         let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
         usableWidth = view.bounds.width / scale
+        usableHeight = view.bounds.height / scale
         cardW = usableWidth / 2 - 16
-        // Capture de review App Store des achats in-app : ouvre directement l'onglet Pièces.
-        if ProcessInfo.processInfo.environment["SHOP_MODE"] == "1" { tab = .coins }
+        // safeAreaInsets peut être nul au lancement : plancher à ~47 pt (encoche).
+        safeTop = max(view.safeAreaInsets.top, 47) / scale
         rebuild()
+        // Capture de review App Store des achats in-app : « Sans pub » est déjà
+        // en haut de page ; SHOP_COINS=1 défile en plus jusqu'aux packs.
+        if ProcessInfo.processInfo.environment["SHOP_COINS"] == "1" { scrollTo(section: "coins") }
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
+    }
+
+    /// Défile pour amener le haut d'une section en haut de la zone visible.
+    private func scrollTo(section key: String) {
+        guard let top = sectionTops[key] else { return }
+        scrollOffset = min(max(0, -top - 6), maxScroll)
+        contentNode.position = CGPoint(x: 0, y: viewportTop + scrollOffset)
     }
 
     // MARK: - Layout
@@ -38,7 +75,10 @@ class BoutiqueScene: SKScene {
         let theme = ThemeManager.shared.active
         backgroundColor = theme.background
 
-        let topY = size.height * 0.42
+        // Chrome fixe, calé sur la hauteur réellement visible (aspectFill),
+        // sous l'encoche / Dynamic Island.
+        let topY = usableHeight / 2 - safeTop - 26
+        let bottomY = -usableHeight / 2
 
         let title = SKLabelNode(text: String(localized: "shop.title", defaultValue: "Boutique"))
         title.fontName = "AvenirNext-Heavy"
@@ -46,99 +86,309 @@ class BoutiqueScene: SKScene {
         title.fontColor = theme.logo
         title.verticalAlignmentMode = .center
         title.position = CGPoint(x: 0, y: topY)
+        title.zPosition = 10
         addChild(title)
 
         addBalanceChip(atY: topY - 56, theme: theme)
-        addTabBar(atY: topY - 116, theme: theme)
+        addBackButton(atY: bottomY + 64, theme: theme)
 
-        let startY = topY - 232
-        let colCenter = usableWidth / 4
-        let colX: [CGFloat] = [-colCenter, colCenter]
+        // Zone défilante entre le solde et le bouton retour (masquée au viewport).
+        viewportTop = topY - 100
+        viewportBottom = bottomY + 104
+        let crop = SKCropNode()
+        let mask = SKSpriteNode(color: .white,
+                                size: CGSize(width: usableWidth, height: viewportTop - viewportBottom))
+        mask.position = CGPoint(x: 0, y: (viewportTop + viewportBottom) / 2)
+        crop.maskNode = mask
+        addChild(crop)
+        contentNode = SKNode()
+        crop.addChild(contentNode)
 
-        func place(_ index: Int) -> CGPoint {
-            CGPoint(x: colX[index % 2], y: startY - CGFloat(index / 2) * (cardH + 18))
-        }
+        buildContent(theme: theme)
 
-        switch tab {
-        case .themes:
-            for (i, t) in ThemeManager.shared.themes.enumerated() {
-                addThemeCard(t, at: place(i))
-            }
-        case .bubbles:
-            for (i, s) in CosmeticManager.shared.bubbleStyles.enumerated() {
-                let preview = BubbleNode.makeVisual(value: 5, styleKind: s.kind, radius: 23)
-                addCosmeticCard(kind: .bubbleStyle, id: s.id, price: s.price,
-                                title: bubbleStyleName(s.id), preview: preview, previewY: 36, at: place(i))
-            }
-        case .trails:
-            for (i, t) in CosmeticManager.shared.trails.enumerated() {
-                addCosmeticCard(kind: .trail, id: t.id, price: t.price,
-                                title: trailStyleName(t.id), preview: trailPreview(t), previewY: 36, at: place(i))
-            }
-        case .boosters:
-            for (i, booster) in Booster.allCases.enumerated() {
-                addBoosterCard(booster, at: place(i))
-            }
-        case .coins:
-            let products = StoreManager.shared.products
-            if ProcessInfo.processInfo.environment["SHOP_MODE"] == "1" && products.isEmpty {
-                // Rendu déterministe pour la capture App Store (sans dépendance réseau StoreKit).
-                let mocks: [(Int, String)] = [(500, "$0.99"), (1200, "$1.99"), (3000, "$3.99"), (6500, "$7.99")]
-                for (i, m) in mocks.enumerated() {
-                    addCoinPackMock(amount: m.0, priceText: m.1, at: place(i))
-                }
-            } else if products.isEmpty {
-                let msg = attemptedProductLoad
-                    ? String(localized: "shop.coins_unavailable", defaultValue: "Indisponible pour le moment")
-                    : String(localized: "shop.coins_loading", defaultValue: "Chargement…")
-                addInfoLabel(msg, atY: startY - 10, theme: theme)
-                if !attemptedProductLoad {
-                    attemptedProductLoad = true
-                    Task { @MainActor in
-                        await StoreManager.shared.loadProducts()
-                        if self.tab == .coins { self.rebuild() }
-                    }
-                }
-            } else {
-                for (i, p) in products.enumerated() {
-                    addCoinPackCard(p, at: place(i))
-                }
+        scrollOffset = min(scrollOffset, maxScroll)
+        contentNode.position = CGPoint(x: 0, y: viewportTop + scrollOffset)
+
+        // rebuild() détruit tout : ré-attache le guide tant qu'il est actif,
+        // en défilant d'abord jusqu'à la section Boosters.
+        if guidedPurchase {
+            scrollTo(section: "boosters")
+            if let target = contentNode.childNode(withName: "booster:\(Booster.hint.rawValue)") {
+                purchaseGuide = CoachMarkOverlay.present(
+                    in: self, over: target,
+                    text: String(localized: "guide.shop_item",
+                                 defaultValue: "Touche cette carte pour acheter un lot d'indices avec tes pièces."))
             }
         }
-
-        addBackButton(atY: -size.height * 0.43, theme: theme)
     }
 
-    private func addTabBar(atY y: CGFloat, theme: Theme) {
-        let items: [(Tab, String)] = [
-            (.themes, String(localized: "shop.tab_themes", defaultValue: "Thèmes")),
-            (.bubbles, String(localized: "shop.tab_bubbles", defaultValue: "Matières")),
-            (.trails, String(localized: "shop.tab_trails", defaultValue: "Tracés")),
-            (.boosters, String(localized: "shop.tab_boosters", defaultValue: "Boosters")),
-            (.coins, String(localized: "shop.tab_coins", defaultValue: "Pièces")),
-        ]
-        let tabW = (usableWidth - 16) / CGFloat(items.count)
-        for (i, item) in items.enumerated() {
-            let isOn = tab == item.0
-            let x = -usableWidth / 2 + 8 + tabW * (CGFloat(i) + 0.5)
-            let node = SKNode()
-            node.name = "tab:\(item.0.rawValue)"
-            node.position = CGPoint(x: x, y: y)
+    /// Empile toutes les sections dans contentNode (0 = haut du contenu, on
+    /// descend en y négatif). Renseigne contentHeight et sectionTops.
+    private func buildContent(theme: Theme) {
+        sectionTops = [:]
+        var cursor: CGFloat = 0
+        let colCenter = usableWidth / 4
+        let colX: [CGFloat] = [-colCenter, colCenter]
+        let rowGap: CGFloat = 18
+        let sectionGap: CGFloat = 34
 
-            let bg = SKShapeNode(rectOf: CGSize(width: tabW - 6, height: 40), cornerRadius: 20)
-            bg.fillColor = isOn ? theme.accent : theme.logo.withAlphaComponent(0.08)
-            bg.strokeColor = isOn ? .clear : theme.logo.withAlphaComponent(0.18)
-            bg.lineWidth = 1
-            node.addChild(bg)
-
-            let label = SKLabelNode(text: item.1)
-            label.fontName = isOn ? "AvenirNext-Bold" : "AvenirNext-Medium"
-            label.fontSize = 14
-            label.fontColor = isOn ? contrastingText(on: theme.accent) : theme.logo.withAlphaComponent(0.8)
+        func header(_ text: String, key: String) {
+            sectionTops[key] = cursor
+            cursor -= 26
+            let label = SKLabelNode(text: text)
+            label.fontName = "AvenirNext-Bold"
+            label.fontSize = 24
+            label.fontColor = theme.logo
             label.verticalAlignmentMode = .center
-            node.addChild(label)
-            addChild(node)
+            label.horizontalAlignmentMode = .left
+            label.position = CGPoint(x: -usableWidth / 2 + 22, y: cursor)
+            contentNode.addChild(label)
+            cursor -= 30
         }
+
+        func gridPlace(_ index: Int) -> CGPoint {
+            CGPoint(x: colX[index % 2],
+                    y: cursor - cardH / 2 - CGFloat(index / 2) * (cardH + rowGap))
+        }
+
+        func endGrid(count: Int) {
+            let rows = (count + 1) / 2
+            cursor -= CGFloat(rows) * (cardH + rowGap) + sectionGap
+        }
+
+        // « Sans pub » mis en avant, tout en haut de la boutique.
+        addNoAdsCard(theme: theme, cursor: &cursor)
+
+        header(String(localized: "shop.tab_themes", defaultValue: "Thèmes"), key: "themes")
+        for (i, t) in ThemeManager.shared.themes.enumerated() { addThemeCard(t, at: gridPlace(i)) }
+        endGrid(count: ThemeManager.shared.themes.count)
+
+        header(String(localized: "shop.tab_bubbles", defaultValue: "Matières"), key: "bubbles")
+        for (i, s) in CosmeticManager.shared.bubbleStyles.enumerated() {
+            let preview = BubbleNode.makeVisual(value: 5, styleKind: s.kind, radius: 23)
+            addCosmeticCard(kind: .bubbleStyle, id: s.id, price: s.price,
+                            title: bubbleStyleName(s.id), preview: preview, previewY: 36, at: gridPlace(i))
+        }
+        endGrid(count: CosmeticManager.shared.bubbleStyles.count)
+
+        header(String(localized: "shop.tab_trails", defaultValue: "Tracés"), key: "trails")
+        for (i, t) in CosmeticManager.shared.trails.enumerated() {
+            addCosmeticCard(kind: .trail, id: t.id, price: t.price,
+                            title: trailStyleName(t.id), preview: trailPreview(t), previewY: 36, at: gridPlace(i))
+        }
+        endGrid(count: CosmeticManager.shared.trails.count)
+
+        header(String(localized: "shop.tab_boosters", defaultValue: "Boosters"), key: "boosters")
+        for (i, booster) in Booster.allCases.enumerated() { addBoosterCard(booster, at: gridPlace(i)) }
+        endGrid(count: Booster.allCases.count)
+
+        header(String(localized: "shop.tab_coins", defaultValue: "Pièces"), key: "coins")
+
+        let products = StoreManager.shared.products
+        if ProcessInfo.processInfo.environment["SHOP_MODE"] == "1" && products.isEmpty {
+            // Rendu déterministe pour la capture App Store (sans dépendance réseau StoreKit).
+            let mocks: [(Int, String)] = [(500, "$0.99"), (1200, "$1.99"), (3000, "$3.99"), (6500, "$7.99")]
+            for (i, m) in mocks.enumerated() { addCoinPackMock(amount: m.0, priceText: m.1, at: gridPlace(i)) }
+            endGrid(count: mocks.count)
+        } else if products.isEmpty {
+            let msg = attemptedProductLoad
+                ? String(localized: "shop.coins_unavailable", defaultValue: "Indisponible pour le moment")
+                : String(localized: "shop.coins_loading", defaultValue: "Chargement…")
+            let label = SKLabelNode(text: msg)
+            label.fontName = "AvenirNext-Medium"
+            label.fontSize = 19
+            label.fontColor = theme.logo.withAlphaComponent(0.7)
+            label.verticalAlignmentMode = .center
+            label.position = CGPoint(x: 0, y: cursor - 30)
+            contentNode.addChild(label)
+            cursor -= 80
+            if !attemptedProductLoad {
+                attemptedProductLoad = true
+                Task { @MainActor in
+                    await StoreManager.shared.loadProducts()
+                    self.rebuild()
+                }
+            }
+        } else {
+            for (i, p) in products.enumerated() { addCoinPackCard(p, at: gridPlace(i)) }
+            endGrid(count: products.count)
+        }
+
+        contentHeight = -cursor + 8
+    }
+
+    /// Carte pleine largeur « Sans pub » (non-consommable), mise en avant
+    /// entre Thèmes et Matières : fond accentué + halo pulsant tant que
+    /// l'achat n'a pas été fait.
+    private func addNoAdsCard(theme: Theme, cursor: inout CGFloat) {
+        let purchased = AdFreeManager.shared.isPurchased
+        let h: CGFloat = purchased ? 116 : 132
+        let w = usableWidth - 32
+        let card = SKNode()
+        card.name = "noAds"
+        card.position = CGPoint(x: 0, y: cursor - h / 2)
+
+        let ink = contrastingText(on: theme.accent)
+
+        // Halo pulsant derrière la carte (seulement tant que non acheté).
+        if !purchased {
+            let halo = SKShapeNode(rectOf: CGSize(width: w + 12, height: h + 12), cornerRadius: 32)
+            halo.fillColor = theme.accent.withAlphaComponent(0.35)
+            halo.strokeColor = .clear
+            halo.zPosition = -2
+            halo.run(.repeatForever(.sequence([
+                .group([.scale(to: 1.03, duration: 1.1), .fadeAlpha(to: 0.5, duration: 1.1)]),
+                .group([.scale(to: 1.0, duration: 1.1), .fadeAlpha(to: 1.0, duration: 1.1)]),
+            ])))
+            card.addChild(halo)
+        }
+
+        let shadow = SKShapeNode(rectOf: CGSize(width: w, height: h), cornerRadius: 26)
+        shadow.fillColor = UIColor(white: 0, alpha: 0.08)
+        shadow.strokeColor = .clear
+        shadow.position = CGPoint(x: 0, y: -5)
+        shadow.zPosition = -1
+        card.addChild(shadow)
+
+        let bg = SKShapeNode(rectOf: CGSize(width: w, height: h), cornerRadius: 26)
+        bg.fillColor = theme.accent
+        bg.strokeColor = theme.logo.withAlphaComponent(0.25)
+        bg.lineWidth = purchased ? 3 : 1.5
+        card.addChild(bg)
+
+        // Pictogramme « écran publicitaire barré ».
+        let picto = SKNode()
+        picto.position = CGPoint(x: -w / 2 + 48, y: 0)
+        let screen = SKShapeNode(rectOf: CGSize(width: 34, height: 24), cornerRadius: 5)
+        screen.fillColor = .clear
+        screen.strokeColor = ink.withAlphaComponent(0.85)
+        screen.lineWidth = 2.5
+        picto.addChild(screen)
+        let slashPath = CGMutablePath()
+        slashPath.move(to: CGPoint(x: -19, y: -14))
+        slashPath.addLine(to: CGPoint(x: 19, y: 14))
+        let slash = SKShapeNode(path: slashPath)
+        slash.strokeColor = ink.withAlphaComponent(0.85)
+        slash.lineWidth = 3
+        slash.lineCap = .round
+        picto.addChild(slash)
+        card.addChild(picto)
+
+        let titleLabel = SKLabelNode(text: String(localized: "menu.remove_ads", defaultValue: "Sans pub"))
+        titleLabel.fontName = "AvenirNext-Bold"
+        titleLabel.fontSize = 23
+        titleLabel.fontColor = ink
+        titleLabel.verticalAlignmentMode = .center
+        titleLabel.horizontalAlignmentMode = .left
+        titleLabel.position = CGPoint(x: -w / 2 + 86, y: purchased ? 12 : 22)
+        card.addChild(titleLabel)
+
+        let subtitle = SKLabelNode(text: String(localized: "shop.no_ads_desc",
+                                                defaultValue: "Supprime définitivement la publicité"))
+        subtitle.fontName = "AvenirNext-Medium"
+        subtitle.fontSize = 14
+        subtitle.fontColor = ink.withAlphaComponent(0.75)
+        subtitle.verticalAlignmentMode = .center
+        subtitle.horizontalAlignmentMode = .left
+        subtitle.position = CGPoint(x: -w / 2 + 86, y: purchased ? -14 : -2)
+        card.addChild(subtitle)
+
+        // Bonus de bienvenue : 500 pièces offertes avec l'achat.
+        if !purchased {
+            let bonusCoin = CoinIcon.make(radius: 8)
+            bonusCoin.position = CGPoint(x: -w / 2 + 94, y: -26)
+            card.addChild(bonusCoin)
+            let bonus = SKLabelNode(text: String(localized: "shop.no_ads_bonus",
+                                                 defaultValue: "+ 500 pièces offertes"))
+            bonus.fontName = "AvenirNext-Bold"
+            bonus.fontSize = 14
+            bonus.fontColor = UIColor(red: 0.45, green: 0.34, blue: 0.10, alpha: 1)
+            bonus.verticalAlignmentMode = .center
+            bonus.horizontalAlignmentMode = .left
+            bonus.position = CGPoint(x: -w / 2 + 108, y: -26)
+            card.addChild(bonus)
+        }
+
+        if purchased {
+            let pill = SKShapeNode(rectOf: CGSize(width: 96, height: 36), cornerRadius: 18)
+            pill.fillColor = theme.background
+            pill.strokeColor = .clear
+            pill.position = CGPoint(x: w / 2 - 70, y: 0)
+            card.addChild(pill)
+            let label = SKLabelNode(text: String(localized: "shop.active", defaultValue: "Actif"))
+            label.fontName = "AvenirNext-Bold"
+            label.fontSize = 15
+            label.fontColor = theme.logo
+            label.verticalAlignmentMode = .center
+            label.position = pill.position
+            card.addChild(label)
+        } else {
+            let priceText = StoreManager.shared.adFreeProduct?.displayPrice ?? "3,99 €"
+            let pill = SKShapeNode(rectOf: CGSize(width: 110, height: 36), cornerRadius: 18)
+            pill.fillColor = theme.background
+            pill.strokeColor = .clear
+            pill.position = CGPoint(x: w / 2 - 74, y: 0)
+            card.addChild(pill)
+            let label = SKLabelNode(text: priceText)
+            label.fontName = "AvenirNext-Bold"
+            label.fontSize = 16
+            label.fontColor = theme.logo
+            label.verticalAlignmentMode = .center
+            label.position = pill.position
+            card.addChild(label)
+        }
+
+        contentNode.addChild(card)
+        cursor -= h + 18
+    }
+
+    /// Bonus de bienvenue crédité avec l'achat « sans pub ».
+    private static let noAdsBonusCoins = 500
+
+    /// Achat du mod « sans pub » depuis la Boutique. Succès → +500 pièces,
+    /// rebuild (badge « Actif ») ; les pubs sont coupées via .tenGOAdFreeChanged.
+    private func handleNoAds() {
+        guard !AdFreeManager.shared.isPurchased else { return }
+        guard let product = StoreManager.shared.adFreeProduct else {
+            shake(contentNode.childNode(withName: "noAds"))
+            Task { @MainActor in
+                await StoreManager.shared.loadProducts()
+                self.rebuild()
+            }
+            return
+        }
+        HapticManager.light()
+        Task { @MainActor in
+            let success = await StoreManager.shared.purchase(product)
+            if success {
+                HapticManager.medium()
+                CoinManager.shared.add(Self.noAdsBonusCoins)
+                self.rebuild()
+                self.showNoAdsBonusFeedback()
+            } else {
+                self.shake(self.contentNode.childNode(withName: "noAds"))
+            }
+        }
+    }
+
+    /// « +500 » doré qui s'élève depuis le solde après l'achat sans pub.
+    private func showNoAdsBonusFeedback() {
+        let chipY = usableHeight / 2 - safeTop - 26 - 56
+        let popup = SKLabelNode(text: "+\(Self.noAdsBonusCoins)")
+        popup.fontName = "AvenirNext-Heavy"
+        popup.fontSize = 26
+        popup.fontColor = UIColor(red: 0.85, green: 0.60, blue: 0.15, alpha: 1)
+        popup.verticalAlignmentMode = .center
+        popup.position = CGPoint(x: 0, y: chipY - 34)
+        popup.zPosition = 30
+        addChild(popup)
+        popup.run(SKAction.sequence([
+            SKAction.group([
+                SKAction.moveBy(x: 0, y: 52, duration: 0.8),
+                SKAction.sequence([SKAction.wait(forDuration: 0.4), SKAction.fadeOut(withDuration: 0.4)])
+            ]),
+            SKAction.removeFromParent()
+        ]))
     }
 
     private func addInfoLabel(_ text: String, atY y: CGFloat, theme: Theme) {
@@ -165,7 +415,7 @@ class BoutiqueScene: SKScene {
                      title: "\(amount)", titleColor: theme.logo,
                      preview: preview, previewY: 40, at: position)
 
-        if let card = childNode(withName: "pack:\(product.id)") {
+        if let card = contentNode.childNode(withName: "pack:\(product.id)") {
             // Pilule accent = prix en euros (bouton d'achat)
             let pill = SKShapeNode(rectOf: CGSize(width: 110, height: 34), cornerRadius: 17)
             pill.fillColor = theme.accent
@@ -191,7 +441,7 @@ class BoutiqueScene: SKScene {
                      border: theme.logo.withAlphaComponent(0.18), borderWidth: 1,
                      title: "\(amount)", titleColor: theme.logo,
                      preview: preview, previewY: 40, at: position)
-        guard let card = childNode(withName: "packmock:\(amount)") else { return }
+        guard let card = contentNode.childNode(withName: "packmock:\(amount)") else { return }
         let pill = SKShapeNode(rectOf: CGSize(width: 110, height: 34), cornerRadius: 17)
         pill.fillColor = theme.accent
         pill.strokeColor = .clear
@@ -220,7 +470,7 @@ class BoutiqueScene: SKScene {
                      title: "\(boosterName(booster)) ×\(booster.bundleQuantity)", titleColor: theme.logo,
                      preview: preview, previewY: 40, at: position)
 
-        guard let card = childNode(withName: "booster:\(booster.rawValue)") else { return }
+        guard let card = contentNode.childNode(withName: "booster:\(booster.rawValue)") else { return }
 
         // Stock possédé.
         let stock = SKLabelNode(text: String(format: String(localized: "shop.booster_stock",
@@ -281,7 +531,7 @@ class BoutiqueScene: SKScene {
                      title: themeName(theme.id), titleColor: theme.logo,
                      preview: preview, previewY: 42, at: position)
         // Badge
-        if let card = childNode(withName: "item:theme:\(theme.id)") {
+        if let card = contentNode.childNode(withName: "item:theme:\(theme.id)") {
             addStatusBadge(to: card, theme: theme, isActive: isActive, owned: owned, atY: -48,
                            priceOverride: owned ? nil : theme.price)
         }
@@ -299,7 +549,7 @@ class BoutiqueScene: SKScene {
                      borderWidth: isActive ? 3 : 1,
                      title: title, titleColor: theme.logo,
                      preview: preview, previewY: previewY, at: position)
-        if let card = childNode(withName: "item:\(prefix):\(id)") {
+        if let card = contentNode.childNode(withName: "item:\(prefix):\(id)") {
             addStatusBadge(to: card, theme: theme, isActive: isActive, owned: owned, atY: -48,
                            priceOverride: owned ? nil : price)
         }
@@ -337,7 +587,7 @@ class BoutiqueScene: SKScene {
         titleLabel.position = CGPoint(x: 0, y: -6)
         card.addChild(titleLabel)
 
-        addChild(card)
+        contentNode.addChild(card)
     }
 
     private func addStatusBadge(to card: SKNode, theme: Theme, isActive: Bool, owned: Bool, atY y: CGFloat, priceOverride: Int? = nil) {
@@ -506,34 +756,73 @@ class BoutiqueScene: SKScene {
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
+        dragStartY = touch.location(in: self).y
+        dragStartOffset = scrollOffset
+        isDragging = false
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first, let startY = dragStartY else { return }
+        let dy = touch.location(in: self).y - startY
+        if !isDragging && abs(dy) > 8 {
+            isDragging = true
+            // Défiler compte comme « autre interaction » : le guide se ferme.
+            if let guide = purchaseGuide, guide.parent != nil {
+                guide.dismiss()
+                purchaseGuide = nil
+                guidedPurchase = false
+            }
+        }
+        if isDragging {
+            scrollOffset = min(max(0, dragStartOffset + dy), maxScroll)
+            contentNode.position = CGPoint(x: 0, y: viewportTop + scrollOffset)
+        }
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        isDragging = false
+        dragStartY = nil
+    }
+
+    /// Les actions se déclenchent au relâchement : un drag (défilement) ne
+    /// doit jamais valider une carte sous le doigt.
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        defer { dragStartY = nil }
+        guard let touch = touches.first else { return }
+        if isDragging { isDragging = false; return }
         let point = touch.location(in: self)
+
+        // Guide d'achat : tap sur la carte cible → achat guidé ; ailleurs, le
+        // guide se ferme et le tap est traité normalement (rien n'est bloqué).
+        if let guide = purchaseGuide, guide.parent != nil {
+            let result = guide.handleTouch(at: point)
+            purchaseGuide = nil
+            guidedPurchase = false
+            if result == .target {
+                completeGuidedPurchase()
+                return
+            }
+        }
 
         for node in nodes(at: point) {
             guard let name = node.name ?? node.parent?.name ?? node.parent?.parent?.name else { continue }
             if name == "shopBack" { goBackToMenu(); return }
-            if name.hasPrefix("tab:") {
-                if let t = Tab(rawValue: String(name.dropFirst("tab:".count))), t != tab {
-                    tab = t
-                    HapticManager.light()
-                    rebuild()
-                }
-                return
-            }
+            if name == "noAds" { handleNoAds(); return }
             if name.hasPrefix("item:theme:") {
-                handleTheme(String(name.dropFirst("item:theme:".count)), card: childNode(withName: name)); return
+                handleTheme(String(name.dropFirst("item:theme:".count)), card: contentNode.childNode(withName: name)); return
             }
             if name.hasPrefix("item:bubbleStyle:") {
-                handleCosmetic(.bubbleStyle, id: String(name.dropFirst("item:bubbleStyle:".count)), card: childNode(withName: name)); return
+                handleCosmetic(.bubbleStyle, id: String(name.dropFirst("item:bubbleStyle:".count)), card: contentNode.childNode(withName: name)); return
             }
             if name.hasPrefix("item:trail:") {
-                handleCosmetic(.trail, id: String(name.dropFirst("item:trail:".count)), card: childNode(withName: name)); return
+                handleCosmetic(.trail, id: String(name.dropFirst("item:trail:".count)), card: contentNode.childNode(withName: name)); return
             }
             if name.hasPrefix("pack:") {
                 handleCoinPack(String(name.dropFirst("pack:".count))); return
             }
             if name.hasPrefix("booster:") {
                 handleBoosterPurchase(String(name.dropFirst("booster:".count)),
-                                      card: childNode(withName: name)); return
+                                      card: contentNode.childNode(withName: name)); return
             }
         }
     }
@@ -545,6 +834,36 @@ class BoutiqueScene: SKScene {
         } else {
             shake(card)
         }
+    }
+
+    /// Achat déclenché depuis le coach-mark : achète le lot d'indices puis
+    /// félicite le joueur (le solde a été vérifié au déclenchement du guide,
+    /// mais l'échec reste géré par le shake standard).
+    private func completeGuidedPurchase() {
+        let hint = Booster.hint
+        let card = contentNode.childNode(withName: "booster:\(hint.rawValue)")
+        guard BoosterManager.shared.purchaseBundle(hint) else {
+            shake(card)
+            return
+        }
+        HapticManager.medium()
+        rebuild()
+        let toast = SKLabelNode(text: String(localized: "guide.shop_success",
+                                             defaultValue: "Achat réussi ! Retrouve tes indices en partie."))
+        toast.fontName = "AvenirNext-DemiBold"
+        toast.fontSize = 19
+        toast.fontColor = UIColor(red: 0.35, green: 0.55, blue: 0.40, alpha: 1)
+        toast.verticalAlignmentMode = .center
+        toast.position = CGPoint(x: 0, y: -usableHeight / 2 + 140)
+        toast.zPosition = 40
+        toast.alpha = 0
+        addChild(toast)
+        toast.run(SKAction.sequence([
+            SKAction.fadeIn(withDuration: 0.2),
+            SKAction.wait(forDuration: 2.2),
+            SKAction.fadeOut(withDuration: 0.4),
+            SKAction.removeFromParent()
+        ]))
     }
 
     private func handleCoinPack(_ productID: String) {

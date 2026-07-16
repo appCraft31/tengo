@@ -16,16 +16,11 @@ class MenuScene: SKScene {
     /// Libellé du solde de pièces (mis à jour après une récompense).
     private var coinLabel: SKLabelNode?
     private var coinChip: SKNode?
+    private var shopGuide: CoachMarkOverlay?
     /// Bouton « regarder une pub pour +10 pièces » + badge de quota restant.
     private var watchAdButton: SKNode?
     private var watchAdBadge: SKLabelNode?
     private static let rewardedCoins = 10
-    /// Bouton « sans pub » (achat non-consommable) + son libellé de prix.
-    private var noAdsButton: SKNode?
-    private var noAdsPriceLabel: SKLabelNode?
-    /// Prix affiché tant que StoreKit n'a pas répondu.
-    private static let noAdsFallbackPrice = "3,99 €"
-
     override func didMove(to view: SKView) {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         backgroundColor = ThemeManager.shared.active.background
@@ -34,14 +29,30 @@ class MenuScene: SKScene {
         // Le bouton « regarder une pub » vient d'apparaître : c'est ici que la
         // récompensée a une chance d'être vue, donc ici qu'on la précharge.
         RewardedAdManager.shared.preloadIfNeeded()
-        // Le prix du mod sans pub vient de StoreKit : on l'affiche dès qu'il arrive.
-        if !AdFreeManager.shared.isPurchased, StoreManager.shared.adFreeProduct == nil {
-            Task { @MainActor in
-                await StoreManager.shared.loadProducts()
-                refreshNoAdsPrice()
-            }
-        }
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
+        maybeShowShopPurchaseGuide()
+    }
+
+    // MARK: - Guide d'achat boutique (one-shot)
+
+    /// Premier moment où le solde couvre l'article ciblé (lot d'indices) :
+    /// coach-mark sur le bouton Boutique. Le flag est posé dès l'affichage —
+    /// le guide ne se représente jamais, même s'il est ignoré.
+    private func maybeShowShopPurchaseGuide() {
+        let defaults = UserDefaults.standard
+        guard defaults.bool(forKey: AppConfig.UserDefaultsKey.hasSeenTutorial),
+              !defaults.bool(forKey: AppConfig.UserDefaultsKey.hasSeenShopPurchaseGuide),
+              CoinManager.shared.balance >= Booster.hint.bundlePrice,
+              let target = childNode(withName: "boutique") else { return }
+        defaults.set(true, forKey: AppConfig.UserDefaultsKey.hasSeenShopPurchaseGuide)
+
+        run(SKAction.wait(forDuration: 0.45)) { [weak self] in
+            guard let self, self.shopGuide == nil else { return }
+            self.shopGuide = CoachMarkOverlay.present(
+                in: self, over: target,
+                text: String(localized: "guide.shop_menu",
+                             defaultValue: "Tu as gagné assez de pièces pour ton premier achat ! Ouvre la boutique."))
+        }
     }
 
     private func presentSettings() {
@@ -97,7 +108,8 @@ class MenuScene: SKScene {
         // le solde de pièces est centré juste en dessous (évite la dynamic island).
         addIconButton(systemName: "trophy.fill", name: "classement", at: CGPoint(x: -edgeX, y: topRowY))
         addIconButton(systemName: "gearshape.fill", name: "parametres", at: CGPoint(x: edgeX, y: topRowY))
-        addCoinChip(atY: topRowY - 70)
+        // Solde de pièces à gauche de l'engrenage (bord droit ancré).
+        addCoinChip(rightEdgeX: edgeX - 36, atY: topRowY)
 
         // Pile de boutons centrée : tous de même gabarit, la hiérarchie passe
         // par la couleur et la graisse du texte, pas par la taille.
@@ -112,16 +124,19 @@ class MenuScene: SKScene {
             return c
         }
 
-        // Jouer — action primaire (accentuée)
+        // Boutons teintés avec la palette de bulles du thème actif :
+        // vert (4) Jouer, bleu (5) Continuer, violet (6) Défi, jaune (3) Boutique.
+        // Jouer — action primaire (accentuée), même typo que les autres boutons.
         addMenuButton(text: String(localized: "menu.new_game"), name: "newGame",
                       width: buttonWidth, height: buttonHeight, at: CGPoint(x: 0, y: stack()),
-                      accent: theme.accent, fontSize: 25, bold: true)
+                      accent: theme.color(forValue: 4), fontSize: 20)
 
         // Continuer — sous Jouer si une partie est en cours
         if GameState.exists {
             addMenuButton(text: String(localized: "menu.continue"), name: "continuer",
                           width: buttonWidth, height: buttonHeight,
-                          at: CGPoint(x: 0, y: stack()), fontSize: 20)
+                          at: CGPoint(x: 0, y: stack()),
+                          accent: theme.color(forValue: 5), fontSize: 20)
         }
 
         // Défi du jour — secondaire
@@ -132,7 +147,7 @@ class MenuScene: SKScene {
             width: buttonWidth, height: buttonHeight, at: CGPoint(x: 0, y: stack()),
             accent: dailyDone
                 ? UIColor(red: 0.90, green: 0.90, blue: 0.89, alpha: 1)
-                : UIColor(red: 0.86, green: 0.82, blue: 0.97, alpha: 1),
+                : theme.color(forValue: 6),
             fontSize: 21)
         if dailyDone {
             dailyButton.alpha = 0.5
@@ -148,12 +163,12 @@ class MenuScene: SKScene {
         // Boutique — tertiaire
         addMenuButton(text: String(localized: "menu.shop", defaultValue: "Boutique"), name: "boutique",
                       width: buttonWidth, height: buttonHeight,
-                      at: CGPoint(x: 0, y: stack()), fontSize: 20)
+                      at: CGPoint(x: 0, y: stack()),
+                      accent: theme.color(forValue: 3), fontSize: 20)
 
-        // Bouton « pub récompensée » (gauche, 3/4 de la hauteur), puis le mod
-        // « sans pub » juste en dessous.
+        // Bouton « pub récompensée » (gauche, 3/4 de la hauteur). L'achat
+        // « sans pub » vit désormais dans la Boutique (section Pièces).
         addWatchAdButton()
-        addNoAdsButton()
     }
 
     /// Bouton-icône rond (SF Symbol) pour les coins (classement, paramètres).
@@ -192,9 +207,9 @@ class MenuScene: SKScene {
 
     /// Solde de pièces dépensables (monnaie de la boutique).
     /// Pastille dorée + pièce vectorielle.
-    private func addCoinChip(atY y: CGFloat) {
+    /// Chip de solde ancré par son bord droit (la largeur varie avec le solde).
+    private func addCoinChip(rightEdgeX: CGFloat, atY y: CGFloat) {
         let container = SKNode()
-        container.position = CGPoint(x: 0, y: y)
 
         let coinR: CGFloat = 9
         let coin = CoinIcon.make(radius: coinR)
@@ -218,6 +233,8 @@ class MenuScene: SKScene {
         bg.strokeColor = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 0.35)
         bg.lineWidth = 1
         bg.zPosition = 0
+
+        container.position = CGPoint(x: rightEdgeX - width / 2, y: y)
 
         let startX = -contentW / 2
         coin.position = CGPoint(x: startX + coinR, y: 0)
@@ -312,135 +329,6 @@ class MenuScene: SKScene {
         watchAdButton?.alpha = remaining > 0 ? 1.0 : 0.45
     }
 
-    /// Bouton rond « sans pub » (achat non-consommable), juste sous le bouton
-    /// « regarder une pub ». Même gabarit, mais accentué et pulsant : c'est la
-    /// seule offre payante mise en avant hors boutique.
-    private func addNoAdsButton() {
-        // Déjà acheté → le bouton n'existe pas (le watchAd, au-dessus, ne bouge pas).
-        guard !AdFreeManager.shared.isPurchased, let v = view else { return }
-
-        let scale = max(v.bounds.width / size.width, v.bounds.height / size.height)
-        let visibleH = v.bounds.height / scale
-        let visibleW = v.bounds.width / scale
-        let r: CGFloat = 38
-        // Sous le watchAd (même x), espacés d'un diamètre + une marge.
-        let y = -visibleH / 2 + visibleH * 0.75 - (r * 2 + 12)
-        let x = -visibleW / 2 + 52
-
-        let theme = ThemeManager.shared.active
-        let node = SKNode()
-        node.name = "noAds"
-        node.position = CGPoint(x: x, y: y)
-        node.zPosition = 6
-
-        // Halo pulsant : accroche l'œil sans masquer le fond.
-        let halo = SKShapeNode(circleOfRadius: r + 4)
-        halo.fillColor = theme.accent.withAlphaComponent(0.28)
-        halo.strokeColor = .clear
-        halo.zPosition = -1
-        halo.run(.repeatForever(.sequence([
-            .group([.scale(to: 1.14, duration: 1.1), .fadeAlpha(to: 0.25, duration: 1.1)]),
-            .group([.scale(to: 1.0, duration: 1.1), .fadeAlpha(to: 1.0, duration: 1.1)]),
-        ])))
-        node.addChild(halo)
-
-        let bg = SKShapeNode(circleOfRadius: r)
-        bg.fillColor = theme.accent
-        bg.strokeColor = theme.logo.withAlphaComponent(0.30)
-        bg.lineWidth = 1.5
-        node.addChild(bg)
-
-        let ink = contrastingText(on: theme.accent)
-
-        // Pictogramme « pas de pub » : l'écran publicitaire (rectangle) barré.
-        let screen = SKShapeNode(rectOf: CGSize(width: 30, height: 21), cornerRadius: 4)
-        screen.fillColor = .clear
-        screen.strokeColor = ink.withAlphaComponent(0.85)
-        screen.lineWidth = 2.5
-        screen.position = CGPoint(x: 0, y: 13)
-        node.addChild(screen)
-
-        // La barre oblique est doublée : un liseré de la couleur du bouton en
-        // dessous, pour qu'elle se détache nettement du rectangle qu'elle croise.
-        for (width, color) in [(6.0, theme.accent), (3.0, ink)] {
-            let path = CGMutablePath()
-            path.move(to: CGPoint(x: -17, y: 2))
-            path.addLine(to: CGPoint(x: 17, y: 24))
-            let slash = SKShapeNode(path: path)
-            slash.strokeColor = color
-            slash.lineWidth = CGFloat(width)
-            slash.lineCap = .round
-            node.addChild(slash)
-        }
-
-        // Prix (StoreKit si disponible, sinon repli).
-        let price = SKLabelNode(text: StoreManager.shared.adFreeProduct?.displayPrice
-                                ?? MenuScene.noAdsFallbackPrice)
-        price.fontName = "AvenirNext-Bold"
-        price.fontSize = 14
-        price.fontColor = ink
-        price.verticalAlignmentMode = .center
-        price.horizontalAlignmentMode = .center
-        price.position = CGPoint(x: 0, y: -17)
-        node.addChild(price)
-        noAdsPriceLabel = price
-
-        // Étiquette « Sans pub » sous le cercle.
-        let caption = SKLabelNode(text: String(localized: "menu.remove_ads", defaultValue: "Sans pub"))
-        caption.fontName = "AvenirNext-DemiBold"
-        caption.fontSize = 12
-        caption.fontColor = theme.logo.withAlphaComponent(0.75)
-        caption.verticalAlignmentMode = .center
-        caption.horizontalAlignmentMode = .center
-        caption.position = CGPoint(x: 0, y: -(r + 13))
-        node.addChild(caption)
-
-        addChild(node)
-        noAdsButton = node
-    }
-
-    /// Le prix StoreKit est arrivé après la construction du bouton.
-    private func refreshNoAdsPrice() {
-        guard let price = StoreManager.shared.adFreeProduct?.displayPrice else { return }
-        noAdsPriceLabel?.text = price
-    }
-
-    /// Achat du mod « sans pub ». Succès → le bouton s'efface, les pubs sont
-    /// coupées (GameViewController retire la bannière sur .tenGOAdFreeChanged).
-    private func purchaseNoAds() {
-        guard let product = StoreManager.shared.adFreeProduct else {
-            // StoreKit n'a pas encore répondu : on retente le chargement.
-            showUnavailableFeedback()
-            Task { @MainActor in
-                await StoreManager.shared.loadProducts()
-                refreshNoAdsPrice()
-            }
-            return
-        }
-        HapticManager.light()
-        Task { @MainActor in
-            let success = await StoreManager.shared.purchase(product)
-            if success {
-                HapticManager.medium()
-                dismissNoAdsButton()
-            } else {
-                showUnavailableFeedback()
-            }
-        }
-    }
-
-    /// Retrait animé du bouton après achat.
-    private func dismissNoAdsButton() {
-        guard let node = noAdsButton else { return }
-        noAdsButton = nil
-        noAdsPriceLabel = nil
-        node.removeAllActions()
-        node.run(.sequence([
-            .group([.scale(to: 1.15, duration: 0.14), .fadeOut(withDuration: 0.28)]),
-            .removeFromParent(),
-        ]))
-    }
-
     private func addLogo(atY y: CGFloat) {
         // "TEN" à gauche
         let ten = SKLabelNode(text: "TEN")
@@ -523,6 +411,19 @@ class MenuScene: SKScene {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
 
+        // Guide d'achat : la cible ouvre la boutique en mode guidé, ailleurs on ferme.
+        if let guide = shopGuide, guide.parent != nil {
+            let result = guide.handleTouch(at: point)
+            shopGuide = nil
+            if result == .target {
+                if let button = childNode(withName: "boutique") { animateTap(button) }
+                run(SKAction.wait(forDuration: 0.12)) {
+                    self.navigateToBoutique(guided: true)
+                }
+            }
+            return
+        }
+
         // Overlay prioritaire si présent
         if let overlay = settingsOverlay, overlay.parent != nil {
             overlay.handleTouch(at: point)
@@ -577,10 +478,6 @@ class MenuScene: SKScene {
             case "watchAd":
                 animateTap(node.parent ?? node)
                 presentRewardedAd()
-                return
-            case "noAds":
-                animateTap(node.parent ?? node)
-                purchaseNoAds()
                 return
             default: break
             }
@@ -663,8 +560,9 @@ class MenuScene: SKScene {
         view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
     }
 
-    private func navigateToBoutique() {
+    private func navigateToBoutique(guided: Bool = false) {
         let scene = BoutiqueScene(size: size)
+        scene.guidedPurchase = guided
         scene.scaleMode = .aspectFill
         view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
     }

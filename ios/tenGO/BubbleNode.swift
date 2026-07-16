@@ -186,13 +186,8 @@ class BubbleNode: SKNode {
     // MARK: - Animations
 
     func playPopAnimation(completion: @escaping () -> Void) {
-        if let parentNode = parent {
-            let burst = makeBurst()
-            burst.position = position
-            parentNode.addChild(burst)
-        }
         let seq = SKAction.sequence([
-            SKAction.scale(to: 1.2, duration: 0.08),
+            SKAction.scale(to: 1.35, duration: 0.08),
             SKAction.group([
                 SKAction.scale(to: 0.0, duration: 0.15),
                 SKAction.fadeOut(withDuration: 0.15)
@@ -209,33 +204,6 @@ class BubbleNode: SKNode {
         run(SKAction.sequence([move, SKAction.run(completion)]), withKey: "fall")
     }
 
-    // MARK: - Private
-
-    private func makeBurst() -> SKNode {
-        let container = SKNode()
-        let color = BubbleNode.color(for: value)
-        let count = 6
-        for i in 0..<count {
-            let angle = CGFloat(i) / CGFloat(count) * .pi * 2
-            let dot = SKShapeNode(circleOfRadius: 5)
-            dot.fillColor = color
-            dot.strokeColor = .clear
-            let dist: CGFloat = 32
-            dot.run(SKAction.sequence([
-                SKAction.group([
-                    SKAction.move(to: CGPoint(x: cos(angle) * dist, y: sin(angle) * dist), duration: 0.22),
-                    SKAction.fadeOut(withDuration: 0.22)
-                ]),
-                SKAction.removeFromParent()
-            ]))
-            container.addChild(dot)
-        }
-        container.run(SKAction.sequence([
-            SKAction.wait(forDuration: 0.25),
-            SKAction.removeFromParent()
-        ]))
-        return container
-    }
 }
 
 private extension UIColor {

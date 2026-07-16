@@ -46,6 +46,8 @@ enum AppConfig {
 
     enum UserDefaultsKey {
         static let hasSeenTutorial = "hasSeenTutorial"
+        /// Le guide d'achat en boutique a déjà été proposé (one-shot).
+        static let hasSeenShopPurchaseGuide = "hasSeenShopPurchaseGuide"
         static let soundMuted = "tenGO_soundMuted"
         static let hapticsEnabled = "tenGO_hapticsEnabled"
         /// Dernier jour (clé AAAAMMJJ, UTC) où le Défi du jour a été complété.

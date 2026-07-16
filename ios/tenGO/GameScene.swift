@@ -161,37 +161,39 @@ class GameScene: SKScene {
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
+    /// Bouton paramètres — même composant visuel et même position que sur la
+    /// page d'accueil (MenuScene.addIconButton : engrenage, fond teinté logo).
     private func setupSettingsButton(in view: SKView) {
         guard mode != .demo else { return }   // pas de chrome parasite en capture vidéo
+        let theme = ThemeManager.shared.active
         let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
         let visibleW = view.bounds.width / scale
         let visibleH = view.bounds.height / scale
-        let safeTop = view.safeAreaInsets.top / scale
-        let safeRight = view.safeAreaInsets.right / scale
-        let rightEdge = visibleW / 2 - safeRight
-        let topEdge = visibleH / 2 - safeTop
+        // Même géométrie que MenuScene.setupUI (marge haute plancher 47 pt).
+        let topInset = max(view.safeAreaInsets.top, 47) / scale
+        let x = visibleW / 2 - 58
+        let y = visibleH / 2 - topInset - 26
 
         let container = SKNode()
         container.name = "settingsBtn"
-        container.position = CGPoint(x: rightEdge - 44, y: topEdge - 44)
+        container.position = CGPoint(x: x, y: y)
         container.zPosition = 10
 
-        let bg = SKShapeNode(circleOfRadius: 26)
-        bg.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 1)
-        bg.strokeColor = UIColor(white: 0.70, alpha: 0.55)
-        bg.lineWidth = 1.2
+        let bg = SKShapeNode(circleOfRadius: 24)
+        bg.fillColor = theme.logo.withAlphaComponent(0.10)
+        bg.strokeColor = theme.logo.withAlphaComponent(0.22)
+        bg.lineWidth = 1
         container.addChild(bg)
 
-        // Trois points dessinés manuellement pour un centrage parfait
-        let dotColor = UIColor(white: 0.45, alpha: 1)
-        let dotRadius: CGFloat = 3
-        let dotSpacing: CGFloat = 9
-        for i in -1...1 {
-            let dot = SKShapeNode(circleOfRadius: dotRadius)
-            dot.fillColor = dotColor
-            dot.strokeColor = .clear
-            dot.position = CGPoint(x: CGFloat(i) * dotSpacing, y: 0)
-            container.addChild(dot)
+        let config = UIImage.SymbolConfiguration(pointSize: 21, weight: .medium)
+        if let img = UIImage(systemName: "gearshape.fill", withConfiguration: config)?
+            .withTintColor(theme.logo, renderingMode: .alwaysOriginal) {
+            let sprite = SKSpriteNode(texture: SKTexture(image: img))
+            let maxDim = max(img.size.width, img.size.height)
+            let target: CGFloat = 24
+            sprite.size = CGSize(width: img.size.width / maxDim * target,
+                                 height: img.size.height / maxDim * target)
+            container.addChild(sprite)
         }
 
         addChild(container)
@@ -695,41 +697,76 @@ class GameScene: SKScene {
         }
     }
 
+    /// Met à jour le chiffre ; le pulse visuel est joué à l'arrivée du vol
+    /// de la bulle « +N » (showScorePopup), pas ici.
     private func updateScoreLabel() {
         scoreLabel.text = "\(score)"
-        scoreBubbleNode.run(SKAction.sequence([
-            SKAction.scale(to: 1.18, duration: 0.07),
-            SKAction.scale(to: 1.0, duration: 0.12)
-        ]))
     }
 
+    /// « +N » dans une mini-bulle qui pop à la dernière bulle du chemin puis
+    /// s'envole vers la bulle de score. Chaque appel crée ses propres nœuds :
+    /// les popups rapprochés coexistent sans état partagé.
     private func showScorePopup(points: Int, at bubblePos: CGPoint) {
-        let popup = SKLabelNode(text: "+\(points)")
         let isBigCombo = points >= 100
-        popup.fontName = isBigCombo ? "AvenirNext-Heavy" : "AvenirNext-Medium"
-        popup.fontSize = isBigCombo ? 40 : 28
-        popup.fontColor = isBigCombo
+        let radius: CGFloat = isBigCombo ? 32 : 26
+        let tint = isBigCombo
             ? UIColor(red: 0.92, green: 0.62, blue: 0.18, alpha: 1)
             : UIColor(white: 0.3, alpha: 0.85)
-        // Appear above the bubble
-        popup.position = CGPoint(x: bubblePos.x, y: bubblePos.y + 30)
-        popup.setScale(0.3)
-        popup.zPosition = 20
-        addChild(popup)
 
-        popup.run(SKAction.sequence([
-            // Pop in
-            SKAction.scale(to: 1.2, duration: 0.1),
-            SKAction.scale(to: 1.0, duration: 0.08),
-            // Float up and fade
-            SKAction.group([
-                SKAction.moveBy(x: 0, y: 70, duration: 0.7),
-                SKAction.sequence([
-                    SKAction.wait(forDuration: 0.25),
-                    SKAction.fadeOut(withDuration: 0.45)
-                ])
-            ]),
-            SKAction.removeFromParent()
+        let flight = SKNode()
+        flight.position = CGPoint(x: bubblePos.x, y: bubblePos.y + 30)
+        flight.zPosition = 20
+        flight.setScale(0.0)
+        addChild(flight)
+
+        let circle = SKShapeNode(circleOfRadius: radius)
+        circle.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 0.92)
+        circle.strokeColor = tint.withAlphaComponent(0.8)
+        circle.lineWidth = 2
+        flight.addChild(circle)
+
+        let label = SKLabelNode(text: "+\(points)")
+        label.fontName = isBigCombo ? "AvenirNext-Heavy" : "AvenirNext-DemiBold"
+        label.fontSize = isBigCombo ? 26 : 20
+        label.fontColor = tint
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .center
+        flight.addChild(label)
+
+        flight.run(SKAction.sequence([
+            // Pop-in
+            SKAction.scale(to: 1.15, duration: 0.10),
+            SKAction.scale(to: 1.0, duration: 0.05),
+            SKAction.wait(forDuration: 0.25),
+            // Vol : la cible est convertie MAINTENANT (le layout peut avoir bougé).
+            SKAction.run { [weak self, weak flight] in
+                guard let self, let flight else { return }
+                let target = self.scoreBubbleNode.position
+                let path = UIBezierPath()
+                path.move(to: flight.position)
+                let mid = CGPoint(x: (flight.position.x + target.x) / 2,
+                                  y: (flight.position.y + target.y) / 2)
+                let side: CGFloat = flight.position.x <= target.x ? 80 : -80
+                path.addQuadCurve(to: target, controlPoint: CGPoint(x: mid.x + side, y: mid.y))
+                let follow = SKAction.follow(path.cgPath, asOffset: false,
+                                             orientToPath: false, duration: 0.5)
+                follow.timingMode = .easeIn
+                flight.run(SKAction.sequence([
+                    SKAction.group([
+                        follow,
+                        SKAction.scale(to: 0.45, duration: 0.5),
+                        SKAction.fadeAlpha(to: 0.7, duration: 0.5)
+                    ]),
+                    SKAction.run { [weak self] in
+                        guard let self else { return }
+                        self.scoreBubbleNode.run(SKAction.sequence([
+                            SKAction.scale(to: 1.18, duration: 0.07),
+                            SKAction.scale(to: 1.0, duration: 0.12)
+                        ]))
+                    },
+                    SKAction.removeFromParent()
+                ]))
+            }
         ]))
     }
 
@@ -754,7 +791,13 @@ class GameScene: SKScene {
 
         SoundManager.shared.playCombo()
         for coord in pathCopy {
-            bubbleNodes[coord.row][coord.col]?.playPopAnimation(completion: {})
+            if let bubble = bubbleNodes[coord.row][coord.col] {
+                let burst = PopEffects.makeBurst(color: BubbleNode.color(for: bubble.value),
+                                                 intensity: pathCopy.count)
+                burst.position = scenePos(row: coord.row, col: coord.col)
+                addChild(burst)
+                bubble.playPopAnimation(completion: {})
+            }
             bubbleNodes[coord.row][coord.col] = nil
         }
         gridModel.removeBubbles(at: pathCopy)
@@ -990,7 +1033,12 @@ class GameScene: SKScene {
     private func performHammer(at coord: (row: Int, col: Int)) {
         guard gridModel.cells[coord.row][coord.col] != nil else { return }
         isAnimating = true
-        bubbleNodes[coord.row][coord.col]?.playPopAnimation(completion: {})
+        if let bubble = bubbleNodes[coord.row][coord.col] {
+            let burst = PopEffects.makeBurst(color: BubbleNode.color(for: bubble.value), intensity: 1)
+            burst.position = scenePos(row: coord.row, col: coord.col)
+            addChild(burst)
+            bubble.playPopAnimation(completion: {})
+        }
         bubbleNodes[coord.row][coord.col] = nil
         gridModel.removeBubbles(at: [coord])
         run(SKAction.sequence([
