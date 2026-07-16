@@ -1,4 +1,9 @@
-Nouveau : l'option « Sans publicité » supprime définitivement la bannière et les publicités plein écran.
-Vous pouvez restaurer vos achats à tout moment depuis les réglages.
-Améliorations techniques et corrections diverses.
-Merci de jouer à tenGO !
+Encore plus de peps dans cette version !
+
+• Les combinaisons éclatent en particules colorées et le score s'envole jusqu'au compteur
+• Menu d'accueil repensé aux couleurs du jeu
+• Boutique réorganisée : tout sur une seule page, défilez pour explorer
+• « Sans pub » désormais en tête de boutique, avec 500 pièces offertes
+• Un petit guide vous accompagne pour votre premier achat en pièces
+
+Bonne détente, et faites de belles chaînes !

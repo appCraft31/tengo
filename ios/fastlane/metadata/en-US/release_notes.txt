@@ -1,4 +1,9 @@
-New: the "Remove Ads" option permanently removes the banner and full-screen ads.
-You can restore your purchases at any time from Settings.
-Technical improvements and various fixes.
-Thanks for playing tenGO!
+Even more sparkle in this update!
+
+• Combos now burst into colourful particles and your score flies up to the counter
+• Refreshed home menu in the game's palette
+• Redesigned shop: everything on one page, just scroll
+• "No ads" now sits at the top of the shop and includes 500 bonus coins
+• A little guide walks you through your first coin purchase
+
+Relax, and make beautiful chains!
