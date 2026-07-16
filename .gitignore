@@ -42,3 +42,4 @@ ios/fastlane/metadata_backup_*/
 ios/fastlane/report.xml
 ios/fastlane/Preview.html
 ios/fastlane/.env.default
+ios/fastlane/screenshots_backup_*/

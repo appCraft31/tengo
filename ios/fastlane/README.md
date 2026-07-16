@@ -47,6 +47,8 @@ Upload IPA uniquement (sans screenshots ni metadata) — après un release parti
 
 Upload screenshots uniquement (sans build) — toutes les langues
 
+La version vient du projet (sinon deliver lit un vieux .ipa du dossier).
+
 ### ios bump_version
 
 ```sh

@@ -86,9 +86,12 @@ platform :ios do
   end
 
   desc "Upload screenshots uniquement (sans build) — toutes les langues"
-  lane :upload_screenshots do
+  desc "La version vient du projet (sinon deliver lit un vieux .ipa du dossier)."
+  lane :upload_screenshots do |options|
+    version = options[:version] || get_version_number(xcodeproj: "tenGO.xcodeproj", target: "tenGO")
     deliver(
       api_key: api_key,
+      app_version: version,
       skip_binary_upload: true,
       skip_metadata: true,
       skip_screenshots: false,
