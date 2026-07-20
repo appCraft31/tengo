@@ -1,9 +1,1 @@
-¡Esta versión tiene aún más chispa!
-
-• Los combos estallan en partículas de colores y la puntuación vuela hasta el contador
-• Menú principal renovado con la paleta del juego
-• Tienda rediseñada: todo en una sola página, solo desplázate
-• «Sin anuncios» ahora encabeza la tienda e incluye 500 monedas de regalo
-• Una pequeña guía te acompaña en tu primera compra con monedas
-
-¡Relájate y haz cadenas preciosas!
+Pequeñas mejoras y correcciones para una experiencia más fluida. ¡Gracias por jugar a tenGO!
