@@ -1,1 +1,1 @@
-Minor improvements and fixes for a smoother experience. Thanks for playing tenGO!
+Under-the-hood improvements and optimizations for an even smoother game. Thanks for playing tenGO!
