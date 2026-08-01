@@ -169,13 +169,28 @@ class BubbleNode: SKNode {
 
     // MARK: - State
 
-    func setSelected(_ selected: Bool) {
+    /// `tension` ∈ [0,1] = progression du chemin vers 10. Plus le joueur
+    /// approche, plus la bulle enfle et respire vite — la montée se ressent
+    /// sans qu'aucun chiffre ne soit affiché.
+    func setSelected(_ selected: Bool, tension: CGFloat = 0) {
         removeAction(forKey: "select")
+        removeAction(forKey: "breathe")
         let color = BubbleNode.color(for: value)
         if selected {
             circle.strokeColor = UIColor(white: 1.0, alpha: 0.9)
             circle.lineWidth = 2.5
-            run(SKAction.scale(to: 1.1, duration: 0.1), withKey: "select")
+            let t = min(1, max(0, tension))
+            let target = 1.08 + 0.06 * t
+            run(SKAction.scale(to: target, duration: 0.1), withKey: "select")
+
+            guard JuiceSettings.motionEnabled else { return }
+            let period = 0.9 - 0.45 * t
+            let breathe = SKAction.repeatForever(SKAction.sequence([
+                SKAction.scale(to: target + 0.03, duration: period / 2),
+                SKAction.scale(to: target, duration: period / 2)
+            ]))
+            run(SKAction.sequence([SKAction.wait(forDuration: 0.1), breathe]),
+                withKey: "breathe")
         } else {
             circle.strokeColor = color.darkened(by: 0.12)
             circle.lineWidth = 1.5
@@ -183,9 +198,42 @@ class BubbleNode: SKNode {
         }
     }
 
+    // MARK: - Souffle (bulles voisines d'une chaîne validée)
+
+    /// Position de repos mémorisée pendant un souffle : les déplacements sont
+    /// posés en absolu, pour qu'une interruption ne laisse jamais de décalage.
+    private var nudgeOrigin: CGPoint?
+
+    func nudge(dx: CGFloat, dy: CGFloat) {
+        guard action(forKey: "nudge") == nil else { return }
+        let origin = nudgeOrigin ?? position
+        nudgeOrigin = origin
+
+        let out = SKAction.move(to: CGPoint(x: origin.x + dx, y: origin.y + dy),
+                                duration: 0.06)
+        out.timingMode = .easeOut
+        let back = SKAction.move(to: origin, duration: 0.16)
+        back.timingMode = .easeOut
+        run(SKAction.sequence([
+            out, back,
+            SKAction.run { [weak self] in self?.nudgeOrigin = nil }
+        ]), withKey: "nudge")
+    }
+
+    /// Interrompt un souffle en restaurant la position exacte. Indispensable
+    /// avant une chute : sinon le décalage horizontal du souffle survivrait au
+    /// `moveTo(y:)`, qui ne corrige que l'ordonnée.
+    func cancelNudge() {
+        guard let origin = nudgeOrigin else { return }
+        removeAction(forKey: "nudge")
+        position = origin
+        nudgeOrigin = nil
+    }
+
     // MARK: - Animations
 
     func playPopAnimation(completion: @escaping () -> Void) {
+        removeAction(forKey: "breathe")
         let seq = SKAction.sequence([
             SKAction.scale(to: 1.35, duration: 0.08),
             SKAction.group([
@@ -198,10 +246,60 @@ class BubbleNode: SKNode {
         run(seq)
     }
 
+    /// La durée de chute est INCHANGÉE : `completion` est appelé au même
+    /// instant qu'avant, et le rebond se joue après, pendant que la scène a
+    /// déjà repris la main. Le chemin critique n'est jamais rallongé.
     func playFallAnimation(toY: CGFloat, duration: TimeInterval, completion: @escaping () -> Void) {
+        cancelNudge()
+        removeAction(forKey: "breathe")
+
+        if JuiceSettings.motionEnabled {
+            let stretchTime = min(0.1, duration)
+            run(SKAction.group([
+                SKAction.scaleX(to: 0.94, duration: stretchTime),
+                SKAction.scaleY(to: 1.08, duration: stretchTime)
+            ]), withKey: "squash")
+        }
+
         let move = SKAction.moveTo(y: toY, duration: duration)
         move.timingMode = .easeIn
-        run(SKAction.sequence([move, SKAction.run(completion)]), withKey: "fall")
+        run(SKAction.sequence([
+            move,
+            SKAction.run { [weak self] in
+                completion()
+                self?.playLandingSquash()
+            }
+        ]), withKey: "fall")
+    }
+
+    private func playLandingSquash() {
+        removeAction(forKey: "squash")
+        guard JuiceSettings.motionEnabled else {
+            xScale = 1
+            yScale = 1
+            return
+        }
+        let squash = SKAction.group([
+            SKAction.scaleX(to: 1.12, duration: 0.06),
+            SKAction.scaleY(to: 0.86, duration: 0.06)
+        ])
+        let rebound = SKAction.group([
+            SKAction.scaleX(to: 0.97, duration: 0.08),
+            SKAction.scaleY(to: 1.06, duration: 0.08)
+        ])
+        let settle = SKAction.group([
+            SKAction.scaleX(to: 1.0, duration: 0.06),
+            SKAction.scaleY(to: 1.0, duration: 0.06)
+        ])
+        // Remise à 1.0 stricte : une bulle est réutilisée d'une chute à
+        // l'autre, la moindre dérive d'échelle finirait par se voir.
+        run(SKAction.sequence([
+            squash, rebound, settle,
+            SKAction.run { [weak self] in
+                self?.xScale = 1
+                self?.yScale = 1
+            }
+        ]), withKey: "squash")
     }
 
 }

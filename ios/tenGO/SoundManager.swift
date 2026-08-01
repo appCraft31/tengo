@@ -17,6 +17,7 @@
 
 import AVFoundation
 import Foundation
+import QuartzCore
 
 final class SoundManager {
     static let shared = SoundManager()
@@ -39,7 +40,12 @@ final class SoundManager {
     private struct QueuedNote {
         let frequency: Double
         let haptic: Bool   // true → vibration synchronisée sur cette note
+        var velocity: Float = 1.0
     }
+
+    /// Anti-saturation des 8 voix sur un swipe très rapide.
+    private var lastImmediateAt: TimeInterval = 0
+    private static let immediateThrottle: TimeInterval = 0.040
 
     private var noteQueue: [QueuedNote] = []
     private let queueLock = NSLock()
@@ -88,21 +94,38 @@ final class SoundManager {
 
     /// Première bulle — la valeur détermine la note dans la gamme courante
     /// (même bulle = même note, tant que la gamme n'a pas été renouvelée par un combo)
+    ///
+    /// Joué HORS FIFO : la note du tracé doit sortir sous le doigt. Via
+    /// l'arpégiateur, un chemin de 5 bulles finissait sa mélodie 750 ms après
+    /// le geste. La FIFO reste utilisée pour les mélodies (combo, victoire),
+    /// où l'égrenage régulier est justement l'effet recherché.
     func playSelect(bubbleValue: Int) {
         guard !isMuted else { return }
         let idx = noteIndex(for: bubbleValue)
         let freq = currentScale[idx]
         pathNotes = [freq]
-        scheduleNote(frequency: freq)
+        playImmediate(frequency: freq, velocity: 0.7)
     }
 
-    /// Bulle suivante — même logique que playSelect
-    func playConnect(bubbleValue: Int) {
+    /// Bulle suivante — même logique que playSelect.
+    /// `tension` ∈ [0,1] (somme courante / 10) nuance le volume, et les deux
+    /// dernières unités montent d'une octave : la progression s'ENTEND sans
+    /// qu'aucun chiffre ne soit affiché.
+    func playConnect(bubbleValue: Int, tension: Double = 0) {
         guard !isMuted else { return }
         let idx = noteIndex(for: bubbleValue)
-        let freq = currentScale[idx]
+        var freq = currentScale[idx]
+        // La mélodie mémorisée reste celle de la gamme : le replay du combo
+        // doit rester exactement ce que le joueur a tracé.
         pathNotes.append(freq)
-        scheduleNote(frequency: freq)
+        if tension >= 0.8 { freq *= 2 }
+        playImmediate(frequency: freq, velocity: Float(0.7 + 0.3 * min(1, max(0, tension))))
+    }
+
+    /// Bulle refusée (elle ferait dépasser 10) — note grave et discrète.
+    func playRejected() {
+        guard !isMuted else { return }
+        playImmediate(frequency: 110.0, velocity: 0.30)
     }
 
     func playBacktrack() {
@@ -112,7 +135,10 @@ final class SoundManager {
     /// Combo — rejoue exactement la mélodie tracée par le joueur + quinte finale
     /// (SANS haptic sur chaque note : le medium de GameScene marque déjà la validation)
     /// Renouvelle la gamme après validation → nouvelle ambiance pour le combo suivant.
-    func playCombo() {
+    /// `length` = longueur de la chaîne validée : la résolution s'étoffe avec
+    /// elle (quinte → + octave → + accord), sans jamais altérer le replay de
+    /// la mélodie tracée, qui doit rester exactement ce que le joueur a joué.
+    func playCombo(length: Int = 0) {
         guard !isMuted else { return }
         let melody = pathNotes
         queueLock.lock()
@@ -121,8 +147,20 @@ final class SoundManager {
         }
         if let last = melody.last {
             noteQueue.append(QueuedNote(frequency: last * 1.498, haptic: false))
+            if length >= 4 {
+                noteQueue.append(QueuedNote(frequency: last * 2, haptic: false))
+            }
         }
         queueLock.unlock()
+
+        // Grandes chaînes : accord final, posé après l'égrenage de la mélodie.
+        if length >= 6, let last = melody.last {
+            let delay = Double(melody.count + 2) * SoundManager.arpInterval
+            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+                self?.playChord([last, last * 1.498, last * 2], velocity: 0.5)
+            }
+        }
+
         pathNotes = []
         pickNewScale()  // nouvelle gamme pour la prochaine tentative
     }
@@ -141,7 +179,7 @@ final class SoundManager {
         guard !isMuted else { return }
         guard currentScale.count >= 2 else { return }
 
-        let noteCount = Int.random(in: 6...8)
+        let noteCount = Int.random(in: 10...12)
         let topIndex = currentScale.count - 1
         // On réserve l'index du haut pour la note finale : intermédiaires clampés en-dessous
         let intermediateCeiling = topIndex - 1
@@ -166,6 +204,13 @@ final class SoundManager {
         noteQueue.append(QueuedNote(frequency: currentScale[topIndex], haptic: false))
 
         queueLock.unlock()
+
+        // Accord parfait final, une fois la mélodie égrenée.
+        let root = currentScale[0]
+        let delay = Double(noteCount + 1) * SoundManager.arpInterval
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            self?.playChord([root, root * 1.498, root * 2, root * 2.52], velocity: 0.45)
+        }
     }
 
     func playLose() {
@@ -206,17 +251,35 @@ final class SoundManager {
 
     // MARK: - Allocation de voix (libre ou vol de voix)
 
-    private func triggerVoice(frequency: Double, haptic: Bool) {
-        // Vibration synchronisée avec la note : le joueur sent la mélodie
-        // dans son téléphone, pas son doigt sur l'écran.
+    private func triggerVoice(frequency: Double, haptic: Bool, velocity: Float = 1.0) {
+        // Vibration synchronisée avec la note, pour les mélodies jouées à la
+        // file. Le tracé, lui, déclenche son haptique directement depuis la
+        // scène : il doit répondre sous le doigt et survivre au son coupé.
         if haptic { HapticManager.light() }
 
         if let freeVoice = voices.first(where: { !$0.isActive }) {
-            freeVoice.noteOn(frequency: frequency)
+            freeVoice.noteOn(frequency: frequency, velocity: velocity)
             return
         }
         if let oldest = voices.min(by: { $0.startTime < $1.startTime }) {
-            oldest.noteOn(frequency: frequency)
+            oldest.noteOn(frequency: frequency, velocity: velocity)
+        }
+    }
+
+    /// Déclenche une voix sans passer par l'arpégiateur (latence nulle).
+    private func playImmediate(frequency: Double, velocity: Float) {
+        let now = CACurrentMediaTime()
+        guard now - lastImmediateAt >= Self.immediateThrottle else { return }
+        lastImmediateAt = now
+        triggerVoice(frequency: frequency, haptic: false, velocity: velocity)
+    }
+
+    /// Notes simultanées (résolution des grandes chaînes, victoire).
+    /// Hors FIFO et hors throttle : c'est justement la simultanéité qu'on veut.
+    func playChord(_ frequencies: [Double], velocity: Float) {
+        guard !isMuted else { return }
+        for freq in frequencies {
+            triggerVoice(frequency: freq, haptic: false, velocity: velocity)
         }
     }
 
@@ -357,6 +420,8 @@ private final class Voice {
     // Atténuation par voix : headroom pour éviter le clipping quand plusieurs
     // voix se superposent (cascades de combo, mélodie de victoire).
     private let voiceGain: Float = 0.6
+    /// Nuance de la note en cours — permet à la tension du tracé de s'entendre.
+    private var velocity: Float = 1.0
 
     // Flags lus depuis le thread principal
     private(set) var isActive: Bool = false
@@ -385,13 +450,16 @@ private final class Voice {
 
     // MARK: - Déclenchement (thread principal)
 
-    func noteOn(frequency: Double) {
+    func noteOn(frequency: Double, velocity: Float = 1.0) {
         phaseIncrement = frequency / sampleRate
         // phase conservée → oscillateur continu sur vol de voix (anti-clic)
         attackStartEnv = currentEnv
         sampleIndex = 0
         stage = .attack
         startTime = DispatchTime.now().uptimeNanoseconds
+        // Écriture d'un Float simple : atomique en pratique, et lue telle
+        // quelle par le render block — pas d'allocation, règle d'or respectée.
+        self.velocity = max(0, min(1, velocity))
         isActive = true
     }
 
@@ -461,6 +529,6 @@ private final class Voice {
         phase += phaseIncrement
         if phase >= 1.0 { phase -= 1.0 }
 
-        return mixed * env * voiceGain
+        return mixed * env * voiceGain * velocity
     }
 }

@@ -46,10 +46,19 @@ enum AppConfig {
 
     enum UserDefaultsKey {
         static let hasSeenTutorial = "hasSeenTutorial"
-        /// Le guide d'achat en boutique a déjà été proposé (one-shot).
+        /// Le guide d'achat en boutique a été mené à son terme (one-shot).
         static let hasSeenShopPurchaseGuide = "hasSeenShopPurchaseGuide"
+        /// Nombre de fois où le joueur a repoussé le guide d'achat. Au-delà de
+        /// `shopGuideMaxSnooze`, on cesse définitivement d'insister.
+        static let shopGuideSnooze = "tenGO_shopGuideSnooze"
+        /// Préfixe des coach-marks d'usage des boosters (+ rawValue du booster).
+        /// Posé à la FERMETURE du coach-mark, jamais à son affichage.
+        static let boosterCoachSeenPrefix = "tenGO_boosterCoachSeen_"
         static let soundMuted = "tenGO_soundMuted"
         static let hapticsEnabled = "tenGO_hapticsEnabled"
+        /// Rendu calme : coupe secousses, particules lourdes et pulsations.
+        /// N'affecte que le ressenti — aucune règle ni timing de jeu ne change.
+        static let reducedEffects = "tenGO_reducedEffects"
         /// Dernier jour (clé AAAAMMJJ, UTC) où le Défi du jour a été complété.
         static let dailyLastCompletedDayKey = "tenGO_dailyLastCompleted"
         /// Série de jours consécutifs de jeu (rétention douce).

@@ -19,6 +19,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         FirebaseApp.configure()
         // Reprogramme le rappel quotidien si l'utilisateur a autorisé les notifications.
         NotificationManager.shared.refreshIfAuthorized()
+        // Reduce Motion peut être basculé depuis le Centre de contrôle en cours
+        // de partie : le niveau d'effets doit suivre sans redémarrage.
+        JuiceSettings.startObservingAccessibility()
         return true
     }
 

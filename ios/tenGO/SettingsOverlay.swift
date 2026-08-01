@@ -4,6 +4,7 @@
 //
 //  Popup paramètres complet :
 //    - Son (toggle)          - Retours haptiques (toggle)
+//    - Effets réduits (toggle, forcé par Reduce Motion système)
 //    - Revoir le tutoriel    - Options de confidentialité
 //    - Noter l'application   - Partager tenGO
 //    - Contacter le support
@@ -42,8 +43,14 @@ final class SettingsOverlay: SKNode {
     private var hapticToggleKnob: SKShapeNode!
     private var hapticStatus: SKLabelNode!
 
+    private var effectsToggleBg: SKShapeNode!
+    private var effectsToggleKnob: SKShapeNode!
+    private var effectsStatus: SKLabelNode!
+    private var effectsLabel: SKLabelNode!
+
     private static let cardW: CGFloat = 490
-    private static let cardH: CGFloat = 738
+    /// +58 pt par rapport à l'origine : une ligne de toggle supplémentaire.
+    private static let cardH: CGFloat = 796
 
     // MARK: - Init
 
@@ -79,6 +86,8 @@ final class SettingsOverlay: SKNode {
                 toggleSound(); return true
             case "row_haptic", "row_haptic_toggle":
                 toggleHaptic(); return true
+            case "row_effects", "row_effects_toggle":
+                toggleEffects(); return true
             case "row_tutorial":
                 animateRow(named: "row_tutorial")
                 dismiss()
@@ -180,6 +189,18 @@ final class SettingsOverlay: SKNode {
         hapticStatus = hapticViews.status
         y -= rowStep
 
+        // Effets réduits — rendu calme. Le libellé est mémorisé pour pouvoir
+        // être grisé quand Reduce Motion système prend la main.
+        let effectsViews = addToggleRow(name: "row_effects",
+                                        title: String(localized: "settings.reduced_effects",
+                                                      defaultValue: "Effets réduits"),
+                                        y: y)
+        effectsToggleBg = effectsViews.bg
+        effectsToggleKnob = effectsViews.knob
+        effectsStatus = effectsViews.status
+        effectsLabel = effectsViews.label
+        y -= rowStep
+
         addSeparator(y: y + 8)
         y -= 10
 
@@ -209,13 +230,14 @@ final class SettingsOverlay: SKNode {
 
         updateSoundVisual(animated: false)
         updateHapticVisual(animated: false)
+        updateEffectsVisual(animated: false)
     }
 
     // MARK: - Row builders
 
     @discardableResult
     private func addToggleRow(name: String, title: String, y: CGFloat)
-    -> (bg: SKShapeNode, knob: SKShapeNode, status: SKLabelNode) {
+    -> (bg: SKShapeNode, knob: SKShapeNode, status: SKLabelNode, label: SKLabelNode) {
 
         // Hitbox invisible couvrant toute la ligne (pour tap facile)
         let hit = SKShapeNode(rectOf: CGSize(width: Self.cardW - 40, height: 48))
@@ -260,7 +282,7 @@ final class SettingsOverlay: SKNode {
         status.position = CGPoint(x: Self.cardW / 2 - 72, y: y - 26)
         card.addChild(status)
 
-        return (bg, knob, status)
+        return (bg, knob, status, label)
     }
 
     private func addActionRow(name: String, title: String, y: CGFloat) {
@@ -363,6 +385,50 @@ final class SettingsOverlay: SKNode {
             hapticToggleBg.fillColor = bgColor
             hapticToggleKnob.position = CGPoint(x: knobX, y: 0)
             hapticStatus.text = text
+        }
+    }
+
+    // MARK: - Toggle effets réduits
+
+    private func toggleEffects() {
+        // Reduce Motion système est prioritaire : on ne laisse pas le réglage
+        // applicatif le contourner, la ligne est inerte dans ce cas.
+        guard !JuiceSettings.isForcedBySystem else { return }
+        JuiceSettings.reducedEffectsPreference.toggle()
+        HapticManager.light()
+        updateEffectsVisual(animated: true)
+    }
+
+    private func updateEffectsVisual(animated: Bool) {
+        let forced = JuiceSettings.isForcedBySystem
+        // Le toggle affiche « effets réduits activés » — donc ON = rendu calme.
+        let reduced = forced || JuiceSettings.reducedEffectsPreference
+        let bgColor: UIColor = {
+            if forced { return UIColor(white: 0.72, alpha: 1) }
+            return reduced
+                ? UIColor(red: 0.55, green: 0.82, blue: 0.65, alpha: 1)
+                : UIColor(white: 0.82, alpha: 1)
+        }()
+        let knobX: CGFloat = reduced ? 16 : -16
+        let text = forced
+            ? String(localized: "settings.system_managed", defaultValue: "Réglage système")
+            : (reduced ? String(localized: "settings.toggle_on")
+                       : String(localized: "settings.toggle_off"))
+
+        effectsLabel.fontColor = forced
+            ? UIColor(white: 0.55, alpha: 1)
+            : UIColor(white: 0.30, alpha: 1)
+
+        if animated {
+            effectsToggleBg.run(SKAction.customAction(withDuration: 0.18) { [weak self] node, _ in
+                (node as? SKShapeNode)?.fillColor = bgColor
+                self?.effectsStatus.text = text
+            })
+            effectsToggleKnob.run(SKAction.moveTo(x: knobX, duration: 0.18))
+        } else {
+            effectsToggleBg.fillColor = bgColor
+            effectsToggleKnob.position = CGPoint(x: knobX, y: 0)
+            effectsStatus.text = text
         }
     }
 
