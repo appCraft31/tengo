@@ -57,6 +57,46 @@ enum Booster: String, CaseIterable {
         case .hammer:  return "Marteau"
         }
     }
+
+    /// Libellé résolu — unique point de vérité, à utiliser partout plutôt que
+    /// de refaire un switch (la boutique en avait un doublon).
+    var title: String {
+        switch self {
+        case .hint:    return String(localized: "booster.hint", defaultValue: "Indice")
+        case .shuffle: return String(localized: "booster.shuffle", defaultValue: "Mélange")
+        case .hammer:  return String(localized: "booster.hammer", defaultValue: "Marteau")
+        }
+    }
+
+    /// Phrase affichée sur la carte boutique : ce que fait le booster.
+    var details: String {
+        switch self {
+        case .hint:
+            return String(localized: "booster.hint_desc",
+                          defaultValue: "Fait clignoter un chemin gagnant quand tu es bloqué.")
+        case .shuffle:
+            return String(localized: "booster.shuffle_desc",
+                          defaultValue: "Redistribue toutes les valeurs de la grille. Ton score est conservé.")
+        case .hammer:
+            return String(localized: "booster.hammer_desc",
+                          defaultValue: "Fait éclater la bulle de ton choix, les autres retombent.")
+        }
+    }
+
+    /// Phrase du coach-mark affiché en jeu à la première possession.
+    var coachText: String {
+        switch self {
+        case .hint:
+            return String(localized: "booster.hint_coach",
+                          defaultValue: "Bloqué ? L'indice fait clignoter un chemin gagnant.")
+        case .shuffle:
+            return String(localized: "booster.shuffle_coach",
+                          defaultValue: "Le mélange redistribue toutes les valeurs. Ton score est conservé.")
+        case .hammer:
+            return String(localized: "booster.hammer_coach",
+                          defaultValue: "Touche le marteau, puis la bulle à faire éclater.")
+        }
+    }
 }
 
 final class BoosterManager {

@@ -38,20 +38,34 @@ class MenuScene: SKScene {
     /// Premier moment où le solde couvre l'article ciblé (lot d'indices) :
     /// coach-mark sur le bouton Boutique. Le flag est posé dès l'affichage —
     /// le guide ne se représente jamais, même s'il est ignoré.
+    /// Au-delà de ce nombre de refus, on cesse définitivement de proposer le guide.
+    private static let shopGuideMaxSnooze = 3
+
     private func maybeShowShopPurchaseGuide() {
         let defaults = UserDefaults.standard
         guard defaults.bool(forKey: AppConfig.UserDefaultsKey.hasSeenTutorial),
               !defaults.bool(forKey: AppConfig.UserDefaultsKey.hasSeenShopPurchaseGuide),
-              CoinManager.shared.balance >= Booster.hint.bundlePrice,
+              // Seuil = prix UNITAIRE (30) et non plus celui du lot (120) :
+              // 3 à 6 parties au lieu de 12 à 24.
+              CoinManager.shared.balance >= Booster.hint.price,
               let target = childNode(withName: "boutique") else { return }
-        defaults.set(true, forKey: AppConfig.UserDefaultsKey.hasSeenShopPurchaseGuide)
+
+        // ⚠️ Le flag n'est PAS posé ici : il l'est à la réussite de l'achat.
+        // L'ancienne version le posait dès l'affichage — guide ignoré une fois,
+        // guide perdu à jamais. On compte plutôt les refus.
+        if defaults.integer(forKey: AppConfig.UserDefaultsKey.shopGuideSnooze) >= Self.shopGuideMaxSnooze {
+            defaults.set(true, forKey: AppConfig.UserDefaultsKey.hasSeenShopPurchaseGuide)
+            AnalyticsService.shopGuide(step: "gaveup")
+            return
+        }
 
         run(SKAction.wait(forDuration: 0.45)) { [weak self] in
             guard let self, self.shopGuide == nil else { return }
             self.shopGuide = CoachMarkOverlay.present(
                 in: self, over: target,
                 text: String(localized: "guide.shop_menu",
-                             defaultValue: "Tu as gagné assez de pièces pour ton premier achat ! Ouvre la boutique."))
+                             defaultValue: "Tu as assez de pièces pour ton premier booster ! Ouvre la boutique."))
+            AnalyticsService.shopGuide(step: "shown")
         }
     }
 
@@ -411,15 +425,22 @@ class MenuScene: SKScene {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
 
-        // Guide d'achat : la cible ouvre la boutique en mode guidé, ailleurs on ferme.
+        // Guide d'achat : la cible ouvre la boutique en mode guidé, ailleurs on
+        // ferme et on compte le refus (au 3e, on cesse de proposer).
         if let guide = shopGuide, guide.parent != nil {
             let result = guide.handleTouch(at: point)
             shopGuide = nil
             if result == .target {
+                AnalyticsService.shopGuide(step: "opened")
                 if let button = childNode(withName: "boutique") { animateTap(button) }
                 run(SKAction.wait(forDuration: 0.12)) {
                     self.navigateToBoutique(guided: true)
                 }
+            } else {
+                let defaults = UserDefaults.standard
+                let snoozed = defaults.integer(forKey: AppConfig.UserDefaultsKey.shopGuideSnooze) + 1
+                defaults.set(snoozed, forKey: AppConfig.UserDefaultsKey.shopGuideSnooze)
+                AnalyticsService.shopGuide(step: "later")
             }
             return
         }
@@ -441,7 +462,7 @@ class MenuScene: SKScene {
             case "newGame":
                 animateTap(node.parent ?? node)
                 run(SKAction.wait(forDuration: 0.12)) {
-                    if !UserDefaults.standard.bool(forKey: "hasSeenTutorial") {
+                    if !UserDefaults.standard.bool(forKey: AppConfig.UserDefaultsKey.hasSeenTutorial) {
                         self.navigateToTutorial()
                     } else {
                         GameState.clear()

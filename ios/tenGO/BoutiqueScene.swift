@@ -18,6 +18,13 @@ class BoutiqueScene: SKScene {
     /// la carte du lot d'indices jusqu'à l'achat ou une autre interaction.
     var guidedPurchase = false
     private var purchaseGuide: CoachMarkOverlay?
+    /// Sortie « Plus tard » du tutoriel d'achat.
+    private var guideLaterButton: SKNode?
+
+    /// Écran de retour. `.game` quand la boutique a été ouverte depuis une
+    /// partie en cours : le joueur doit retrouver sa grille, pas le menu.
+    enum ReturnDestination { case menu, game }
+    var returnDestination: ReturnDestination = .menu
 
     private let cardH: CGFloat = 150
     private var usableWidth: CGFloat = 600
@@ -113,13 +120,54 @@ class BoutiqueScene: SKScene {
         // en défilant d'abord jusqu'à la section Boosters.
         if guidedPurchase {
             scrollTo(section: "boosters")
-            if let target = contentNode.childNode(withName: "booster:\(Booster.hint.rawValue)") {
-                purchaseGuide = CoachMarkOverlay.present(
+            // Cible la pilule ×1 : le tutoriel fait acheter UNE unité (30), pas
+            // le lot (120). Repli sur la carte si la pilule est introuvable.
+            let hint = Booster.hint
+            let target = contentNode.childNode(withName: "booster:\(hint.rawValue):1")
+                ?? contentNode.childNode(withName: "booster:\(hint.rawValue)")
+            if let target = target {
+                let guide = CoachMarkOverlay.present(
                     in: self, over: target,
                     text: String(localized: "guide.shop_item",
-                                 defaultValue: "Touche cette carte pour acheter un lot d'indices avec tes pièces."))
+                                 defaultValue: "Achète un indice pour 30 pièces. Il te sortira d'un mauvais pas."))
+                // Insistance : taper à côté ne ferme pas le guide, la cible pulse.
+                // Le joueur n'est pas piégé pour autant — le lien « Plus tard »
+                // ci-dessous et le bouton Retour restent actifs.
+                guide.blocksOutsideTaps = true
+                purchaseGuide = guide
+                addGuideLaterButton()
             }
         }
+    }
+
+    /// Sortie explicite du tutoriel d'achat. Sans elle, `blocksOutsideTaps`
+    /// enfermerait le joueur — ce qu'on refuse (dark pattern, et Apple le
+    /// refuse aussi).
+    private func addGuideLaterButton() {
+        guideLaterButton?.removeFromParent()
+        let label = SKLabelNode(text: String(localized: "guide.shop_later", defaultValue: "Plus tard"))
+        label.name = "guideLater"
+        label.fontName = "AvenirNext-DemiBold"
+        label.fontSize = 16
+        label.fontColor = UIColor(white: 0.98, alpha: 0.9)
+        label.verticalAlignmentMode = .center
+        // Assez haut pour ne pas se confondre avec le bouton « Accueil ».
+        label.position = CGPoint(x: 0, y: -usableHeight / 2 + 168)
+        label.zPosition = 96   // au-dessus du voile du coach-mark (90)
+        addChild(label)
+        guideLaterButton = label
+    }
+
+    private func dismissGuideAsLater() {
+        purchaseGuide?.dismiss()
+        purchaseGuide = nil
+        guidedPurchase = false
+        guideLaterButton?.removeFromParent()
+        guideLaterButton = nil
+        let defaults = UserDefaults.standard
+        let snoozed = defaults.integer(forKey: AppConfig.UserDefaultsKey.shopGuideSnooze) + 1
+        defaults.set(snoozed, forKey: AppConfig.UserDefaultsKey.shopGuideSnooze)
+        AnalyticsService.shopGuide(step: "later")
     }
 
     /// Empile toutes les sections dans contentNode (0 = haut du contenu, on
@@ -179,8 +227,9 @@ class BoutiqueScene: SKScene {
         endGrid(count: CosmeticManager.shared.trails.count)
 
         header(String(localized: "shop.tab_boosters", defaultValue: "Boosters"), key: "boosters")
-        for (i, booster) in Booster.allCases.enumerated() { addBoosterCard(booster, at: gridPlace(i)) }
-        endGrid(count: Booster.allCases.count)
+        // Rangées pleine largeur (pas la grille) : elles portent une description.
+        for booster in Booster.allCases { addBoosterRow(booster, theme: theme, cursor: &cursor) }
+        cursor -= sectionGap - 16   // le pas de rangée inclut déjà 16 pt
 
         header(String(localized: "shop.tab_coins", defaultValue: "Pièces"), key: "coins")
 
@@ -342,6 +391,125 @@ class BoutiqueScene: SKScene {
         cursor -= h + 18
     }
 
+    /// Rangée pleine largeur d'un booster : icône, nom, **description**, stock,
+    /// et deux prix (unité / lot).
+    ///
+    /// Format choisi plutôt que la grille 2 colonnes parce que `cardH` (150) est
+    /// global à toute la boutique : l'agrandir pour loger une description aurait
+    /// aussi étiré thèmes, matières, tracés et packs de pièces. Une rangée offre
+    /// en prime une bien meilleure cible pour le coach-mark du tutoriel d'achat.
+    private func addBoosterRow(_ booster: Booster, theme: Theme, cursor: inout CGFloat) {
+        let h: CGFloat = 112
+        let w = usableWidth - 32
+        let card = SKNode()
+        card.name = "booster:\(booster.rawValue)"
+        card.position = CGPoint(x: 0, y: cursor - h / 2)
+
+        let shadow = SKShapeNode(rectOf: CGSize(width: w, height: h), cornerRadius: 26)
+        shadow.fillColor = UIColor(white: 0, alpha: 0.08)
+        shadow.strokeColor = .clear
+        shadow.position = CGPoint(x: 0, y: -5)
+        shadow.zPosition = -1
+        card.addChild(shadow)
+
+        let bg = SKShapeNode(rectOf: CGSize(width: w, height: h), cornerRadius: 26)
+        bg.fillColor = UIColor(red: 0.99, green: 0.97, blue: 0.94, alpha: 1)
+        bg.strokeColor = theme.logo.withAlphaComponent(0.18)
+        bg.lineWidth = 1.5
+        card.addChild(bg)
+
+        let icon = BoosterIcon.make(booster, size: 40, color: theme.logo)
+        icon.position = CGPoint(x: -w / 2 + 48, y: 0)
+        card.addChild(icon)
+
+        let textX = -w / 2 + 86
+        // Largeur laissée libre par les pilules de prix, à droite.
+        let textWidth = w - 86 - 176
+
+        let title = SKLabelNode(text: booster.title)
+        title.fontName = "AvenirNext-Bold"
+        title.fontSize = 22
+        title.fontColor = theme.logo
+        title.verticalAlignmentMode = .center
+        title.horizontalAlignmentMode = .left
+        title.position = CGPoint(x: textX, y: 30)
+        card.addChild(title)
+
+        let desc = SKLabelNode(text: booster.details)
+        desc.fontName = "AvenirNext-Medium"
+        desc.fontSize = 14
+        desc.fontColor = UIColor(white: 0.32, alpha: 1)
+        desc.verticalAlignmentMode = .center
+        desc.horizontalAlignmentMode = .left
+        desc.numberOfLines = 2
+        desc.lineBreakMode = .byWordWrapping
+        desc.preferredMaxLayoutWidth = textWidth
+        desc.position = CGPoint(x: textX, y: 2)
+        card.addChild(desc)
+
+        let owned = BoosterManager.shared.count(booster)
+        let stock = SKLabelNode(text: String(format: String(localized: "shop.booster_stock",
+                                                            defaultValue: "en stock : %lld"), owned))
+        stock.fontName = "AvenirNext-Medium"
+        stock.fontSize = 13
+        stock.fontColor = UIColor(white: 0.45, alpha: 1)
+        stock.verticalAlignmentMode = .center
+        stock.horizontalAlignmentMode = .left
+        stock.position = CGPoint(x: textX, y: -34)
+        card.addChild(stock)
+
+        // Deux achats possibles : l'unité (utilisée par le tutoriel) et le lot remisé.
+        addBoosterPricePill(to: card, booster: booster, quantity: 1,
+                            price: booster.price, theme: theme,
+                            at: CGPoint(x: w / 2 - 74, y: 24))
+        addBoosterPricePill(to: card, booster: booster, quantity: booster.bundleQuantity,
+                            price: booster.bundlePrice, theme: theme,
+                            at: CGPoint(x: w / 2 - 74, y: -24))
+
+        contentNode.addChild(card)
+        cursor -= h + 16
+    }
+
+    private func addBoosterPricePill(to card: SKNode, booster: Booster, quantity: Int,
+                                     price: Int, theme: Theme, at position: CGPoint) {
+        let name = "booster:\(booster.rawValue):\(quantity)"
+        let affordable = CoinManager.shared.balance >= price
+
+        let pill = SKShapeNode(rectOf: CGSize(width: 124, height: 38), cornerRadius: 19)
+        pill.name = name
+        pill.fillColor = affordable ? theme.accent : UIColor(white: 0.90, alpha: 1)
+        pill.strokeColor = .clear
+        pill.position = position
+        card.addChild(pill)
+
+        let ink = affordable ? contrastingText(on: theme.accent) : UIColor(white: 0.45, alpha: 1)
+
+        let qty = SKLabelNode(text: "×\(quantity)")
+        qty.name = name
+        qty.fontName = "AvenirNext-Bold"
+        qty.fontSize = 15
+        qty.fontColor = ink
+        qty.verticalAlignmentMode = .center
+        qty.horizontalAlignmentMode = .left
+        qty.position = CGPoint(x: position.x - 46, y: position.y)
+        card.addChild(qty)
+
+        let coin = CoinIcon.make(radius: 8)
+        coin.name = name
+        coin.position = CGPoint(x: position.x + 2, y: position.y)
+        card.addChild(coin)
+
+        let priceLabel = SKLabelNode(text: "\(price)")
+        priceLabel.name = name
+        priceLabel.fontName = "AvenirNext-Bold"
+        priceLabel.fontSize = 16
+        priceLabel.fontColor = ink
+        priceLabel.verticalAlignmentMode = .center
+        priceLabel.horizontalAlignmentMode = .left
+        priceLabel.position = CGPoint(x: position.x + 14, y: position.y)
+        card.addChild(priceLabel)
+    }
+
     /// Bonus de bienvenue crédité avec l'achat « sans pub ».
     private static let noAdsBonusCoins = 500
 
@@ -456,54 +624,6 @@ class BoutiqueScene: SKScene {
         card.addChild(label)
     }
 
-    /// Carte d'un lot de booster (achat en pièces).
-    private func addBoosterCard(_ booster: Booster, at position: CGPoint) {
-        let theme = ThemeManager.shared.active
-        let owned = BoosterManager.shared.count(booster)
-
-        let preview = SKNode()
-        let icon = BoosterIcon.make(booster, size: 46, color: theme.logo)
-        preview.addChild(icon)
-
-        addCardFrame(name: "booster:\(booster.rawValue)", background: theme.background,
-                     border: theme.logo.withAlphaComponent(0.18), borderWidth: 1,
-                     title: "\(boosterName(booster)) ×\(booster.bundleQuantity)", titleColor: theme.logo,
-                     preview: preview, previewY: 40, at: position)
-
-        guard let card = contentNode.childNode(withName: "booster:\(booster.rawValue)") else { return }
-
-        // Stock possédé.
-        let stock = SKLabelNode(text: String(format: String(localized: "shop.booster_stock",
-                                                             defaultValue: "en stock : %lld"), owned))
-        stock.fontName = "AvenirNext-Medium"
-        stock.fontSize = 13
-        stock.fontColor = theme.logo.withAlphaComponent(0.6)
-        stock.verticalAlignmentMode = .center
-        stock.position = CGPoint(x: 0, y: 20)
-        card.addChild(stock)
-
-        // Pilule prix (pièces).
-        let priceLabel = SKLabelNode(text: "\(booster.bundlePrice)")
-        priceLabel.fontName = "AvenirNext-Bold"
-        priceLabel.fontSize = 17
-        priceLabel.fontColor = theme.logo
-        priceLabel.verticalAlignmentMode = .center
-        priceLabel.horizontalAlignmentMode = .left
-        let coin = CoinIcon.make(radius: 9)
-        let gap: CGFloat = 6
-        let contentW = 18 + gap + priceLabel.frame.width
-        let pill = SKShapeNode(rectOf: CGSize(width: contentW + 28, height: 32), cornerRadius: 16)
-        pill.fillColor = theme.logo.withAlphaComponent(0.06)
-        pill.strokeColor = theme.logo.withAlphaComponent(0.18)
-        pill.lineWidth = 1
-        pill.position = CGPoint(x: 0, y: -48)
-        card.addChild(pill)
-        let startX = -contentW / 2
-        coin.position = CGPoint(x: startX + 9, y: -48)
-        priceLabel.position = CGPoint(x: startX + 18 + gap, y: -48)
-        card.addChild(coin)
-        card.addChild(priceLabel)
-    }
 
     // MARK: - Cartes
 
@@ -733,14 +853,6 @@ class BoutiqueScene: SKScene {
         }
     }
 
-    private func boosterName(_ booster: Booster) -> String {
-        switch booster {
-        case .hint:    return String(localized: "booster.hint", defaultValue: "Indice")
-        case .shuffle: return String(localized: "booster.shuffle", defaultValue: "Mélange")
-        case .hammer:  return String(localized: "booster.hammer", defaultValue: "Marteau")
-        }
-    }
-
     private func trailStyleName(_ id: String) -> String {
         switch id {
         case "classic": return String(localized: "trail.classic", defaultValue: "Classique")
@@ -763,15 +875,13 @@ class BoutiqueScene: SKScene {
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first, let startY = dragStartY else { return }
+        // Pendant le tutoriel d'achat, le défilement est verrouillé : la section
+        // Boosters a été amenée en vue, la cible ne doit pas pouvoir s'échapper.
+        if purchaseGuide?.parent != nil { return }
+
         let dy = touch.location(in: self).y - startY
         if !isDragging && abs(dy) > 8 {
             isDragging = true
-            // Défiler compte comme « autre interaction » : le guide se ferme.
-            if let guide = purchaseGuide, guide.parent != nil {
-                guide.dismiss()
-                purchaseGuide = nil
-                guidedPurchase = false
-            }
         }
         if isDragging {
             scrollOffset = min(max(0, dragStartOffset + dy), maxScroll)
@@ -792,15 +902,27 @@ class BoutiqueScene: SKScene {
         if isDragging { isDragging = false; return }
         let point = touch.location(in: self)
 
-        // Guide d'achat : tap sur la carte cible → achat guidé ; ailleurs, le
-        // guide se ferme et le tap est traité normalement (rien n'est bloqué).
+        // Guide d'achat. Deux sorties seulement : acheter, ou « Plus tard ».
+        // Tout autre tap laisse le guide en place (la cible pulse).
         if let guide = purchaseGuide, guide.parent != nil {
+            if nodes(at: point).contains(where: { ($0.name ?? "") == "guideLater" }) {
+                dismissGuideAsLater()
+                return
+            }
             let result = guide.handleTouch(at: point)
-            purchaseGuide = nil
-            guidedPurchase = false
-            if result == .target {
+            switch result {
+            case .ignored:
+                return          // insistance : rien d'autre ne se produit
+            case .target:
+                guideLaterButton?.removeFromParent()
+                guideLaterButton = nil
                 completeGuidedPurchase()
                 return
+            case .dismissed:
+                purchaseGuide = nil
+                guidedPurchase = false
+                guideLaterButton?.removeFromParent()
+                guideLaterButton = nil
             }
         }
 
@@ -821,39 +943,90 @@ class BoutiqueScene: SKScene {
                 handleCoinPack(String(name.dropFirst("pack:".count))); return
             }
             if name.hasPrefix("booster:") {
-                handleBoosterPurchase(String(name.dropFirst("booster:".count)),
-                                      card: contentNode.childNode(withName: name)); return
+                // "booster:<raw>" (carte) ou "booster:<raw>:<qty>" (pilule de prix).
+                let parts = name.split(separator: ":")
+                guard parts.count >= 2 else { return }
+                let raw = String(parts[1])
+                let qty = parts.count > 2 ? (Int(parts[2]) ?? 1) : 1
+                handleBoosterPurchase(raw, quantity: qty,
+                                      card: contentNode.childNode(withName: "booster:\(raw)"))
+                return
             }
         }
     }
 
-    private func handleBoosterPurchase(_ id: String, card: SKNode?) {
+    /// `quantity` = 1 pour l'achat unitaire, `bundleQuantity` pour le lot remisé.
+    private func handleBoosterPurchase(_ id: String, quantity: Int, card: SKNode?) {
         guard let booster = Booster(rawValue: id) else { return }
-        if BoosterManager.shared.purchaseBundle(booster) {
-            HapticManager.medium(); rebuild()
-        } else {
-            shake(card)
-        }
-    }
-
-    /// Achat déclenché depuis le coach-mark : achète le lot d'indices puis
-    /// félicite le joueur (le solde a été vérifié au déclenchement du guide,
-    /// mais l'échec reste géré par le shake standard).
-    private func completeGuidedPurchase() {
-        let hint = Booster.hint
-        let card = contentNode.childNode(withName: "booster:\(hint.rawValue)")
-        guard BoosterManager.shared.purchaseBundle(hint) else {
+        let isBundle = quantity == booster.bundleQuantity && quantity > 1
+        let cost = isBundle ? booster.bundlePrice : booster.price * max(1, quantity)
+        let ok = isBundle
+            ? BoosterManager.shared.purchaseBundle(booster)
+            : BoosterManager.shared.purchase(booster, quantity: max(1, quantity))
+        guard ok else {
             shake(card)
             return
         }
+        AnalyticsService.boosterPurchased(booster.rawValue, quantity: quantity,
+                                          cost: cost, source: "shop")
         HapticManager.medium()
         rebuild()
-        let toast = SKLabelNode(text: String(localized: "guide.shop_success",
-                                             defaultValue: "Achat réussi ! Retrouve tes indices en partie."))
+    }
+
+    /// Achat déclenché depuis le coach-mark : achète UNE unité d'indice, puis
+    /// rembourse intégralement — le premier booster est offert.
+    ///
+    /// Le débit puis le crédit sont montrés successivement, à 1,4 s d'écart :
+    /// le joueur apprend qu'acheter coûte des pièces, sans rien perdre. Un
+    /// remboursement différé (après usage en partie) aurait exigé un état à
+    /// honorer au prochain lancement, et lésé qui ne rejoue pas.
+    private func completeGuidedPurchase() {
+        let hint = Booster.hint
+        let card = contentNode.childNode(withName: "booster:\(hint.rawValue)")
+        guard BoosterManager.shared.purchase(hint, quantity: 1) else {
+            shake(card)
+            return
+        }
+        AnalyticsService.boosterPurchased(hint.rawValue, quantity: 1,
+                                          cost: hint.price, source: "tutorial")
+        AnalyticsService.shopGuide(step: "purchased")
+
+        // Le guide ne doit plus se ré-attacher lors des rebuild() qui suivent.
+        guidedPurchase = false
+        purchaseGuide?.dismiss()
+        purchaseGuide = nil
+
+        HapticManager.medium()
+        rebuild()
+        showShopToast(String(localized: "guide.shop_success",
+                             defaultValue: "Acheté ! Ton indice t'attend en partie."))
+
+        run(SKAction.wait(forDuration: 1.4)) { [weak self] in
+            guard let self else { return }
+            CoinManager.shared.add(hint.price)
+            UserDefaults.standard.set(true, forKey: AppConfig.UserDefaultsKey.hasSeenShopPurchaseGuide)
+            AnalyticsService.boosterRefunded(hint.rawValue, amount: hint.price)
+            AnalyticsService.shopGuide(step: "refunded")
+            HapticManager.light()
+            // rebuild() D'ABORD (il fait removeAllChildren), le toast ensuite.
+            self.rebuild()
+            self.showShopToast(String(localized: "guide.shop_refund",
+                                      defaultValue: "Cadeau de bienvenue : tes 30 pièces te sont rendues."))
+        }
+    }
+
+    /// Message temporaire en bas d'écran. Attaché à la scène et non à
+    /// `contentNode` : il doit survivre au défilement, mais **pas** à un
+    /// `rebuild()` — toujours l'afficher après celui-ci.
+    private func showShopToast(_ text: String) {
+        let toast = SKLabelNode(text: text)
         toast.fontName = "AvenirNext-DemiBold"
         toast.fontSize = 19
         toast.fontColor = UIColor(red: 0.35, green: 0.55, blue: 0.40, alpha: 1)
         toast.verticalAlignmentMode = .center
+        toast.numberOfLines = 2
+        toast.lineBreakMode = .byWordWrapping
+        toast.preferredMaxLayoutWidth = usableWidth - 48
         toast.position = CGPoint(x: 0, y: -usableHeight / 2 + 140)
         toast.zPosition = 40
         toast.alpha = 0
@@ -912,9 +1085,21 @@ class BoutiqueScene: SKScene {
         ]))
     }
 
+    /// Retour : menu, ou partie en cours si la boutique a été ouverte depuis le jeu.
     private func goBackToMenu() {
-        let menu = MenuScene(size: size)
-        menu.scaleMode = .aspectFill
-        view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.3))
+        let destination: SKScene
+        switch returnDestination {
+        case .menu:
+            destination = MenuScene(size: size)
+        case .game:
+            // `resuming: true` : les effets de bord de début de partie
+            // (série, paliers, compteur de notifications) ne doivent PAS
+            // être rejoués sur un simple aller-retour boutique.
+            destination = GameScene(size: size,
+                                    savedState: GameState.load(),
+                                    resuming: true)
+        }
+        destination.scaleMode = .aspectFill
+        view?.presentScene(destination, transition: SKTransition.fade(withDuration: 0.3))
     }
 }

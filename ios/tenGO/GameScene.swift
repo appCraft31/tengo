@@ -32,8 +32,14 @@ class GameScene: SKScene {
     private var savedState: GameState?
     private var homeBubbleNode: SKNode!
 
-    init(size: CGSize, savedState: GameState? = nil) {
+    /// `resuming` : la partie reprend après un aller-retour interne (boutique).
+    /// Les effets de bord « début de session » sont alors sautés — voir
+    /// `sceneDidLoad`.
+    private let resuming: Bool
+
+    init(size: CGSize, savedState: GameState? = nil, resuming: Bool = false) {
         self.savedState = savedState
+        self.resuming = resuming
         self.mode = .normal
         super.init(size: size)
     }
@@ -42,6 +48,7 @@ class GameScene: SKScene {
     init(size: CGSize, daily: DailyChallenge.Today) {
         self.mode = .daily
         self.dailyToday = daily
+        self.resuming = false
         super.init(size: size)
     }
 
@@ -51,11 +58,13 @@ class GameScene: SKScene {
         self.mode = .demo
         self.demoSeed = demoSeed
         self.demoSpeed = max(0.25, demoSpeed)
+        self.resuming = false
         super.init(size: size)
     }
 
     required init?(coder aDecoder: NSCoder) {
         self.mode = .normal
+        self.resuming = false
         super.init(coder: aDecoder)
     }
 
@@ -83,12 +92,23 @@ class GameScene: SKScene {
     )
 
     private var currentPath: [(row: Int, col: Int)] = []
+    /// Conteneur persistant du tracé (alias historique conservé).
     private var pathLineNode: SKNode?
+    private var trailContainer: SKNode?
+    /// Le trait lui-même, reconstruit à chaque cellule.
+    private var strokeNode: SKNode?
+    /// Point lumineux de tête, qui suit le doigt sans être reconstruit.
+    private var trailComet: SKSpriteNode?
     private var isAnimating = false
 
     // MARK: - Score
 
+    /// Score réel, crédité dès la validation (sauvegarde, records, Game Center).
     private var score = 0
+    /// Score AFFICHÉ, qui ne rattrape `score` qu'à l'arrivée de la bulle « +N »
+    /// sur le compteur : le gain se lit alors comme la conséquence du vol, et
+    /// non comme un chiffre qui a déjà changé avant que l'animation ne parte.
+    private var displayedScore = 0
     private var gameOverPanel: SKNode?
     private var scoreBubbleNode: SKNode!
     private var restartBubbleNode: SKNode!
@@ -108,9 +128,39 @@ class GameScene: SKScene {
     private var boosterCountLabels: [Booster: SKLabelNode] = [:]
     /// Marteau armé : le prochain tap sur une bulle la détruit.
     private var hammerArmed = false
+    /// Rayon de tap d'un bouton booster, borné par le demi-espacement effectif
+    /// (sur iPad l'espacement est de 88 pt : un rayon fixe de 48 faisait se
+    /// chevaucher deux boutons voisins).
+    private var boosterHitRadius: CGFloat = 48
+    /// Boosters dont le coach-mark d'usage reste à montrer.
+    private var boosterCoachQueue: [Booster] = []
+    private var boosterCoach: CoachMarkOverlay?
+    /// Modale « à court de boosters » et instantané de la partie capturé à son
+    /// ouverture (pour ne rien perdre si une animation tourne au moment du tap).
+    private var boosterShopPrompt: SKNode?
+    private var pendingShopSnapshot: (grid: GridModel, score: Int)?
+    /// Pastille « Boutique » qui remplace la barre quand elle est vide.
+    private var shopPillNode: SKNode?
 
     // MARK: - Haptics
     // Haptics via HapticManager (toggle dans les paramètres)
+
+    // MARK: - Juice
+    /// Couche décorative. zPosition 12 — surtout PAS 14, que `performReset`
+    /// purge à chaque relance de partie.
+    private var fxLayer: SKNode!
+    /// Caméra dédiée aux secousses : elle ne déplace que le rendu, jamais les
+    /// zones tactiles (les touches sont lues en coordonnées scène).
+    private var sceneCamera: SKCameraNode!
+    private var juice: JuiceDirector!
+    /// Meilleure chaîne déjà célébrée dans cette partie (ressenti uniquement,
+    /// le score reste strictement inchangé).
+    private var celebratedChain = 0
+
+    /// Progression du chemin courant vers 10, dans [0,1].
+    private var pathTension: CGFloat {
+        min(1, CGFloat(gridModel.pathSum(currentPath)) / 10)
+    }
 
     // MARK: - UI nodes
 
@@ -125,6 +175,10 @@ class GameScene: SKScene {
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         removeAllChildren()
         backgroundColor = ThemeManager.shared.active.background
+        // En capture marketing, le juice reste complet quelle que soit la
+        // configuration d'accessibilité de la machine de capture.
+        JuiceSettings.forceFull = (mode == .demo)
+        setupJuice()
         setupBackground()
         setupUI()
         if mode == .daily, let today = dailyToday {
@@ -135,6 +189,7 @@ class GameScene: SKScene {
         } else if let state = savedState {
             gridModel = GridModel(from: state)
             score = state.score
+            displayedScore = state.score
             scoreLabel.text = "\(score)"
         }
         setupGrid()
@@ -148,14 +203,47 @@ class GameScene: SKScene {
             return
         }
 
-        StreakManager.shared.registerPlay()
-        CoinManager.shared.awardStreakMilestones(currentStreak: StreakManager.shared.current)
-        NotificationManager.shared.registerGameAndMaybeRequest()
+        // Effets de bord de DÉBUT DE SESSION : à ne jouer qu'une fois par
+        // partie. Un aller-retour vers la boutique reconstruit la scène, et
+        // `registerGameAndMaybeRequest` n'est PAS idempotent : il incrémente le
+        // compteur de parties qui déclenche la demande d'autorisation de
+        // notifications. Sans ce garde, faire deux allers-retours suffirait à
+        // provoquer la popup système prématurément.
+        if !resuming {
+            StreakManager.shared.registerPlay()
+            CoinManager.shared.awardStreakMilestones(currentStreak: StreakManager.shared.current)
+            NotificationManager.shared.registerGameAndMaybeRequest()
+        }
         setupBoosters()
+    }
+
+    /// Couche d'effets + caméra de secousse. Créée avant tout le reste et
+    /// jamais retirée : `performReset` ne purge que la zPosition 14.
+    private func setupJuice() {
+        let camera = SKCameraNode()
+        camera.position = .zero
+        addChild(camera)
+        self.camera = camera
+        sceneCamera = camera
+
+        let layer = SKNode()
+        layer.zPosition = 12
+        addChild(layer)
+        fxLayer = layer
+
+        juice = JuiceDirector(scene: self, fxLayer: layer, camera: camera)
+        // Pas de secousse quand un overlay modal est ouvert : panel et réglages
+        // sont enfants de la scène et bougeraient avec elle.
+        juice.allowsScreenEffects = { [weak self] in
+            guard let self = self else { return false }
+            return self.gameOverPanel == nil && self.settingsOverlay?.parent == nil
+        }
     }
 
     override func didMove(to view: SKView) {
         repositionBottomRow(in: view)
+        // La barre est maintenant à sa place : les coach-marks peuvent viser juste.
+        queueBoosterCoachMarks()
         setupSettingsButton(in: view)
         HapticManager.prepare()
         NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
@@ -225,7 +313,7 @@ class GameScene: SKScene {
         repositionBottomRow(in: view)
     }
 
-    private func repositionBottomRow(in view: SKView) {
+    private func repositionBottomRow(in view: SKView, animated: Bool = false) {
         // Calcule la hauteur de scène réellement visible selon l'écran (aspectFill)
         let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
         let visibleBottom = -(view.bounds.height / scale) / 2
@@ -237,12 +325,27 @@ class GameScene: SKScene {
         // Position horizontale par défaut de la rangée de contrôle (⌂ / score / ↺).
         let sideX: CGFloat = 120
 
-        guard let bar = boosterBar else {
-            // Pas de boosters (Défi/démo) : rangée de contrôle centrée dans la bande.
+        // Barre absente (Défi/démo) OU vide (aucun booster possédé) : la rangée
+        // de contrôle reprend toute la bande, exactement comme avant l'existence
+        // des boosters. C'est ce qui « masque » la barre, sans `isHidden`.
+        guard let bar = boosterBar, !boosterButtons.isEmpty || shopPillNode != nil else {
             homeBubbleNode.position = CGPoint(x: -sideX, y: bandMid)
             scoreBubbleNode.position = CGPoint(x: 0, y: bandMid)
             restartBubbleNode.position = CGPoint(x: sideX, y: bandMid)
             return
+        }
+        let n = boosterButtons.count
+        shopPillNode?.position = .zero
+
+        /// Pose une position, en l'animant quand la barre change de composition.
+        func place(_ node: SKNode, _ p: CGPoint) {
+            guard animated else {
+                node.position = p
+                return
+            }
+            let move = SKAction.move(to: p, duration: 0.22)
+            move.timingMode = .easeOut
+            node.run(move, withKey: "layout")
         }
 
         // Hauteur nécessaire pour empiler 2 rangées (booster Ø + écart + score Ø).
@@ -250,10 +353,14 @@ class GameScene: SKScene {
         if band >= twoRowNeeded {
             // iPhone : 2 rangées empilées (boosters au-dessus), cluster centré.
             let rowGap: CGFloat = 116
+            let spacing: CGFloat = 132
             bar.position = CGPoint(x: 0, y: bandMid + rowGap / 2)
+            // Cluster centré quel que soit le nombre de boutons.
+            // n=3 → -132, 0, 132 (identique à la mise en page historique).
             for (i, item) in boosterButtons.enumerated() {
-                item.node.position = CGPoint(x: CGFloat(i - 1) * 132, y: 0)
+                place(item.node, CGPoint(x: (CGFloat(i) - CGFloat(n - 1) / 2) * spacing, y: 0))
             }
+            boosterHitRadius = min(48, spacing / 2 - 2)
             let rowY = bandMid - rowGap / 2
             homeBubbleNode.position = CGPoint(x: -sideX, y: rowY)
             scoreBubbleNode.position = CGPoint(x: 0, y: rowY)
@@ -262,10 +369,14 @@ class GameScene: SKScene {
             // iPad (bande courte) : une seule rangée horizontale, boosters à gauche,
             // contrôles à droite — exploite la largeur disponible, rien n'est masqué.
             bar.position = CGPoint(x: 0, y: bandMid)
-            let bxs: [CGFloat] = [-288, -200, -112]
+            // Bloc ancré à droite (bord droit figé à -112) : les boutons
+            // ⌂ / score / ↺ ne bougent jamais, quel que soit le nombre de
+            // boosters. n=3 → -288, -200, -112 (mise en page historique).
+            let spacing: CGFloat = 88
             for (i, item) in boosterButtons.enumerated() {
-                item.node.position = CGPoint(x: bxs[min(i, bxs.count - 1)], y: 0)
+                place(item.node, CGPoint(x: -112 - CGFloat(n - 1 - i) * spacing, y: 0))
             }
+            boosterHitRadius = min(48, spacing / 2 - 2)
             homeBubbleNode.position = CGPoint(x: 92, y: bandMid)
             scoreBubbleNode.position = CGPoint(x: 200, y: bandMid)
             restartBubbleNode.position = CGPoint(x: 308, y: bandMid)
@@ -466,6 +577,31 @@ class GameScene: SKScene {
             return
         }
 
+        // Modale « à court de boosters » : bloque le reste du touch.
+        if let prompt = boosterShopPrompt, prompt.parent != nil {
+            for node in nodes(at: point) {
+                switch node.name ?? node.parent?.name ?? "" {
+                case "boosterPromptShop":
+                    navigateToBoutique(reason: "empty_bar")
+                    return
+                case "boosterPromptClose", "boosterPromptDim":
+                    dismissBoosterShopPrompt()
+                    pendingShopSnapshot = nil
+                    return
+                default: continue
+                }
+            }
+            return
+        }
+
+        // Coach-mark d'usage : n'importe quel tap le referme et passe au
+        // suivant. Le tap est consommé pour ne pas déclencher le booster
+        // pointé par mégarde.
+        if let coach = boosterCoach, coach.parent != nil {
+            dismissBoosterCoach(handledAt: point)
+            return
+        }
+
         // Bouton paramètres en haut à droite
         if let settingsBubble = settingsBubbleNode,
            hypot(point.x - settingsBubble.position.x, point.y - settingsBubble.position.y) < 34 {
@@ -531,9 +667,25 @@ class GameScene: SKScene {
 
         // Boutons boosters (mode normal uniquement)
         if let bar = boosterBar, bar.parent != nil, !bar.isHidden, !isAnimating {
+            // Pastille boutique (barre vide) : accès direct, sans modale — le
+            // joueur a explicitement tapé « Boutique ».
+            if let pill = shopPillNode {
+                let p = bar.convert(pill.position, to: self)
+                if abs(point.x - p.x) < 98, abs(point.y - p.y) < 26 {
+                    pill.run(SKAction.sequence([
+                        SKAction.scale(to: 0.93, duration: 0.07),
+                        SKAction.scale(to: 1.0, duration: 0.1)
+                    ]))
+                    pendingShopSnapshot = gridModel.isGridEmpty() ? nil : (gridModel, score)
+                    run(SKAction.wait(forDuration: 0.12)) { [weak self] in
+                        self?.navigateToBoutique(reason: "empty_bar")
+                    }
+                    return
+                }
+            }
             for (booster, node) in boosterButtons {
                 let p = bar.convert(node.position, to: self)
-                if hypot(point.x - p.x, point.y - p.y) < 48 {
+                if hypot(point.x - p.x, point.y - p.y) < boosterHitRadius {
                     node.run(SKAction.sequence([
                         SKAction.scale(to: 0.88, duration: 0.08),
                         SKAction.scale(to: 1.0, duration: 0.12)
@@ -550,8 +702,9 @@ class GameScene: SKScene {
             messageLabel.isHidden = true
             if !isAnimating, let coord = gridCoord(for: point),
                gridModel.cells[coord.row][coord.col]?.isFrozen != true {
-                if BoosterManager.shared.consume(.hammer)
-                    || (BoosterManager.shared.purchase(.hammer) && BoosterManager.shared.consume(.hammer)) {
+                // Consommation seule : plus d'achat implicite (80 pièces
+                // pouvaient partir ici sans que le joueur ne voie rien).
+                if BoosterManager.shared.consume(.hammer) {
                     refreshBoosterButtons()
                     performHammer(at: coord)
                 }
@@ -565,9 +718,10 @@ class GameScene: SKScene {
         if gridModel.cells[coord.row][coord.col]?.isFrozen == true { return }
 
         currentPath = [coord]
-        bubbleNodes[coord.row][coord.col]?.setSelected(true)
         let selectValue = gridModel.cells[coord.row][coord.col]?.value ?? 1
+        bubbleNodes[coord.row][coord.col]?.setSelected(true, tension: pathTension)
         SoundManager.shared.playSelect(bubbleValue: selectValue)
+        juice.onSelect()
         updateSumLabel()
         updatePathLine()
     }
@@ -623,12 +777,21 @@ class GameScene: SKScene {
         if currentPath.contains(where: { $0.row == coord.row && $0.col == coord.col }) { return false }
         // Cellule non vide et non gelée
         guard let bubble = gridModel.cells[coord.row][coord.col], !bubble.isFrozen else { return false }
-        // Contrainte de somme
-        guard gridModel.pathSum(currentPath) + bubble.value <= 10 else { return false }
+        // Contrainte de somme — refus signalé au joueur, qui n'avait jusqu'ici
+        // aucun retour quand son doigt passait sur une bulle « de trop ».
+        // On ne révèle aucun chiffre : juste « pas celle-là ».
+        guard gridModel.pathSum(currentPath) + bubble.value <= 10 else {
+            if let node = bubbleNodes[coord.row][coord.col] {
+                juice.onRejected(node: node, at: coord)
+            }
+            return false
+        }
 
         currentPath.append(coord)
-        bubbleNodes[coord.row][coord.col]?.setSelected(true)
-        SoundManager.shared.playConnect(bubbleValue: bubble.value)
+        let tension = pathTension
+        bubbleNodes[coord.row][coord.col]?.setSelected(true, tension: tension)
+        SoundManager.shared.playConnect(bubbleValue: bubble.value, tension: Double(tension))
+        juice.onAppend(tension: tension)
         updateSumLabel()
         updatePathLine()
         return true
@@ -637,7 +800,8 @@ class GameScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard !isAnimating, !currentPath.isEmpty else { return }
         if gridModel.pathSum(currentPath) == 10 {
-            HapticManager.medium()
+            // L'haptique de validation est portée par le JuiceDirector
+            // (motif proportionné à la longueur), déclenché dans commitPath.
             commitPath()
         } else {
             cancelPath()
@@ -653,9 +817,28 @@ class GameScene: SKScene {
     private func updateSumLabel() { /* somme masquée — l'utilisateur calcule lui-même */ }
 
     private func updatePathLine() {
-        pathLineNode?.removeFromParent()
-        pathLineNode = nil
-        guard currentPath.count >= 2 else { return }
+        let tension = pathTension
+
+        // Les bulles déjà sélectionnées suivent la tension : la montée vers 10
+        // se ressent sur tout le chemin, pas seulement sur la dernière bulle.
+        for coord in currentPath {
+            bubbleNodes[coord.row][coord.col]?.setSelected(true, tension: tension)
+        }
+
+        // Le trait lui-même est reconstruit à chaque cellule ; la comète, elle,
+        // vit sur le conteneur persistant et survit donc au rebuild — c'est ce
+        // qui donne la sensation de continuité sous le doigt.
+        strokeNode?.removeFromParent()
+        strokeNode = nil
+
+        guard currentPath.count >= 2 else {
+            trailContainer?.removeFromParent()
+            trailContainer = nil
+            trailComet = nil
+            return
+        }
+
+        let container = ensureTrailContainer()
 
         let cgPath = CGMutablePath()
         cgPath.move(to: scenePos(row: currentPath[0].row, col: currentPath[0].col))
@@ -663,17 +846,55 @@ class GameScene: SKScene {
             cgPath.addLine(to: scenePos(row: coord.row, col: coord.col))
         }
 
-        let container = makeTrailNode(path: cgPath)
+        let stroke = makeTrailNode(path: cgPath, tension: tension)
+        container.addChild(stroke)
+        strokeNode = stroke
+
+        if let head = currentPath.last {
+            moveComet(to: scenePos(row: head.row, col: head.col), tension: tension)
+        }
+    }
+
+    /// Conteneur persistant du tracé : seuls ses enfants « stroke » sont
+    /// remplacés, pour que les animations posées dessus ne soient pas tuées.
+    private func ensureTrailContainer() -> SKNode {
+        if let existing = trailContainer { return existing }
+        let container = SKNode()
         container.zPosition = 5
         addChild(container)
+        trailContainer = container
         pathLineNode = container
+        return container
+    }
+
+    private func moveComet(to position: CGPoint, tension: CGFloat) {
+        guard JuiceSettings.motionEnabled else { return }
+        let comet: SKSpriteNode
+        if let existing = trailComet {
+            comet = existing
+        } else {
+            comet = SKSpriteNode(texture: FXTextures.dot)
+            comet.blendMode = .add
+            comet.colorBlendFactor = 1
+            comet.zPosition = 2
+            comet.position = position
+            trailContainer?.addChild(comet)
+            trailComet = comet
+        }
+        let accent = ThemeManager.shared.active.accent
+        comet.color = accent.mixedWithWhite(0.25 + 0.45 * tension)
+        let size = 26 + 16 * tension
+        comet.size = CGSize(width: size, height: size)
+        comet.alpha = 0.45 + 0.35 * tension
+        comet.run(SKAction.move(to: position, duration: 0.06))
     }
 
     /// Construit la ligne de tracé selon le style cosmétique actif (purement visuel).
-    private func makeTrailNode(path: CGMutablePath) -> SKNode {
+    private func makeTrailNode(path: CGMutablePath, tension: CGFloat) -> SKNode {
         TrailRenderer.make(path: path,
                            style: CosmeticManager.shared.activeTrail,
-                           accent: ThemeManager.shared.active.accent)
+                           accent: ThemeManager.shared.active.accent,
+                           tension: tension)
     }
 
     private func cancelPath() {
@@ -681,9 +902,19 @@ class GameScene: SKScene {
             bubbleNodes[coord.row][coord.col]?.setSelected(false)
         }
         currentPath = []
-        pathLineNode?.removeFromParent()
-        pathLineNode = nil
+        clearTrail()
         SoundManager.shared.cancelPath()
+    }
+
+    /// Démonte intégralement le tracé (trait + comète + conteneur).
+    private func clearTrail() {
+        strokeNode?.removeFromParent()
+        strokeNode = nil
+        trailComet?.removeFromParent()
+        trailComet = nil
+        trailContainer?.removeFromParent()
+        trailContainer = nil
+        pathLineNode = nil
     }
 
     // MARK: - Scoring
@@ -700,13 +931,22 @@ class GameScene: SKScene {
     /// Met à jour le chiffre ; le pulse visuel est joué à l'arrivée du vol
     /// de la bulle « +N » (showScorePopup), pas ici.
     private func updateScoreLabel() {
-        scoreLabel.text = "\(score)"
+        scoreLabel.text = "\(displayedScore)"
+    }
+
+    /// Aligne l'affichage sur le score réel, sans attendre les bulles encore en
+    /// vol. Indispensable en fin de partie : le panneau et les records doivent
+    /// montrer le total, jamais un compteur en retard d'une animation.
+    private func syncDisplayedScore() {
+        guard displayedScore != score else { return }
+        displayedScore = score
+        updateScoreLabel()
     }
 
     /// « +N » dans une mini-bulle qui pop à la dernière bulle du chemin puis
     /// s'envole vers la bulle de score. Chaque appel crée ses propres nœuds :
     /// les popups rapprochés coexistent sans état partagé.
-    private func showScorePopup(points: Int, at bubblePos: CGPoint) {
+    private func showScorePopup(points: Int, at bubblePos: CGPoint, tier: PopTier = .small) {
         let isBigCombo = points >= 100
         let radius: CGFloat = isBigCombo ? 32 : 26
         let tint = isBigCombo
@@ -718,6 +958,26 @@ class GameScene: SKScene {
         flight.zPosition = 20
         flight.setScale(0.0)
         addChild(flight)
+
+        // Halo doré sur les grandes chaînes : la récompense se voit avant même
+        // que le chiffre ne soit lu.
+        if tier == .large, JuiceSettings.motionEnabled {
+            let halo = SKSpriteNode(texture: FXTextures.dot)
+            halo.size = CGSize(width: radius * 4, height: radius * 4)
+            halo.color = UIColor(red: 0.98, green: 0.80, blue: 0.35, alpha: 1)
+            halo.colorBlendFactor = 1
+            halo.blendMode = .add
+            halo.alpha = 0.55
+            halo.zPosition = -1
+            flight.addChild(halo)
+            halo.run(SKAction.sequence([
+                SKAction.group([
+                    SKAction.scale(to: 1.5, duration: 0.35),
+                    SKAction.fadeOut(withDuration: 0.35)
+                ]),
+                SKAction.removeFromParent()
+            ]))
+        }
 
         let circle = SKShapeNode(circleOfRadius: radius)
         circle.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 0.92)
@@ -759,6 +1019,11 @@ class GameScene: SKScene {
                     ]),
                     SKAction.run { [weak self] in
                         guard let self else { return }
+                        // Le compteur ne monte qu'ICI : la bulle vient de le
+                        // percuter. Plafonné au score réel, pour qu'un ordre
+                        // d'arrivée inattendu ne le fasse jamais dépasser.
+                        self.displayedScore = min(self.displayedScore + points, self.score)
+                        self.updateScoreLabel()
                         self.scoreBubbleNode.run(SKAction.sequence([
                             SKAction.scale(to: 1.18, duration: 0.07),
                             SKAction.scale(to: 1.0, duration: 0.12)
@@ -774,29 +1039,55 @@ class GameScene: SKScene {
 
     private func commitPath() {
         isAnimating = true
-        pathLineNode?.removeFromParent()
-        pathLineNode = nil
+        clearTrail()
 
         let points = scoreForPath(length: currentPath.count)
         let lastCoord = currentPath.last!
         let popupOrigin = scenePos(row: lastCoord.row, col: lastCoord.col)
         let pathCopy = currentPath
+        let length = pathCopy.count
         combosCreated += 1
-        longestChain = max(longestChain, currentPath.count)
+        longestChain = max(longestChain, length)
         currentPath = []
 
-        score += points
-        updateScoreLabel()
-        showScorePopup(points: points, at: popupOrigin)
+        // Palier d'intensité. Battre son record de chaîne dans la partie fait
+        // monter le ressenti d'un cran — le score, lui, ne bouge pas d'un point.
+        var tier = PopTier(length: length)
+        if length > celebratedChain && length >= 3 {
+            celebratedChain = length
+            tier = tier.boosted
+        }
 
-        SoundManager.shared.playCombo()
-        for coord in pathCopy {
+        // Le score réel est crédité tout de suite (sauvegarde, records) ; le
+        // compteur affiché, lui, attend l'arrivée de la bulle « +N ».
+        score += points
+        showScorePopup(points: points, at: popupOrigin, tier: tier)
+
+        SoundManager.shared.playCombo(length: length)
+        juice.onCommit(tier: tier, length: length)
+        pushNeighbors(of: pathCopy, tier: tier)
+
+        for (index, coord) in pathCopy.enumerated() {
             if let bubble = bubbleNodes[coord.row][coord.col] {
                 let burst = PopEffects.makeBurst(color: BubbleNode.color(for: bubble.value),
-                                                 intensity: pathCopy.count)
+                                                 tier: tier)
                 burst.position = scenePos(row: coord.row, col: coord.col)
-                addChild(burst)
-                bubble.playPopAnimation(completion: {})
+                // Décalage libre : le burst est décoratif et vit dans fxLayer,
+                // il n'est attendu par personne.
+                burst.alpha = 0
+                burst.run(SKAction.sequence([
+                    SKAction.wait(forDuration: TimeInterval(index) * 0.020),
+                    SKAction.fadeIn(withDuration: 0.01)
+                ]))
+                fxLayer.addChild(burst)
+
+                // Décalage PLAFONNÉ : la disparition des bulles, elle, doit
+                // tenir dans la fenêtre de 0,26 s avant la gravité.
+                let popDelay = min(TimeInterval(index) * 0.012, 0.08)
+                bubble.run(SKAction.sequence([
+                    SKAction.wait(forDuration: popDelay),
+                    SKAction.run { bubble.playPopAnimation(completion: {}) }
+                ]))
             }
             bubbleNodes[coord.row][coord.col] = nil
         }
@@ -810,6 +1101,32 @@ class GameScene: SKScene {
             SKAction.wait(forDuration: 0.26),
             SKAction.run { [weak self] in self?.afterPop() }
         ]))
+    }
+
+    /// Souffle de la chaîne sur les bulles voisines. Purement décoratif :
+    /// aucune position du modèle n'est touchée, et `nudge` repose sur des
+    /// déplacements absolus annulés avant toute chute.
+    private func pushNeighbors(of path: [(row: Int, col: Int)], tier: PopTier) {
+        let push = tier.neighborPush
+        guard push > 0, JuiceSettings.motionEnabled else { return }
+
+        let inPath = Set(path.map { $0.row * GridModel.cols + $0.col })
+        var pushed = Set<Int>()
+
+        for coord in path {
+            for dr in -1...1 {
+                for dc in -1...1 where !(dr == 0 && dc == 0) {
+                    let r = coord.row + dr
+                    let c = coord.col + dc
+                    guard r >= 0, r < GridModel.rows, c >= 0, c < GridModel.cols else { continue }
+                    let key = r * GridModel.cols + c
+                    guard !inPath.contains(key), !pushed.contains(key),
+                          let node = bubbleNodes[r][c] else { continue }
+                    pushed.insert(key)
+                    node.nudge(dx: CGFloat(dc) * push, dy: CGFloat(dr) * push)
+                }
+            }
+        }
     }
 
     private func afterPop() {
@@ -853,6 +1170,9 @@ class GameScene: SKScene {
             if mode == .demo { demoReseed() } else { triggerLose() }
         } else {
             isAnimating = false
+            // Filet de sécurité : un coach-mark reporté parce que la scène était
+            // occupée doit finir par s'afficher.
+            showNextBoosterCoach()
         }
     }
 
@@ -860,79 +1180,251 @@ class GameScene: SKScene {
 
     static let boosterRadius: CGFloat = 42
 
-    /// Construit la barre de 3 gros boosters ronds, posée au-dessus de la rangée
-    /// de contrôle (mode normal). Position verticale fixée par repositionBottomRow.
+    /// Ordre d'affichage stable des boosters dans la barre.
+    private static let boosterOrder: [Booster] = [.hint, .shuffle, .hammer]
+
+    /// Crée le conteneur de la barre (vide). Son contenu est piloté
+    /// exclusivement par `refreshBoosterButtons()`.
     private func setupBoosters() {
         guard mode == .normal else { return }
         let bar = SKNode()
         bar.zPosition = 8
         addChild(bar)
         boosterBar = bar
-
-        let order: [Booster] = [.hint, .shuffle, .hammer]
-        let spacing: CGFloat = 132
-        let iconColor = UIColor(white: 0.42, alpha: 1)
-        for (i, booster) in order.enumerated() {
-            let node = SKNode()
-            node.position = CGPoint(x: CGFloat(i - 1) * spacing, y: 0)
-            bar.addChild(node)
-
-            let circle = SKShapeNode(circleOfRadius: GameScene.boosterRadius)
-            circle.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 1)
-            circle.strokeColor = UIColor(white: 0.70, alpha: 0.55)
-            circle.lineWidth = 1.5
-            node.addChild(circle)
-
-            let icon = BoosterIcon.make(booster, size: 44, color: iconColor)
-            node.addChild(icon)
-
-            // Badge quantité / prix : pastille en bas à droite du bouton.
-            let badgePill = SKShapeNode(circleOfRadius: 17)
-            badgePill.fillColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
-            badgePill.strokeColor = UIColor(white: 0.70, alpha: 0.5)
-            badgePill.lineWidth = 1
-            badgePill.position = CGPoint(x: 31, y: -31)
-            badgePill.zPosition = 1
-            node.addChild(badgePill)
-
-            let badge = SKLabelNode(text: "")
-            badge.fontName = "AvenirNext-Bold"
-            badge.fontSize = 14
-            badge.verticalAlignmentMode = .center
-            badge.horizontalAlignmentMode = .center
-            badge.position = CGPoint(x: 31, y: -31)
-            badge.zPosition = 2
-            node.addChild(badge)
-            boosterCountLabels[booster] = badge
-
-            boosterButtons.append((booster, node))
-        }
         refreshBoosterButtons()
     }
 
-    /// Met à jour les badges (quantité possédée en sombre, sinon prix en doré) et l'opacité.
+    /// Construit le bouton rond d'un booster (sans le positionner).
+    private func makeBoosterButton(_ booster: Booster) -> SKNode {
+        let node = SKNode()
+
+        let circle = SKShapeNode(circleOfRadius: GameScene.boosterRadius)
+        circle.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 1)
+        circle.strokeColor = UIColor(white: 0.70, alpha: 0.55)
+        circle.lineWidth = 1.5
+        node.addChild(circle)
+
+        node.addChild(BoosterIcon.make(booster, size: 44, color: UIColor(white: 0.42, alpha: 1)))
+
+        // Badge quantité : pastille en bas à droite du bouton.
+        let badgePill = SKShapeNode(circleOfRadius: 17)
+        badgePill.fillColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
+        badgePill.strokeColor = UIColor(white: 0.70, alpha: 0.5)
+        badgePill.lineWidth = 1
+        badgePill.position = CGPoint(x: 31, y: -31)
+        badgePill.zPosition = 1
+        node.addChild(badgePill)
+
+        let badge = SKLabelNode(text: "")
+        badge.fontName = "AvenirNext-Bold"
+        badge.fontSize = 14
+        badge.fontColor = UIColor(white: 0.30, alpha: 1)
+        badge.verticalAlignmentMode = .center
+        badge.horizontalAlignmentMode = .center
+        badge.position = CGPoint(x: 31, y: -31)
+        badge.zPosition = 2
+        node.addChild(badge)
+        boosterCountLabels[booster] = badge
+
+        return node
+    }
+
+    /// Synchronise la barre sur l'inventaire : **seuls les boosters possédés
+    /// sont affichés**. Un booster à 0 n'a rien à faire à l'écran — l'ancienne
+    /// version montrait trois icônes grisées avec un prix hors de portée dès la
+    /// première partie.
+    ///
+    /// Le nom est conservé : ses quatre sites d'appel continuent de fonctionner.
     private func refreshBoosterButtons() {
-        for (booster, node) in boosterButtons {
-            let count = BoosterManager.shared.count(booster)
-            let badge = boosterCountLabels[booster]
-            if count > 0 {
-                badge?.text = "×\(count)"
-                badge?.fontColor = UIColor(white: 0.30, alpha: 1)
-                node.alpha = 1.0
-            } else {
-                badge?.text = "\(booster.price)"
-                badge?.fontColor = UIColor(red: 0.78, green: 0.55, blue: 0.12, alpha: 1)
-                node.alpha = CoinManager.shared.balance >= booster.price ? 1.0 : 0.45
-            }
+        guard mode == .normal, let bar = boosterBar else { return }
+
+        let wanted = GameScene.boosterOrder.filter { BoosterManager.shared.count($0) > 0 }
+        let current = boosterButtons.map { $0.booster }
+
+        // Retraits (le booster vient d'être épuisé).
+        for (booster, node) in boosterButtons where !wanted.contains(booster) {
+            boosterCountLabels[booster] = nil
+            node.run(SKAction.sequence([
+                SKAction.group([
+                    SKAction.fadeOut(withDuration: 0.16),
+                    SKAction.scale(to: 0.2, duration: 0.16)
+                ]),
+                SKAction.removeFromParent()
+            ]))
         }
+        boosterButtons.removeAll { !wanted.contains($0.booster) }
+
+        // Ajouts, dans l'ordre canonique.
+        for booster in wanted where !current.contains(booster) {
+            let node = makeBoosterButton(booster)
+            bar.addChild(node)
+            boosterButtons.append((booster, node))
+            animateBoosterAppearance(node)
+        }
+        boosterButtons.sort { a, b in
+            let ia = GameScene.boosterOrder.firstIndex(of: a.booster) ?? 0
+            let ib = GameScene.boosterOrder.firstIndex(of: b.booster) ?? 0
+            return ia < ib
+        }
+
+        // Badges.
+        for (booster, _) in boosterButtons {
+            boosterCountLabels[booster]?.text = "×\(BoosterManager.shared.count(booster))"
+        }
+
+        syncShopPill(in: bar, barIsEmpty: wanted.isEmpty)
+
+        if wanted != current, let view = view {
+            repositionBottomRow(in: view, animated: !current.isEmpty && !wanted.isEmpty)
+        }
+        queueBoosterCoachMarks()
+    }
+
+    /// Pastille « Boutique » affichée à la place de la barre quand le joueur
+    /// n'a plus aucun booster.
+    ///
+    /// Sans elle le funnel serait mort : les boosters non possédés n'étant plus
+    /// affichés, `denyBooster` n'est quasiment plus atteignable. Elle
+    /// n'apparaît que lorsqu'elle a du sens — jamais pendant les toutes
+    /// premières parties, où la barre doit rester vide.
+    private func syncShopPill(in bar: SKNode, barIsEmpty: Bool) {
+        let defaults = UserDefaults.standard
+        let deserved = barIsEmpty
+            && (CoinManager.shared.balance >= Booster.hint.price
+                || defaults.bool(forKey: AppConfig.UserDefaultsKey.hasSeenShopPurchaseGuide))
+
+        guard deserved else {
+            shopPillNode?.removeFromParent()
+            shopPillNode = nil
+            return
+        }
+        guard shopPillNode == nil else { return }
+
+        let node = SKNode()
+        node.name = "boosterShopPill"
+
+        let pill = SKShapeNode(rectOf: CGSize(width: 196, height: 52), cornerRadius: 26)
+        pill.name = "boosterShopPill"
+        pill.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 1)
+        pill.strokeColor = UIColor(white: 0.70, alpha: 0.55)
+        pill.lineWidth = 1.5
+        node.addChild(pill)
+
+        let icon = BoosterIcon.make(.hint, size: 26, color: UIColor(white: 0.42, alpha: 1))
+        icon.position = CGPoint(x: -64, y: 0)
+        node.addChild(icon)
+
+        let label = SKLabelNode(text: String(localized: "game.shop_button", defaultValue: "Boutique"))
+        label.name = "boosterShopPill"
+        label.fontName = "AvenirNext-DemiBold"
+        label.fontSize = 18
+        label.fontColor = UIColor(white: 0.35, alpha: 1)
+        label.verticalAlignmentMode = .center
+        label.position = CGPoint(x: 12, y: 0)
+        node.addChild(label)
+
+        bar.addChild(node)
+        shopPillNode = node
+    }
+
+    // MARK: - Coach-marks d'usage
+
+    private func boosterCoachKey(_ booster: Booster) -> String {
+        AppConfig.UserDefaultsKey.boosterCoachSeenPrefix + booster.rawValue
+    }
+
+    /// Reconstruit la file à partir des boosters présents dans la barre et
+    /// jamais encore expliqués. Appelé depuis la synchronisation de la barre :
+    /// c'est le seul point traversé par TOUS les chemins d'acquisition (achat
+    /// en boutique, don, reprise de partie, reset).
+    private func queueBoosterCoachMarks() {
+        let pending = boosterButtons.map { $0.booster }.filter {
+            !UserDefaults.standard.bool(forKey: boosterCoachKey($0))
+        }
+        guard !pending.isEmpty else { return }
+        boosterCoachQueue = pending
+        showNextBoosterCoach()
+    }
+
+    /// Affiche le prochain coach-mark si le moment s'y prête. Les conditions
+    /// sont volontairement strictes : expliquer un booster pendant une
+    /// animation ou un tracé en cours serait pire que ne rien expliquer.
+    private func showNextBoosterCoach() {
+        // `view != nil` est indispensable : tant que la scène n'est pas montée,
+        // `repositionBottomRow` n'a pas tourné, la barre est encore en (0,0) et
+        // le coach-mark figerait un cadre au milieu de la grille.
+        guard mode == .normal,
+              view != nil,
+              boosterCoach == nil,
+              gameOverPanel == nil,
+              settingsOverlay?.parent == nil,
+              !isAnimating, !hammerArmed, currentPath.isEmpty,
+              let next = boosterCoachQueue.first,
+              let item = boosterButtons.first(where: { $0.booster == next })
+        else { return }
+
+        boosterCoach = CoachMarkOverlay.present(in: self, over: item.node, text: next.coachText)
+        AnalyticsService.boosterCoachShown(next.rawValue)
+    }
+
+    /// Ferme le coach-mark courant et marque le booster comme expliqué.
+    /// Le flag est posé À LA FERMETURE, jamais à l'affichage : c'est le défaut
+    /// du guide d'achat historique, qui se perdait s'il était ignoré.
+    private func dismissBoosterCoach(handledAt point: CGPoint?) {
+        guard let coach = boosterCoach else { return }
+        if let point = point {
+            _ = coach.handleTouch(at: point)
+        } else {
+            coach.dismiss()
+        }
+        if let done = boosterCoachQueue.first {
+            UserDefaults.standard.set(true, forKey: boosterCoachKey(done))
+            boosterCoachQueue.removeFirst()
+        }
+        boosterCoach = nil
+        run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.25),
+            SKAction.run { [weak self] in self?.showNextBoosterCoach() }
+        ]))
+    }
+
+    /// Apparition d'un booster fraîchement acquis : il doit se remarquer, c'est
+    /// le moment où le joueur apprend qu'il en possède un.
+    private func animateBoosterAppearance(_ node: SKNode) {
+        guard JuiceSettings.motionEnabled else { return }
+        node.setScale(0.1)
+        node.alpha = 0
+        node.run(SKAction.group([
+            SKAction.fadeIn(withDuration: 0.18),
+            SKAction.sequence([
+                SKAction.scale(to: 1.14, duration: 0.22),
+                SKAction.scale(to: 1.0, duration: 0.12)
+            ])
+        ]))
+
+        let halo = SKShapeNode(circleOfRadius: GameScene.boosterRadius)
+        halo.fillColor = .clear
+        halo.strokeColor = ThemeManager.shared.active.accent.withAlphaComponent(0.75)
+        halo.lineWidth = 3
+        halo.zPosition = -1
+        node.addChild(halo)
+        halo.run(SKAction.sequence([
+            SKAction.group([
+                SKAction.scale(to: 1.9, duration: 0.45),
+                SKAction.fadeOut(withDuration: 0.45)
+            ]),
+            SKAction.removeFromParent()
+        ]))
+        HapticManager.light()
     }
 
     private func handleBoosterTap(_ booster: Booster) {
         guard !isAnimating else { return }
         switch booster {
         case .hammer:
-            // Arme le ciblage si disponible (consommation différée au tap sur la bulle).
-            if BoosterManager.shared.count(booster) > 0 || CoinManager.shared.balance >= booster.price {
+            // Arme le ciblage (consommation différée au tap sur la bulle).
+            // Plus de repli sur le solde : la barre n'affiche que le possédé.
+            if BoosterManager.shared.count(booster) > 0 {
                 hammerArmed = true
                 messageLabel.text = String(localized: "booster.hammer_prompt",
                                            defaultValue: "Touche une bulle à détruire")
@@ -940,11 +1432,32 @@ class GameScene: SKScene {
             } else { denyBooster(booster) }
         case .hint:
             disarmHammer()
-            if acquireBooster(booster) { showHint() } else { denyBooster(booster) }
+            // Le chemin d'abord : une grille sans solution ne doit pas coûter
+            // un indice au joueur.
+            guard let path = gridModel.showcasePath() else {
+                flashMessage(String(localized: "booster.hint_none",
+                                    defaultValue: "Aucun chemin ici — essaie le mélange"))
+                return
+            }
+            if acquireBooster(booster) { showHint(path: path) } else { denyBooster(booster) }
         case .shuffle:
             disarmHammer()
             if acquireBooster(booster) { performShuffle() } else { denyBooster(booster) }
         }
+    }
+
+    /// Message éphémère dans la zone de consigne (réutilise `messageLabel`).
+    private func flashMessage(_ text: String, duration: TimeInterval = 1.6) {
+        messageLabel.text = text
+        messageLabel.isHidden = false
+        messageLabel.removeAction(forKey: "flashMessage")
+        messageLabel.run(SKAction.sequence([
+            SKAction.wait(forDuration: duration),
+            SKAction.run { [weak self] in
+                guard let self = self, !self.hammerArmed else { return }
+                self.messageLabel.isHidden = true
+            }
+        ]), withKey: "flashMessage")
     }
 
     private func disarmHammer() {
@@ -953,32 +1466,125 @@ class GameScene: SKScene {
         messageLabel.isHidden = true
     }
 
-    /// Consomme une unité (depuis l'inventaire, sinon achat immédiat). Met à jour les badges.
+    /// Consomme une unité de l'inventaire. Met à jour les badges.
+    ///
+    /// N'achète PLUS implicitement : un booster absent de l'inventaire n'est de
+    /// toute façon plus affiché dans la barre. L'ancienne version enchaînait un
+    /// `purchase()` silencieux — jusqu'à 80 pièces pouvaient partir d'un seul
+    /// tap, sans confirmation ni trace visible du débit.
     private func acquireBooster(_ booster: Booster) -> Bool {
-        if BoosterManager.shared.consume(booster) {
-            refreshBoosterButtons()
-            return true
-        }
-        if BoosterManager.shared.purchase(booster), BoosterManager.shared.consume(booster) {
-            refreshBoosterButtons()
-            return true
-        }
-        return false
+        guard BoosterManager.shared.consume(booster) else { return false }
+        AnalyticsService.boosterUsed(booster.rawValue)
+        refreshBoosterButtons()
+        return true
     }
 
-    /// Feedback « solde insuffisant » : secousse du bouton.
+    // MARK: - Modale « à court de boosters »
+
+    /// Explique où trouver des boosters et ouvre la boutique — l'ancienne
+    /// version se contentait d'une secousse muette, sans issue.
+    private func presentBoosterShopPrompt() {
+        guard mode == .normal, boosterShopPrompt == nil, gameOverPanel == nil else { return }
+
+        // Snapshot AVANT toute interaction : `isAnimating` peut devenir vrai
+        // entre l'ouverture de la modale et le tap sur « Boutique ».
+        // GridModel est une struct : l'affectation fige une copie de la grille.
+        pendingShopSnapshot = gridModel.isGridEmpty() ? nil : (gridModel, score)
+
+        let panel = SKNode()
+        panel.zPosition = 15
+        panel.name = "boosterPrompt"
+
+        let dim = SKSpriteNode(color: UIColor(white: 0, alpha: 0.45),
+                               size: CGSize(width: size.width * 2, height: size.height * 2))
+        dim.name = "boosterPromptDim"
+        panel.addChild(dim)
+
+        let w: CGFloat = 470, h: CGFloat = 280
+        let card = SKShapeNode(rectOf: CGSize(width: w, height: h), cornerRadius: 32)
+        card.fillColor = UIColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1)
+        card.strokeColor = UIColor(white: 0.70, alpha: 0.25)
+        card.lineWidth = 1
+        panel.addChild(card)
+
+        let title = SKLabelNode(text: String(localized: "game.no_boosters_title",
+                                             defaultValue: "À court de boosters"))
+        title.fontName = "AvenirNext-Heavy"
+        title.fontSize = 28
+        title.fontColor = UIColor(white: 0.25, alpha: 1)
+        title.verticalAlignmentMode = .center
+        title.position = CGPoint(x: 0, y: h / 2 - 58)
+        panel.addChild(title)
+
+        let body = SKLabelNode(text: String(localized: "game.no_boosters_body",
+                                            defaultValue: "Les boosters s'achètent en boutique avec les pièces gagnées en partie."))
+        body.fontName = "AvenirNext-Medium"
+        body.fontSize = 17
+        body.fontColor = UIColor(white: 0.38, alpha: 1)
+        body.verticalAlignmentMode = .center
+        body.numberOfLines = 3
+        body.lineBreakMode = .byWordWrapping
+        body.preferredMaxLayoutWidth = w - 72
+        body.position = CGPoint(x: 0, y: 10)
+        panel.addChild(body)
+
+        addPromptButton(to: panel, name: "boosterPromptShop",
+                        title: String(localized: "game.no_boosters_shop", defaultValue: "Boutique"),
+                        fill: ThemeManager.shared.active.accent,
+                        ink: UIColor(white: 0.20, alpha: 1),
+                        at: CGPoint(x: -w / 4 - 6, y: -h / 2 + 58))
+        addPromptButton(to: panel, name: "boosterPromptClose",
+                        title: String(localized: "game.no_boosters_continue", defaultValue: "Continuer"),
+                        fill: UIColor(white: 0.90, alpha: 1),
+                        ink: UIColor(white: 0.35, alpha: 1),
+                        at: CGPoint(x: w / 4 + 6, y: -h / 2 + 58))
+
+        addChild(panel)
+        boosterShopPrompt = panel
+        panel.alpha = 0
+        panel.run(SKAction.fadeIn(withDuration: 0.18))
+    }
+
+    private func addPromptButton(to panel: SKNode, name: String, title: String,
+                                 fill: UIColor, ink: UIColor, at position: CGPoint) {
+        let pill = SKShapeNode(rectOf: CGSize(width: 190, height: 54), cornerRadius: 27)
+        pill.name = name
+        pill.fillColor = fill
+        pill.strokeColor = .clear
+        pill.position = position
+        panel.addChild(pill)
+
+        let label = SKLabelNode(text: title)
+        label.name = name
+        label.fontName = "AvenirNext-DemiBold"
+        label.fontSize = 19
+        label.fontColor = ink
+        label.verticalAlignmentMode = .center
+        label.position = position
+        panel.addChild(label)
+    }
+
+    private func dismissBoosterShopPrompt() {
+        boosterShopPrompt?.removeFromParent()
+        boosterShopPrompt = nil
+    }
+
+    /// Feedback « plus de boosters » : secousse du bouton, puis explication.
     private func denyBooster(_ booster: Booster) {
-        guard let node = boosterButtons.first(where: { $0.booster == booster })?.node else { return }
-        node.run(SKAction.sequence([
-            SKAction.moveBy(x: -6, y: 0, duration: 0.05),
-            SKAction.moveBy(x: 12, y: 0, duration: 0.05),
-            SKAction.moveBy(x: -6, y: 0, duration: 0.05)
-        ]))
+        if let node = boosterButtons.first(where: { $0.booster == booster })?.node {
+            node.run(SKAction.sequence([
+                SKAction.moveBy(x: -6, y: 0, duration: 0.05),
+                SKAction.moveBy(x: 12, y: 0, duration: 0.05),
+                SKAction.moveBy(x: -6, y: 0, duration: 0.05)
+            ]))
+        }
+        presentBoosterShopPrompt()
     }
 
     /// Indice : met en valeur un chemin valide (somme 10) sans rien consommer de la grille.
-    private func showHint() {
-        guard let path = gridModel.showcasePath() else { return }
+    /// Le chemin est calculé par l'appelant AVANT toute consommation — sinon une
+    /// grille sans solution mangeait l'indice sans rien afficher.
+    private func showHint(path: [(row: Int, col: Int)]) {
         isAnimating = true
         let pulse = SKAction.sequence([
             SKAction.scale(to: 1.28, duration: 0.24),
@@ -1034,9 +1640,10 @@ class GameScene: SKScene {
         guard gridModel.cells[coord.row][coord.col] != nil else { return }
         isAnimating = true
         if let bubble = bubbleNodes[coord.row][coord.col] {
-            let burst = PopEffects.makeBurst(color: BubbleNode.color(for: bubble.value), intensity: 1)
+            let burst = PopEffects.makeBurst(color: BubbleNode.color(for: bubble.value),
+                                             tier: .small)
             burst.position = scenePos(row: coord.row, col: coord.col)
-            addChild(burst)
+            fxLayer.addChild(burst)
             bubble.playPopAnimation(completion: {})
         }
         bubbleNodes[coord.row][coord.col] = nil
@@ -1073,20 +1680,31 @@ class GameScene: SKScene {
     }
 
     private func triggerWin() {
+        // La célébration ne doit pas hériter d'un hit-stop encore actif.
+        juice.resetTimeScale()
         SoundManager.shared.playWin()
         InterstitialAdManager.shared.markGameCompleted()
         isWinState = true
         let bonus = 1000
+        // Le bonus de victoire a lui aussi sa bulle : on rattrape d'abord les
+        // gains encore en vol, puis on laisse le +1000 créditer à son arrivée.
+        syncDisplayedScore()
         score += bonus
-        updateScoreLabel()
-        showScorePopup(points: bonus, at: CGPoint(x: 0, y: 50))
+        showScorePopup(points: bonus, at: CGPoint(x: 0, y: 50), tier: .large)
+        // Vider la grille est LE moment fort du jeu, et il n'était jusqu'ici
+        // souligné par rien.
+        juice.onWin(at: CGPoint(x: 0, y: 0),
+                    accent: ThemeManager.shared.active.accent)
         recordScore()
-        run(SKAction.wait(forDuration: 0.5)) { [weak self] in
+        // 1,1 s au lieu de 0,5 : le panel ne doit pas couper la célébration.
+        // C'est le seul allongement de timing du chantier, et il est hors jeu.
+        run(SKAction.wait(forDuration: 1.1)) { [weak self] in
             self?.showGameOverPanel()
         }
         // Une grille vidée est un moment de satisfaction : on sollicite un avis
-        // (iOS plafonne lui-même la fréquence à ~3×/an).
-        run(SKAction.wait(forDuration: 1.8)) { [weak self] in
+        // (iOS plafonne lui-même la fréquence à ~3×/an). Décalé d'autant, pour
+        // rester APRÈS l'apparition du panel.
+        run(SKAction.wait(forDuration: 2.6)) { [weak self] in
             self?.maybeRequestReview()
         }
     }
@@ -1108,14 +1726,25 @@ class GameScene: SKScene {
         SoundManager.shared.playLose()
         InterstitialAdManager.shared.markGameCompleted()
         isWinState = false
-        let shake = SKAction.sequence([
-            SKAction.moveBy(x: 8,  y: 0, duration: 0.05),
-            SKAction.moveBy(x: -16, y: 0, duration: 0.05),
-            SKAction.moveBy(x: 16,  y: 0, duration: 0.05),
-            SKAction.moveBy(x: -8,  y: 0, duration: 0.05)
-        ])
+        juice.resetTimeScale()
+        juice.onLose()
+
+        // Défaite adoucie : les bulles s'affaissent en cascade au lieu de
+        // subir une secousse sèche sur 63 nœuds. Perdre parce qu'aucun coup
+        // n'existe plus n'est pas une faute du joueur — le retour ne doit pas
+        // être punitif.
         for row in 0..<GridModel.rows {
-            for col in 0..<GridModel.cols { bubbleNodes[row][col]?.run(shake) }
+            for col in 0..<GridModel.cols {
+                guard let node = bubbleNodes[row][col] else { continue }
+                node.cancelNudge()
+                guard JuiceSettings.motionEnabled else { continue }
+                let drop = SKAction.moveBy(x: 0, y: -6, duration: 0.22)
+                drop.timingMode = .easeOut
+                node.run(SKAction.sequence([
+                    SKAction.wait(forDuration: TimeInterval(row) * 0.02),
+                    drop
+                ]))
+            }
         }
         run(SKAction.sequence([
             SKAction.wait(forDuration: 0.35),
@@ -1134,7 +1763,11 @@ class GameScene: SKScene {
     }
 
     private func showGameOverPanel() {
+        // Le panneau affiche le total : plus question d'attendre une bulle.
+        syncDisplayedScore()
         // Boosters indisponibles pendant l'écran de fin.
+        boosterCoach?.dismiss()
+        boosterCoach = nil
         hammerArmed = false
         messageLabel.isHidden = true
         boosterBar?.isHidden = true
@@ -1377,10 +2010,14 @@ class GameScene: SKScene {
         messageLabel.isHidden = true
         backgroundColor = ThemeManager.shared.active.background
         score = 0
+        displayedScore = 0
         combosCreated = 0
         longestChain = 0
+        celebratedChain = 0
         isWinState = false
         scoreLabel.text = "0"
+        CameraShake.reset(sceneCamera)
+        juice.resetTimeScale()
 
         // Retirer le panneau game-over et l'overlay
         children.filter { $0.zPosition == 14 }.forEach { $0.removeFromParent() } // overlay
@@ -1559,7 +2196,34 @@ class GameScene: SKScene {
 
     // MARK: - Navigation
 
+    /// Ouvre la boutique depuis la partie, en préservant celle-ci.
+    ///
+    /// Volontairement SANS interstitiel : `goBackToMenu` en déclenche un, mais
+    /// on ne monétise pas le chemin qui mène le joueur à dépenser ses pièces.
+    private func navigateToBoutique(reason: String) {
+        boosterCoach?.dismiss()
+        boosterCoach = nil
+        disarmHammer()
+        cancelPath()
+        dismissBoosterShopPrompt()
+
+        // Snapshot pris à l'ouverture de la modale : la partie ne doit pas être
+        // perdue si une animation était en cours au moment du tap.
+        if let snapshot = pendingShopSnapshot {
+            GameState.save(gridModel: snapshot.grid, score: snapshot.score)
+        }
+        AnalyticsService.shopOpenedFromGame(reason: reason)
+
+        let shop = BoutiqueScene(size: size)
+        shop.returnDestination = pendingShopSnapshot != nil ? .game : .menu
+        shop.scaleMode = .aspectFill
+        pendingShopSnapshot = nil
+        view?.presentScene(shop, transition: SKTransition.fade(withDuration: 0.3))
+    }
+
     private func goBackToMenu() {
+        boosterCoach?.dismiss()
+        boosterCoach = nil
         // Le Défi du jour ne se sauvegarde pas dans le slot « Continuer » du mode normal.
         if mode == .normal && !gridModel.isGridEmpty() && !isAnimating {
             GameState.save(gridModel: gridModel, score: score)

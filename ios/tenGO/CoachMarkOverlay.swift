@@ -11,9 +11,22 @@ import SpriteKit
 
 final class CoachMarkOverlay: SKNode {
 
-    enum TouchResult { case target, dismissed }
+    /// `ignored` : le tap est tombé hors cible alors que l'overlay refuse de se
+    /// fermer (`blocksOutsideTaps`). L'overlay reste affiché et la scène hôte ne
+    /// doit rien faire d'autre de ce tap.
+    enum TouchResult { case target, dismissed, ignored }
+
+    /// Quand `true`, seul un tap sur la cible ferme l'overlay : ailleurs, la
+    /// cible pulse pour réorienter le joueur. Sert au tutoriel d'achat, qui
+    /// insiste sans pour autant enfermer le joueur (une sortie explicite reste
+    /// offerte par la scène hôte).
+    var blocksOutsideTaps = false
+
+    /// Appelé après la fermeture, avec la raison.
+    var onDismiss: ((TouchResult) -> Void)?
 
     private weak var targetNode: SKNode?
+    private weak var haloNode: SKNode?
     private var savedTargetZPosition: CGFloat = 0
     /// Cadre de la cible en coordonnées scène (la cible peut vivre dans un
     /// nœud défilant : son frame parent ne suffit pas).
@@ -36,8 +49,24 @@ final class CoachMarkOverlay: SKNode {
     /// si la cible a été touchée. Le tap hors cible est rendu à la scène.
     func handleTouch(at point: CGPoint) -> TouchResult {
         let hit = targetSceneFrame.contains(point)
+        if !hit && blocksOutsideTaps {
+            pulseTarget()
+            return .ignored
+        }
+        let result: TouchResult = hit ? .target : .dismissed
         dismiss()
-        return hit ? .target : .dismissed
+        onDismiss?(result)
+        return result
+    }
+
+    /// Rappel visuel quand le joueur tape à côté d'un coach-mark insistant.
+    private func pulseTarget() {
+        guard let halo = haloNode else { return }
+        halo.removeAction(forKey: "nudge")
+        halo.run(SKAction.sequence([
+            SKAction.scale(to: 1.18, duration: 0.10),
+            SKAction.scale(to: 1.0, duration: 0.16)
+        ]), withKey: "nudge")
     }
 
     /// Restaure la zPosition de la cible et retire l'overlay.
@@ -82,6 +111,7 @@ final class CoachMarkOverlay: SKNode {
         halo.position = CGPoint(x: frame.midX, y: frame.midY)
         halo.zPosition = 1
         addChild(halo)
+        haloNode = halo
         halo.run(SKAction.repeatForever(SKAction.sequence([
             SKAction.scale(to: 1.06, duration: 0.55),
             SKAction.scale(to: 1.0, duration: 0.55)

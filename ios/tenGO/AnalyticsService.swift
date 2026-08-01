@@ -47,6 +47,55 @@ enum AnalyticsService {
         ])
     }
 
+    // MARK: - Boosters
+    //
+    // Funnel visé :
+    //   shop_guide:shown → opened → spend_virtual_currency
+    //   → booster_coach_shown → booster_used
+    // Les noms d'événements et de paramètres doivent rester IDENTIQUES sur
+    // Android, sinon les rapports Firebase ne sont pas comparables.
+
+    /// Achat d'un booster avec la monnaie du jeu.
+    static func boosterPurchased(_ id: String, quantity: Int, cost: Int, source: String) {
+        Analytics.logEvent(AnalyticsEventSpendVirtualCurrency, parameters: [
+            AnalyticsParameterItemName: id,
+            AnalyticsParameterVirtualCurrencyName: "coins",
+            AnalyticsParameterValue: cost,
+            "quantity": quantity,
+            "source": source,
+        ])
+    }
+
+    /// Remboursement du tutoriel d'achat (le premier indice est offert).
+    static func boosterRefunded(_ id: String, amount: Int) {
+        Analytics.logEvent(AnalyticsEventEarnVirtualCurrency, parameters: [
+            AnalyticsParameterVirtualCurrencyName: "coins",
+            AnalyticsParameterValue: amount,
+            "item_name": id,
+            "reason": "tutorial_refund",
+        ])
+    }
+
+    /// Booster consommé en partie.
+    static func boosterUsed(_ id: String) {
+        Analytics.logEvent("booster_used", parameters: ["item_name": id])
+    }
+
+    /// Coach-mark d'usage affiché à la première possession.
+    static func boosterCoachShown(_ id: String) {
+        Analytics.logEvent("booster_coach_shown", parameters: ["item_name": id])
+    }
+
+    /// Étape du tutoriel d'achat : shown | opened | purchased | refunded | later | gaveup
+    static func shopGuide(step: String) {
+        Analytics.logEvent("shop_guide", parameters: ["step": step])
+    }
+
+    /// Boutique ouverte depuis la partie : empty_bar | game_over
+    static func shopOpenedFromGame(reason: String) {
+        Analytics.logEvent("shop_from_game", parameters: ["reason": reason])
+    }
+
     // MARK: - Monétisation (conversion clé pour Google Ads)
 
     /// Achat d'un pack de pièces validé. Loggue la valeur réelle pour le ROAS.

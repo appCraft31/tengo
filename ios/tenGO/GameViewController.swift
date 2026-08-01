@@ -55,6 +55,11 @@ class GameViewController: UIViewController {
 
         let scene: SKScene
         let env = ProcessInfo.processInfo.environment
+
+        #if DEBUG
+        applyQAOverrides(env)
+        #endif
+
         if env["BRAND_MODE"] == "1" {
             // Capture vidéo marketing : écran de marque animé (transition).
             scene = BrandTransitionScene(size: CGSize(width: 750, height: 1334))
@@ -70,7 +75,12 @@ class GameViewController: UIViewController {
             scene = GameScene(size: CGSize(width: 750, height: 1334), savedState: nil)
         } else if env["SHOP_MODE"] == "1" {
             // Ouvre directement la boutique (capture de review App Store des achats in-app).
-            scene = BoutiqueScene(size: CGSize(width: 750, height: 1334))
+            let shop = BoutiqueScene(size: CGSize(width: 750, height: 1334))
+            #if DEBUG
+            if env["FORCE_SHOP_GUIDE"] == "1" { shop.guidedPurchase = true }
+            if env["SHOP_RETURN"] == "game" { shop.returnDestination = .game }
+            #endif
+            scene = shop
         } else {
             scene = MenuScene(size: CGSize(width: 750, height: 1334))
         }
@@ -87,6 +97,7 @@ class GameViewController: UIViewController {
             name: .tenGOSceneChanged,
             object: nil
         )
+
         NotificationCenter.default.addObserver(
             self,
             selector: #selector(showGameCenter(_:)),
@@ -256,6 +267,50 @@ class GameViewController: UIViewController {
     override var prefersStatusBarHidden: Bool {
         return true
     }
+
+    #if DEBUG
+    /// Raccourcis de QA pilotables par variables d'environnement
+    /// (`SIMCTL_CHILD_*` au lancement). Le simulateur ne pouvant pas être
+    /// cliqué automatiquement, ils permettent d'atteindre directement chaque
+    /// état de l'onboarding des boosters.
+    ///
+    ///   BOOSTER_GRANT=hint:2,hammer:1   inventaire de départ
+    ///   BOOSTER_RESET=1                 vide l'inventaire
+    ///   COINS=30                        solde de pièces
+    ///   RESET_ONBOARDING=1              rejoue guide d'achat + coach-marks
+    ///   FORCE_SHOP_GUIDE=1              force le tutoriel d'achat (avec SHOP_MODE)
+    ///   SHOP_RETURN=game                retour boutique → partie
+    private func applyQAOverrides(_ env: [String: String]) {
+        let defaults = UserDefaults.standard
+
+        if env["BOOSTER_RESET"] == "1" {
+            for booster in Booster.allCases {
+                defaults.set(0, forKey: AppConfig.UserDefaultsKey.boosterInventoryPrefix + booster.rawValue)
+            }
+        }
+        if let grant = env["BOOSTER_GRANT"], !grant.isEmpty {
+            for pair in grant.split(separator: ",") {
+                let parts = pair.split(separator: ":")
+                guard let booster = Booster(rawValue: String(parts[0])) else { continue }
+                let qty = parts.count > 1 ? (Int(parts[1]) ?? 1) : 1
+                defaults.set(qty, forKey: AppConfig.UserDefaultsKey.boosterInventoryPrefix + booster.rawValue)
+            }
+        }
+        if let coins = env["COINS"], let value = Int(coins) {
+            defaults.set(value, forKey: AppConfig.UserDefaultsKey.coinsBalance)
+        }
+        if env["RESET_ONBOARDING"] == "1" {
+            defaults.set(false, forKey: AppConfig.UserDefaultsKey.hasSeenShopPurchaseGuide)
+            defaults.set(0, forKey: AppConfig.UserDefaultsKey.shopGuideSnooze)
+            defaults.set(true, forKey: AppConfig.UserDefaultsKey.hasSeenTutorial)
+            for booster in Booster.allCases {
+                defaults.removeObject(forKey: AppConfig.UserDefaultsKey.boosterCoachSeenPrefix + booster.rawValue)
+            }
+        }
+        print("[BOOSTER] QA — coins=\(CoinManager.shared.balance) "
+              + Booster.allCases.map { "\($0.rawValue)=\(BoosterManager.shared.count($0))" }.joined(separator: " "))
+    }
+    #endif
 }
 
 // MARK: - BannerViewDelegate

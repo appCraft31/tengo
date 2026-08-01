@@ -196,6 +196,136 @@
         }
       }
     },
+    "booster.hammer_coach": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tippe den Hammer an, dann die Blase."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tap the hammer, then the bubble to pop."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toca el martillo y luego la burbuja que quieras reventar."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Touche le marteau, puis la bulle à faire éclater."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tocca il martello, poi la bolla da far scoppiare."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ハンマーを押してから、割りたいバブルを選びます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "망치를 누른 뒤, 터뜨릴 방울을 선택하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tik op de hamer en daarna op de bel."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Toque no martelo e depois na bolha a estourar."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "先点锤子，再点要击破的气泡。"
+          }
+        }
+      }
+    },
+    "booster.hammer_desc": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zerplatzt eine Blase deiner Wahl, der Rest fällt nach."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pops any bubble you pick; the rest fall down."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Revienta la burbuja que elijas; las demás caen."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fait éclater la bulle de ton choix, les autres retombent."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fa scoppiare la bolla che scegli, le altre cadono."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "好きなバブルを割ります。残りは下に落ちます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "원하는 방울을 터뜨립니다. 나머지는 아래로 떨어집니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laat een gekozen bel knappen; de rest valt naar beneden."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Estoura a bolha que você escolher; as outras caem."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "击破任意气泡，其余气泡下落。"
+          }
+        }
+      }
+    },
     "booster.hammer_prompt": {
       "extractionState": "manual",
       "localizations": {
@@ -326,6 +456,201 @@
         }
       }
     },
+    "booster.hint_coach": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Feststeckt? Der Tipp zeigt einen Lösungsweg."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Stuck? The hint flashes a winning path."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¿Atascado? La pista muestra un camino ganador."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloqué ? L'indice fait clignoter un chemin gagnant."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bloccato? L'indizio illumina un percorso vincente."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行き詰まった？ヒントが正解の道筋を光らせます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "막혔나요? 힌트가 정답 경로를 보여줍니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vast? De hint laat een winnend pad zien."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Travou? A dica mostra um caminho vencedor."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卡住了？提示会闪烁一条可行路径。"
+          }
+        }
+      }
+    },
+    "booster.hint_desc": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Zeigt einen Lösungsweg, wenn du feststeckst."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Flashes a winning path when you're stuck."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Muestra un camino ganador cuando te atascas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Fait clignoter un chemin gagnant quand tu es bloqué."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Illumina un percorso vincente quando sei bloccato."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "行き詰まったとき、正解の道筋を光らせます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "막혔을 때 정답 경로를 깜빡여 알려줍니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Laat een winnend pad knipperen als je vastzit."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mostra um caminho vencedor quando você travar."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "卡住时闪烁提示一条可行路径。"
+          }
+        }
+      }
+    },
+    "booster.hint_none": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Kein Weg hier – versuch's mit Mischen"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No path here — try a shuffle"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "No hay camino aquí: prueba a mezclar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Aucun chemin ici — essaie le mélange"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nessun percorso qui — prova a mescolare"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ここには道がありません — シャッフルを試して"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "여기엔 경로가 없어요 — 섞기를 써보세요"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geen pad hier — probeer te schudden"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Nenhum caminho aqui — tente embaralhar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "这里没有可行路径 — 试试洗牌"
+          }
+        }
+      }
+    },
     "booster.shuffle": {
       "extractionState": "manual",
       "localizations": {
@@ -391,6 +716,396 @@
         }
       }
     },
+    "booster.shuffle_coach": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mischen verteilt alle Werte neu. Dein Punktestand bleibt."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shuffle reshuffles every value. Your score is kept."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "El mezclador redistribuye todos los valores. Conservas tu puntuación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Le mélange redistribue toutes les valeurs. Ton score est conservé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mescola ridistribuisce tutti i valori. Il punteggio resta."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "シャッフルは数字を配り直します。スコアはそのままです。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "섞기는 모든 숫자를 다시 배치합니다. 점수는 유지됩니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Schudden verdeelt alle waarden opnieuw. Je score blijft."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Embaralhar redistribui todos os valores. Sua pontuação é mantida."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "洗牌会重新分配所有数字，分数保留。"
+          }
+        }
+      }
+    },
+    "booster.shuffle_desc": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verteilt alle Werte neu. Dein Punktestand bleibt erhalten."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reshuffles every value on the board. Your score is kept."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redistribuye todos los valores del tablero. Conservas tu puntuación."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redistribue toutes les valeurs de la grille. Ton score est conservé."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ridistribuisce tutti i valori della griglia. Il punteggio resta."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "盤面の数字を配り直します。スコアはそのままです。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "판의 모든 숫자를 다시 섞습니다. 점수는 유지됩니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Verdeelt alle waarden opnieuw. Je score blijft behouden."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Redistribui todos os valores da grade. Sua pontuação é mantida."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "重新分配棋盘上的所有数字，分数保留。"
+          }
+        }
+      }
+    },
+    "game.no_boosters_body": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Booster kaufst du im Shop mit Münzen aus deinen Partien."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boosters are bought in the shop with coins earned while playing."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Los potenciadores se compran en la tienda con las monedas ganadas jugando."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Les boosters s'achètent en boutique avec les pièces gagnées en partie."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I booster si comprano nel negozio con le monete guadagnate giocando."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブースターはプレイで貯めたコインでショップから購入できます。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "부스터는 플레이로 모은 코인으로 상점에서 구매할 수 있습니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boosters koop je in de winkel met munten die je al spelend verdient."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boosters são comprados na loja com as moedas ganhas jogando."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "道具可在商店用游戏中赚取的金币购买。"
+          }
+        }
+      }
+    },
+    "game.no_boosters_continue": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Weiter"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continue"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continua"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "つづける"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "계속하기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Doorgaan"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Continuar"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "继续"
+          }
+        }
+      }
+    },
+    "game.no_boosters_shop": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shop"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tienda"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boutique"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Negozio"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ショップ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "상점"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Winkel"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loja"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "商店"
+          }
+        }
+      }
+    },
+    "game.no_boosters_title": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Keine Booster mehr"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Out of boosters"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sin potenciadores"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "À court de boosters"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Booster esauriti"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ブースターがありません"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "부스터가 없습니다"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Geen boosters meer"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sem boosters"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "道具已用完"
+          }
+        }
+      }
+    },
     "game.points_label": {
       "extractionState": "manual",
       "localizations": {
@@ -452,6 +1167,71 @@
           "stringUnit": {
             "state": "translated",
             "value": "分"
+          }
+        }
+      }
+    },
+    "game.shop_button": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shop"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Shop"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tienda"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Boutique"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Negozio"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ショップ"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "상점"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Winkel"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Loja"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "商店"
           }
         }
       }
@@ -1047,61 +1827,126 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tippe auf diese Karte, um mit deinen Münzen ein Hinweis-Paket zu kaufen."
+            "value": "Kauf einen Tipp für 30 Münzen. Er rettet dich aus der Klemme."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tap this card to buy a pack of hints with your coins."
+            "value": "Buy one hint for 30 coins. It'll get you out of a tight spot."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toca esta tarjeta para comprar un lote de pistas con tus monedas."
+            "value": "Compra una pista por 30 monedas. Te sacará de un apuro."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Touche cette carte pour acheter un lot d'indices avec tes pièces."
+            "value": "Achète un indice pour 30 pièces. Il te sortira d'un mauvais pas."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tocca questa carta per acquistare un pacchetto di indizi con le tue monete."
+            "value": "Compra un indizio per 30 monete. Ti toglierà dai guai."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "このカードをタップして、コインでヒントのセットを購入しましょう。"
+            "value": "30コインでヒントを1つ買ってみよう。ピンチを救ってくれます。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "이 카드를 눌러 코인으로 힌트 묶음을 구매하세요."
+            "value": "30코인으로 힌트 하나를 사보세요. 위기에서 구해줍니다."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tik op deze kaart om met je munten een pakket hints te kopen."
+            "value": "Koop één hint voor 30 munten. Die helpt je uit de brand."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Toque neste cartão para comprar um pacote de dicas com suas moedas."
+            "value": "Compre uma dica por 30 moedas. Ela te tira de um aperto."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "点按此卡片，用金币购买一组提示。"
+            "value": "用 30 金币买一个提示吧，关键时刻能救场。"
+          }
+        }
+      }
+    },
+    "guide.shop_later": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Später"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Más tarde"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Plus tard"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Più tardi"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "あとで"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "나중에"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Later"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mais tarde"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "稍后"
           }
         }
       }
@@ -1112,61 +1957,126 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du hast genug Münzen für deinen ersten Kauf gesammelt! Öffne den Shop."
+            "value": "Du hast genug Münzen für deinen ersten Booster! Öffne den Shop."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You've earned enough coins for your first purchase! Open the shop."
+            "value": "You have enough coins for your first booster! Open the shop."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¡Has ganado suficientes monedas para tu primera compra! Abre la tienda."
+            "value": "¡Tienes monedas para tu primer potenciador! Abre la tienda."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu as gagné assez de pièces pour ton premier achat ! Ouvre la boutique."
+            "value": "Tu as assez de pièces pour ton premier booster ! Ouvre la boutique."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Hai guadagnato abbastanza monete per il tuo primo acquisto! Apri il negozio."
+            "value": "Hai abbastanza monete per il primo booster! Apri il negozio."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "初めての購入に十分なコインが貯まりました！ショップを開きましょう。"
+            "value": "最初のブースターを買えるコインが貯まりました！ショップを開こう。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "첫 구매에 충분한 코인을 모았어요! 상점을 열어보세요."
+            "value": "첫 부스터를 살 코인이 모였어요! 상점을 열어보세요."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Je hebt genoeg munten verdiend voor je eerste aankoop! Open de winkel."
+            "value": "Je hebt genoeg munten voor je eerste booster! Open de winkel."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Você ganhou moedas suficientes para sua primeira compra! Abra a loja."
+            "value": "Você tem moedas para seu primeiro booster! Abra a loja."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "你已经赚到足够的金币进行首次购买！打开商店吧。"
+            "value": "你的金币够买第一个道具了！打开商店看看。"
+          }
+        }
+      }
+    },
+    "guide.shop_refund": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Willkommensgeschenk: Deine 30 Münzen sind zurück."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welcome gift: your 30 coins are back."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regalo de bienvenida: recuperas tus 30 monedas."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Cadeau de bienvenue : tes 30 pièces te sont rendues."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Regalo di benvenuto: le tue 30 monete tornano indietro."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ようこそ！30コインをお返しします。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "환영 선물: 30코인을 돌려드립니다."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Welkomstcadeau: je 30 munten zijn terug."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Presente de boas-vindas: suas 30 moedas voltaram."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "欢迎礼物：30 枚金币已退还。"
           }
         }
       }
@@ -1177,61 +2087,61 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Kauf erfolgreich! Nutze deine Hinweise im Spiel."
+            "value": "Gekauft! Dein Tipp wartet im Spiel."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Purchase complete! Use your hints during a game."
+            "value": "Bought! Your hint is waiting in-game."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¡Compra realizada! Usa tus pistas durante la partida."
+            "value": "¡Comprado! Tu pista te espera en la partida."
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Achat réussi ! Retrouve tes indices en partie."
+            "value": "Acheté ! Ton indice t'attend en partie."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Acquisto riuscito! Usa i tuoi indizi durante la partita."
+            "value": "Comprato! Il tuo indizio ti aspetta in partita."
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "購入完了！ゲーム中にヒントを使いましょう。"
+            "value": "購入しました！ヒントはゲーム内で使えます。"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "구매 완료! 게임에서 힌트를 사용해 보세요."
+            "value": "구매 완료! 힌트는 게임에서 사용할 수 있어요."
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Aankoop gelukt! Gebruik je hints tijdens het spel."
+            "value": "Gekocht! Je hint wacht in het spel."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Compra concluída! Use suas dicas durante o jogo."
+            "value": "Comprado! Sua dica espera por você no jogo."
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "购买成功！在游戏中使用你的提示吧。"
+            "value": "已购买！提示已在游戏中待命。"
           }
         }
       }
@@ -2666,6 +3576,71 @@
         }
       }
     },
+    "settings.reduced_effects": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reduzierte Effekte"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reduced effects"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Efectos reducidos"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effets réduits"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Effetti ridotti"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "エフェクトを軽減"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "효과 줄이기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beperkte effecten"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Efeitos reduzidos"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "减弱效果"
+          }
+        }
+      }
+    },
     "settings.replay_tutorial": {
       "extractionState": "manual",
       "localizations": {
@@ -3117,6 +4092,71 @@
           "stringUnit": {
             "state": "translated",
             "value": "tenGO 支持"
+          }
+        }
+      }
+    },
+    "settings.system_managed": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systemeinstellung"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "System setting"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajuste del sistema"
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réglage système"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Impostazione di sistema"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "システム設定"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "시스템 설정"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Systeeminstelling"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ajuste do sistema"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "系统设置"
           }
         }
       }
