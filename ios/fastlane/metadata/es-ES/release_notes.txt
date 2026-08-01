@@ -1,1 +1,7 @@
-Mejoras técnicas y optimizaciones para una experiencia aún más fluida. ¡Gracias por jugar a tenGO!
+El tablero cobra vida. Las cadenas reaccionan con más carácter y la intensidad sube con la longitud de tu cadena.
+
+Los potenciadores se vuelven claros: solo aparecen cuando ya los has conseguido, cada uno se explica la primera vez que tienes uno y tu primera pista es gratuita.
+
+Nuevo ajuste «Efectos reducidos» para recuperar un aspecto tranquilo en cualquier momento.
+
+Corrección: los recordatorios diarios vuelven a llegar a la hora prevista.

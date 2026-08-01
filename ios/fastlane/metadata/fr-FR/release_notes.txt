@@ -1,1 +1,7 @@
-Améliorations techniques et optimisations pour un jeu toujours plus fluide. Merci de jouer à tenGO !
+Le plateau prend vie. Les enchaînements réagissent plus franchement, et l'intensité monte avec la longueur de votre chaîne.
+
+Les boosters deviennent clairs : ils n'apparaissent qu'une fois obtenus, chacun s'explique la première fois que vous en possédez un, et votre premier indice est offert.
+
+Nouveau réglage « Effets réduits » pour retrouver un rendu calme à tout moment.
+
+Correctif : les rappels quotidiens arrivent de nouveau à l'heure prévue.

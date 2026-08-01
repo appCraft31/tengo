@@ -1,1 +1,7 @@
-Miglioramenti tecnici e ottimizzazioni per un'esperienza ancora più fluida. Grazie per giocare a tenGO!
+La griglia prende vita. Le catene reagiscono in modo più deciso e l'intensità cresce con la lunghezza della tua catena.
+
+I potenziamenti diventano chiari: compaiono solo dopo che li hai ottenuti, ognuno si spiega la prima volta che ne possiedi uno e il tuo primo indizio è in regalo.
+
+Nuova impostazione «Effetti ridotti» per ritrovare una resa tranquilla in qualsiasi momento.
+
+Correzione: i promemoria quotidiani arrivano di nuovo all'ora prevista.

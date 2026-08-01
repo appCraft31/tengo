@@ -1,1 +1,7 @@
-Technische Verbesserungen und Optimierungen für ein noch flüssigeres Spielerlebnis. Danke, dass du tenGO spielst!
+Das Raster erwacht zum Leben. Die Ketten reagieren deutlicher, und die Intensität steigt mit der Länge deiner Kette.
+
+Die Booster werden klar: Sie erscheinen erst, wenn du sie erhalten hast, jeder erklärt sich beim ersten Mal von selbst, und dein erster Tipp ist geschenkt.
+
+Neue Einstellung „Reduzierte Effekte“, um jederzeit zu einer ruhigen Darstellung zurückzukehren.
+
+Behoben: Die täglichen Erinnerungen kommen wieder zur vorgesehenen Zeit.

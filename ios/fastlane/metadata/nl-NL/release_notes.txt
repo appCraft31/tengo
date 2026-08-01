@@ -1,1 +1,7 @@
-Technische verbeteringen en optimalisaties voor een nog soepelere spelervaring. Bedankt dat je tenGO speelt!
+Het raster komt tot leven. De ketens reageren duidelijker en de intensiteit neemt toe naarmate je keten langer wordt.
+
+De boosters worden helder: ze verschijnen pas zodra je ze hebt verkregen, elke booster legt zichzelf uit de eerste keer dat je er een hebt, en je eerste hint krijg je cadeau.
+
+Nieuwe instelling 'Beperkte effecten' om op elk moment terug te keren naar een rustig beeld.
+
+Opgelost: de dagelijkse herinneringen komen weer op de verwachte tijd binnen.

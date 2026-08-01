@@ -1,1 +1,7 @@
-Melhorias técnicas e otimizações para uma experiência ainda mais fluida. Obrigado por jogares tenGO!
+O tabuleiro ganha vida. As cadeias reagem de forma mais vincada e a intensidade aumenta com o comprimento da sua cadeia.
+
+Os boosters tornam-se claros: só aparecem depois de conquistados, cada um explica-se na primeira vez que tem um, e a sua primeira dica é oferecida.
+
+Nova definição «Efeitos reduzidos» para voltar a um aspeto calmo em qualquer momento.
+
+Correção: os lembretes diários voltam a chegar à hora prevista.
