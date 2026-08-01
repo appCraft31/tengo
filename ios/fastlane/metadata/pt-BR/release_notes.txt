@@ -3,5 +3,3 @@ O tabuleiro ganha vida. As correntes reagem de forma mais marcante, e a intensid
 Os boosters ficam claros: só aparecem depois de conquistados, cada um se explica na primeira vez que você tem um, e a sua primeira dica é por nossa conta.
 
 Nova opção “Efeitos reduzidos” para voltar a um visual calmo a qualquer momento.
-
-Correção: os lembretes diários voltam a chegar no horário previsto.

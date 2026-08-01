@@ -3,5 +3,3 @@ El tablero cobra vida. Las cadenas reaccionan con más carácter y la intensidad
 Los potenciadores se vuelven claros: solo aparecen cuando ya los conseguiste, cada uno se explica la primera vez que tienes uno y tu primera pista es gratuita.
 
 Nuevo ajuste “Efectos reducidos” para recuperar un aspecto tranquilo en cualquier momento.
-
-Corrección: los recordatorios diarios vuelven a llegar a la hora prevista.

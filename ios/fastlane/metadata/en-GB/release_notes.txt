@@ -3,5 +3,3 @@ The grid comes alive. Chains react more distinctly, and the intensity builds as 
 Boosters are now clear: they only appear once you've earned them, each one explains itself the first time you own it, and your first hint is on us.
 
 New "Reduced effects" setting to bring back a calm look at any time.
-
-Fix: daily reminders arrive at the expected time again.
