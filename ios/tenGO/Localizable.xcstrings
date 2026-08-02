@@ -2406,6 +2406,71 @@
         }
       }
     },
+    "leaderboard.unavailable": {
+      "extractionState": "manual",
+      "localizations": {
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestenliste nicht verfügbar – melde dich bei Google Play Spiele an."
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Leaderboard unavailable — sign in to Google Play Games."
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clasificación no disponible: inicia sesión en Google Play Juegos."
+          }
+        },
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classement indisponible — connecte-toi à Google Play Jeux."
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Classifica non disponibile: accedi a Google Play Giochi."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ランキングを利用できません。Google Play ゲームにログインしてください。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "리더보드를 사용할 수 없습니다. Google Play 게임즈에 로그인하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Klassement niet beschikbaar — meld je aan bij Google Play Games."
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Placar indisponível — entre no Google Play Games."
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "排行榜不可用 — 请登录 Google Play 游戏。"
+          }
+        }
+      }
+    },
     "leaderboard.world_button": {
       "extractionState": "manual",
       "localizations": {
