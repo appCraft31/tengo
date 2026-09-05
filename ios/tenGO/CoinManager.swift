@@ -18,10 +18,6 @@ final class CoinManager {
 
     /// Pièces offertes pour avoir terminé le Défi du jour.
     static let dailyChallengeReward = 30
-    /// Paliers de série → pièces (récompensés une seule fois chacun, anti-farm).
-    static let streakMilestones: [(day: Int, coins: Int)] = [
-        (3, 20), (7, 50), (14, 100), (30, 200)
-    ]
 
     // MARK: - Solde
 
@@ -64,23 +60,5 @@ final class CoinManager {
     /// Récompense de complétion du Défi du jour (à n'appeler qu'une fois par défi).
     func awardDailyChallenge() {
         add(CoinManager.dailyChallengeReward)
-    }
-
-    /// Récompense les paliers de série nouvellement franchis (idempotent : chaque
-    /// palier n'est payé qu'une fois dans la vie du joueur). Retourne les pièces gagnées.
-    @discardableResult
-    func awardStreakMilestones(currentStreak: Int) -> Int {
-        let alreadyRewarded = defaults.integer(forKey: AppConfig.UserDefaultsKey.streakRewardedMilestone)
-        var gained = 0
-        var highest = alreadyRewarded
-        for milestone in CoinManager.streakMilestones where milestone.day > alreadyRewarded && currentStreak >= milestone.day {
-            gained += milestone.coins
-            highest = max(highest, milestone.day)
-        }
-        if gained > 0 {
-            add(gained)
-            defaults.set(highest, forKey: AppConfig.UserDefaultsKey.streakRewardedMilestone)
-        }
-        return gained
     }
 }

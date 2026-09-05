@@ -212,8 +212,11 @@ class GameScene: SKScene {
         // notifications. Sans ce garde, faire deux allers-retours suffirait à
         // provoquer la popup système prématurément.
         if !resuming {
-            StreakManager.shared.registerPlay()
-            CoinManager.shared.awardStreakMilestones(currentStreak: StreakManager.shared.current)
+            let streakProtected = StreakManager.shared.registerPlay()
+            StreakManager.shared.awardMilestones(currentStreak: StreakManager.shared.current)
+            if streakProtected {
+                flashMessage(String(localized: "streak.protected"), duration: 2.4)
+            }
             NotificationManager.shared.registerGameAndMaybeRequest()
         }
         setupBoosters()

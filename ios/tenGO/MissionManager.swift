@@ -121,6 +121,11 @@ final class MissionManager {
         saveEntries(entries)
         CoinManager.shared.add(def.coinReward)
         LevelManager.shared.awardForMission(isSuper: def.isSuper)
+        // Le Streak Shield doit rester rare : seule la super mission peut en
+        // offrir un, et seulement 1 fois sur 4.
+        if def.isSuper && Int.random(in: 0..<4) == 0 {
+            StreakManager.shared.addShield(1)
+        }
         return def.coinReward
     }
 
