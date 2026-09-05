@@ -34,10 +34,10 @@ class ProfileScene: SKScene {
         title.fontSize = 36
         title.fontColor = UIColor(white: 0.28, alpha: 1)
         title.verticalAlignmentMode = .center
-        title.position = CGPoint(x: 0, y: topY - 80)
+        title.position = CGPoint(x: 0, y: topY - 110)
         addChild(title)
 
-        var cursorY = topY - 150
+        var cursorY = topY - 190
         cursorY = addHeaderCard(atY: cursorY)
         cursorY -= 26
 
