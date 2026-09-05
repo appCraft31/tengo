@@ -21,13 +21,19 @@ class ProfileScene: SKScene {
 
     // MARK: - UI
 
+    /// Largeur réellement visible en coordonnées scène (scène 750×1334 en
+    /// aspectFill : les bords latéraux sont rognés).
+    private var cardWidth: CGFloat = 340
+
     private func setupUI() {
         guard let view = view else { return }
         let topY = size.height / 2
         let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
+        let usableWidth = view.bounds.width / scale
         let visibleHalfH = view.bounds.height / scale / 2
         let safeBottomInset = view.safeAreaInsets.bottom / scale
         let bottomY = -visibleHalfH + safeBottomInset
+        cardWidth = min(usableWidth - 48, 600)
 
         let title = SKLabelNode(text: String(localized: "profile.title"))
         title.fontName = "AvenirNext-Heavy"
@@ -51,7 +57,7 @@ class ProfileScene: SKScene {
         ]
         for (label, value) in stats {
             addStatRow(label: label, value: value, atY: cursorY)
-            cursorY -= 54
+            cursorY -= 64
         }
 
         cursorY -= 18
@@ -63,7 +69,7 @@ class ProfileScene: SKScene {
         ]
         for (label, value) in progress {
             addStatRow(label: label, value: value, atY: cursorY)
-            cursorY -= 54
+            cursorY -= 64
         }
 
         cursorY -= 18
@@ -77,7 +83,7 @@ class ProfileScene: SKScene {
     /// Niveau + titre + barre de progression XP. Retourne le y sous la carte.
     private func addHeaderCard(atY y: CGFloat) -> CGFloat {
         let level = LevelManager.shared.level
-        let cardW: CGFloat = 340
+        let cardW = cardWidth
 
         let levelLabel = SKLabelNode(text: String(format: String(localized: "level.chip.label"), level))
         levelLabel.fontName = "AvenirNext-Heavy"
@@ -131,18 +137,18 @@ class ProfileScene: SKScene {
     private func addSectionLabel(_ text: String, atY y: CGFloat) -> CGFloat {
         let label = SKLabelNode(text: text)
         label.fontName = "AvenirNext-DemiBold"
-        label.fontSize = 15
+        label.fontSize = 17
         label.fontColor = UIColor(white: 0.40, alpha: 0.9)
         label.horizontalAlignmentMode = .left
         label.verticalAlignmentMode = .center
-        label.position = CGPoint(x: -170, y: y)
+        label.position = CGPoint(x: -cardWidth / 2, y: y)
         addChild(label)
         return y - 34
     }
 
     private func addStatRow(label: String, value: String, atY y: CGFloat) {
-        let width: CGFloat = 340
-        let height: CGFloat = 44
+        let width = cardWidth
+        let height: CGFloat = 54
 
         let row = SKNode()
         row.position = CGPoint(x: 0, y: y)
@@ -156,20 +162,20 @@ class ProfileScene: SKScene {
 
         let labelNode = SKLabelNode(text: label)
         labelNode.fontName = "AvenirNext-Medium"
-        labelNode.fontSize = 15
+        labelNode.fontSize = 17
         labelNode.fontColor = UIColor(white: 0.36, alpha: 1)
         labelNode.horizontalAlignmentMode = .left
         labelNode.verticalAlignmentMode = .center
-        labelNode.position = CGPoint(x: -width / 2 + 18, y: 0)
+        labelNode.position = CGPoint(x: -width / 2 + 22, y: 0)
         row.addChild(labelNode)
 
         let valueNode = SKLabelNode(text: value)
         valueNode.fontName = "AvenirNext-Bold"
-        valueNode.fontSize = 16
+        valueNode.fontSize = 18
         valueNode.fontColor = UIColor(white: 0.22, alpha: 1)
         valueNode.horizontalAlignmentMode = .right
         valueNode.verticalAlignmentMode = .center
-        valueNode.position = CGPoint(x: width / 2 - 18, y: 0)
+        valueNode.position = CGPoint(x: width / 2 - 22, y: 0)
         row.addChild(valueNode)
     }
 

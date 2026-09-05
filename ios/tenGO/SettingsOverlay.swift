@@ -96,9 +96,9 @@ final class SettingsOverlay: SKNode {
                 }
                 return true
             case "row_privacy":
-                animateRow(named: "row_privacy"); presentPrivacyOptions(); return true
+                animateRow(named: "row_privacy"); openAppSettings(); return true
             case "row_notifications":
-                animateRow(named: "row_notifications"); presentPrivacyOptions(); return true
+                animateRow(named: "row_notifications"); openAppSettings(); return true
             case "row_restore":
                 animateRow(named: "row_restore"); restorePurchases(); return true
             case "row_rate":
@@ -487,9 +487,9 @@ final class SettingsOverlay: SKNode {
         }
     }
 
-    private func presentPrivacyOptions() {
-        // Réglages système de l'app, où vit le toggle « Autoriser le suivi »
-        // (plus de formulaire UMP : le consentement se résume à l'ATT).
+    /// Ouvre la page de l'app dans les Réglages iOS — c'est là que vivent à
+    /// la fois le toggle « Autoriser le suivi » (ATT) et celui des notifications.
+    private func openAppSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url, options: [:], completionHandler: nil)
     }
