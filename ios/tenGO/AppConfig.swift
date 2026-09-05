@@ -92,5 +92,7 @@ enum AppConfig {
         /// pubs dès le lancement, avant la réponse de StoreKit ; la source de
         /// vérité reste Transaction.currentEntitlements (voir AdFreeManager).
         static let noAdsPurchased = "tenGO_noAdsPurchased"
+        /// XP total cumulé (système de niveaux, cf. LevelManager).
+        static let totalXP = "tenGO_totalXP"
     }
 }
