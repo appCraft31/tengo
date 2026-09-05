@@ -113,5 +113,7 @@ enum AppConfig {
         static let statsTotalDaily = "tenGO_statsTotalDaily"
         /// Identifiants des succès déjà débloqués (crédités), cf. AchievementManager.
         static let achievementsUnlocked = "tenGO_achievementsUnlocked"
+        /// Étoiles par niveau de puzzle : préfixe + monde + index (cf. PuzzleProgress).
+        static let puzzleStarsPrefix = "tenGO_puzzleStars_"
     }
 }
