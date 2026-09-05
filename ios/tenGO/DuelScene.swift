@@ -80,7 +80,10 @@ class DuelScene: SKScene {
         addChild(status)
         statusLabel = status
 
-        addBackButton(atY: bottomY + 80)
+        // Cet écran EST l'onglet Social : pas de retour, des onglets.
+        let tabBar = TabBar.make(width: usableWidth, selected: .social)
+        tabBar.position = CGPoint(x: 0, y: bottomY + TabBar.height / 2)
+        addChild(tabBar)
     }
 
     private func addButton(text: String, name: String, color: UIColor, atY y: CGFloat) {
@@ -180,26 +183,6 @@ class DuelScene: SKScene {
         row.addChild(right)
     }
 
-    private func addBackButton(atY y: CGFloat) {
-        let back = SKNode()
-        back.name = "back"
-        back.position = CGPoint(x: 0, y: y)
-        addChild(back)
-
-        let circle = SKShapeNode(circleOfRadius: 36)
-        circle.fillColor = UIColor(red: 0.94, green: 0.91, blue: 0.88, alpha: 1)
-        circle.strokeColor = UIColor(white: 0.68, alpha: 0.45)
-        circle.lineWidth = 1.5
-        back.addChild(circle)
-
-        let icon = SKLabelNode(text: "‹")
-        icon.fontName = "AvenirNext-Medium"
-        icon.fontSize = 32
-        icon.fontColor = UIColor(white: 0.45, alpha: 1)
-        icon.verticalAlignmentMode = .center
-        back.addChild(icon)
-    }
-
     // MARK: - Actions
 
     /// Le challenger joue d'abord : le duel n'est créé qu'avec un vrai score,
@@ -260,11 +243,6 @@ class DuelScene: SKScene {
         for node in nodes(at: point) {
             guard let name = node.parent?.name ?? node.name else { continue }
             switch name {
-            case "back":
-                let menu = MenuScene(size: size)
-                menu.scaleMode = .aspectFill
-                view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.28))
-                return
             case "startDuel":
                 startDuel()
                 return
@@ -273,6 +251,10 @@ class DuelScene: SKScene {
                 return
             default: break
             }
+        }
+
+        if let tab = TabBar.tab(at: point, in: self), tab != .social {
+            TabBar.present(tab, from: self)
         }
     }
 }

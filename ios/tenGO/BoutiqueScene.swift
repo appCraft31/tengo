@@ -32,6 +32,8 @@ class BoutiqueScene: SKScene {
     private var cardW: CGFloat = 280
     /// Marge haute réellement sûre (encoche / Dynamic Island), en points scène.
     private var safeTop: CGFloat = 47
+    /// Marge basse réellement sûre (indicateur d'accueil), en points scène.
+    private var safeBottom: CGFloat = 20
 
     // MARK: - Défilement (page unique)
 
@@ -61,6 +63,7 @@ class BoutiqueScene: SKScene {
         cardW = usableWidth / 2 - 16
         // safeAreaInsets peut être nul au lancement : plancher à ~47 pt (encoche).
         safeTop = max(view.safeAreaInsets.top, 47) / scale
+        safeBottom = max(view.safeAreaInsets.bottom, 20) / scale
         rebuild()
         // Capture de review App Store des achats in-app : « Sans pub » est déjà
         // en haut de page ; SHOP_COINS=1 défile en plus jusqu'aux packs.
@@ -97,11 +100,26 @@ class BoutiqueScene: SKScene {
         addChild(title)
 
         addBalanceChip(atY: topY - 56, theme: theme)
-        addBackButton(atY: bottomY + 64, theme: theme)
 
-        // Zone défilante entre le solde et le bouton retour (masquée au viewport).
+        // Ouverte depuis l'accueil, la boutique EST l'onglet Boutique. Ouverte
+        // depuis une partie, elle garde son bouton de retour : les onglets
+        // ramèneraient au menu et abandonneraient la partie en cours.
+        let bottomChromeH: CGFloat
+        switch returnDestination {
+        case .menu:
+            let tabBar = TabBar.make(width: usableWidth, selected: .shop)
+            tabBar.position = CGPoint(x: 0, y: bottomY + safeBottom + TabBar.height / 2)
+            tabBar.zPosition = 10
+            addChild(tabBar)
+            bottomChromeH = safeBottom + TabBar.height
+        case .game:
+            addBackButton(atY: bottomY + 64, theme: theme)
+            bottomChromeH = 88   // conserve exactement l'ancien viewport
+        }
+
+        // Zone défilante entre le solde et le pied d'écran (masquée au viewport).
         viewportTop = topY - 100
-        viewportBottom = bottomY + 104
+        viewportBottom = bottomY + bottomChromeH + 16
         let crop = SKCropNode()
         let mask = SKSpriteNode(color: .white,
                                 size: CGSize(width: usableWidth, height: viewportTop - viewportBottom))
@@ -794,6 +812,7 @@ class BoutiqueScene: SKScene {
         let node = SKNode()
         node.name = "shopBack"
         node.position = CGPoint(x: 0, y: y)
+        node.zPosition = 10
         let bg = SKShapeNode(rectOf: CGSize(width: 210, height: 56), cornerRadius: 28)
         bg.fillColor = UIColor(white: 0.96, alpha: 0.95)
         bg.strokeColor = UIColor(white: 0.68, alpha: 0.35)
@@ -928,6 +947,7 @@ class BoutiqueScene: SKScene {
 
         for node in nodes(at: point) {
             guard let name = node.name ?? node.parent?.name ?? node.parent?.parent?.name else { continue }
+
             if name == "shopBack" { goBackToMenu(); return }
             if name == "noAds" { handleNoAds(); return }
             if name.hasPrefix("item:theme:") {
@@ -952,6 +972,10 @@ class BoutiqueScene: SKScene {
                                       card: contentNode.childNode(withName: "booster:\(raw)"))
                 return
             }
+        }
+
+        if returnDestination == .menu, let tab = TabBar.tab(at: point, in: self), tab != .shop {
+            TabBar.present(tab, from: self)
         }
     }
 
