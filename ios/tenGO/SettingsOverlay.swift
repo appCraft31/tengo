@@ -97,6 +97,8 @@ final class SettingsOverlay: SKNode {
                 return true
             case "row_privacy":
                 animateRow(named: "row_privacy"); presentPrivacyOptions(); return true
+            case "row_notifications":
+                animateRow(named: "row_notifications"); presentPrivacyOptions(); return true
             case "row_restore":
                 animateRow(named: "row_restore"); restorePurchases(); return true
             case "row_rate":
@@ -205,6 +207,7 @@ final class SettingsOverlay: SKNode {
         y -= 10
 
         addActionRow(name: "row_tutorial", title: String(localized: "settings.replay_tutorial"), y: y); y -= rowStep
+        addActionRow(name: "row_notifications", title: String(localized: "settings.notifications"), y: y); y -= rowStep
         addActionRow(name: "row_privacy", title: String(localized: "settings.privacy_options"), y: y); y -= rowStep
         // Restauration des achats : exigée par Apple pour le mod « sans pub »
         // (non-consommable), guideline 3.1.1.
