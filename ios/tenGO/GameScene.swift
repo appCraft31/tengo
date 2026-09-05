@@ -15,7 +15,7 @@ class GameScene: SKScene {
 
     // MARK: - Init
 
-    enum Mode { case normal, daily, demo }
+    enum Mode { case normal, daily, demo, rush }
 
     private let mode: Mode
     private var dailyToday: DailyChallenge.Today?
@@ -58,6 +58,16 @@ class GameScene: SKScene {
         self.mode = .demo
         self.demoSeed = demoSeed
         self.demoSpeed = max(0.25, demoSpeed)
+        self.resuming = false
+        super.init(size: size)
+    }
+
+    /// Mode Rush : 60 secondes chrono, meilleur score possible. Grille non
+    /// déterministe (pas de partage entre joueurs, contrairement au Défi du
+    /// jour) et régénérée automatiquement si elle se bloque — le chrono seul
+    /// doit décider de la fin de partie.
+    init(size: CGSize, startRush: Bool) {
+        self.mode = .rush
         self.resuming = false
         super.init(size: size)
     }
@@ -124,6 +134,15 @@ class GameScene: SKScene {
     /// XP créditée à la fin de cette partie (affiché dans le panel game-over).
     private var lastXPResult: LevelManager.GainResult?
 
+    // MARK: - Rush
+    static let rushDuration: TimeInterval = 60
+    /// Longueur de chaîne à partir de laquelle une chaîne accorde du temps bonus.
+    static let rushBonusChainLength = 7
+    static let rushBonusSeconds: TimeInterval = 2
+    private var rushTimeRemaining: TimeInterval = GameScene.rushDuration
+    private var rushTimerLabel: SKLabelNode?
+    private var rushEnded = false
+
     // MARK: - Boosters
     private var boosterBar: SKNode?
     private var boosterButtons: [(booster: Booster, node: SKNode)] = []
@@ -188,6 +207,9 @@ class GameScene: SKScene {
         } else if mode == .demo {
             var generator = SeededGenerator(seed: demoSeed)
             gridModel = GridModel(using: &generator)
+        } else if mode == .rush {
+            var generator = SystemRandomNumberGenerator()
+            gridModel = GridModel(using: &generator)
         } else if let state = savedState {
             gridModel = GridModel(from: state)
             score = state.score
@@ -220,6 +242,10 @@ class GameScene: SKScene {
             NotificationManager.shared.registerGameAndMaybeRequest()
         }
         setupBoosters()
+
+        if mode == .rush {
+            startRushCountdown()
+        }
     }
 
     /// Couche d'effets + caméra de secousse. Créée avant tout le reste et
@@ -399,34 +425,48 @@ class GameScene: SKScene {
     private func setupUI() {
         let logoY = gridTop + 95
 
-        let ten = SKLabelNode(text: "TEN")
-        ten.fontName = "AvenirNext-Heavy"
-        ten.fontSize = 48
-        ten.fontColor = ThemeManager.shared.active.logo
-        ten.verticalAlignmentMode = .center
-        ten.horizontalAlignmentMode = .right
-        ten.position = CGPoint(x: -14, y: logoY)
-        addChild(ten)
+        if mode == .rush {
+            // Le chrono remplace le logo décoratif : c'est l'information la
+            // plus importante à l'écran en Rush.
+            let timer = SKLabelNode(text: "60")
+            timer.fontName = "AvenirNext-Heavy"
+            timer.fontSize = 48
+            timer.fontColor = ThemeManager.shared.active.logo
+            timer.verticalAlignmentMode = .center
+            timer.horizontalAlignmentMode = .center
+            timer.position = CGPoint(x: 0, y: logoY)
+            addChild(timer)
+            rushTimerLabel = timer
+        } else {
+            let ten = SKLabelNode(text: "TEN")
+            ten.fontName = "AvenirNext-Heavy"
+            ten.fontSize = 48
+            ten.fontColor = ThemeManager.shared.active.logo
+            ten.verticalAlignmentMode = .center
+            ten.horizontalAlignmentMode = .right
+            ten.position = CGPoint(x: -14, y: logoY)
+            addChild(ten)
 
-        let dot = SKShapeNode(circleOfRadius: 11)
-        dot.fillColor = bubbleColors[Int.random(in: 0..<bubbleColors.count)]
-        dot.strokeColor = .clear
-        dot.position = CGPoint(x: 0, y: logoY + 3)
-        dot.zPosition = 1
-        addChild(dot)
-        dot.run(SKAction.repeatForever(SKAction.sequence([
-            SKAction.scale(to: 1.15, duration: 1.4),
-            SKAction.scale(to: 0.90, duration: 1.4)
-        ])))
+            let dot = SKShapeNode(circleOfRadius: 11)
+            dot.fillColor = bubbleColors[Int.random(in: 0..<bubbleColors.count)]
+            dot.strokeColor = .clear
+            dot.position = CGPoint(x: 0, y: logoY + 3)
+            dot.zPosition = 1
+            addChild(dot)
+            dot.run(SKAction.repeatForever(SKAction.sequence([
+                SKAction.scale(to: 1.15, duration: 1.4),
+                SKAction.scale(to: 0.90, duration: 1.4)
+            ])))
 
-        let go = SKLabelNode(text: "GO")
-        go.fontName = "AvenirNext-Heavy"
-        go.fontSize = 48
-        go.fontColor = ThemeManager.shared.active.logo
-        go.verticalAlignmentMode = .center
-        go.horizontalAlignmentMode = .left
-        go.position = CGPoint(x: 14, y: logoY)
-        addChild(go)
+            let go = SKLabelNode(text: "GO")
+            go.fontName = "AvenirNext-Heavy"
+            go.fontSize = 48
+            go.fontColor = ThemeManager.shared.active.logo
+            go.verticalAlignmentMode = .center
+            go.horizontalAlignmentMode = .left
+            go.position = CGPoint(x: 14, y: logoY)
+            addChild(go)
+        }
 
         messageLabel = SKLabelNode(text: "")
         messageLabel.fontName = "AvenirNext-Heavy"
@@ -1058,6 +1098,9 @@ class GameScene: SKScene {
             MissionManager.shared.reportMove()
             MissionManager.shared.reportChain(length: length)
         }
+        if mode == .rush && length >= GameScene.rushBonusChainLength {
+            awardRushTimeBonus()
+        }
 
         // Palier d'intensité. Battre son record de chaîne dans la partie fait
         // monter le ressenti d'un cran — le score, lui, ne bouge pas d'un point.
@@ -1177,7 +1220,15 @@ class GameScene: SKScene {
 
     private func afterGravity() {
         if !gridModel.hasValidMove() {
-            if mode == .demo { demoReseed() } else { triggerLose() }
+            if mode == .demo {
+                demoReseed()
+            } else if mode == .rush {
+                // Le chrono seul décide de la fin : une grille bloquée se
+                // régénère au lieu de mettre fin à la partie.
+                performShuffle()
+            } else {
+                triggerLose()
+            }
         } else {
             isAnimating = false
             // Filet de sécurité : un coach-mark reporté parce que la scène était
@@ -1691,6 +1742,12 @@ class GameScene: SKScene {
             GameCenterManager.shared.submitDailyScore(score)
             AnalyticsService.levelEnd(mode: "daily", score: score, won: isWinState)
             AnalyticsService.dailyChallengePlayed(score: score)
+        case .rush:
+            GameState.addRushScore(score)
+            GameCenterManager.shared.submitRushScore(score)
+            lastXPResult = LevelManager.shared.awardForRush()
+            MissionManager.shared.reportGameEnded(isPerfect: false)
+            AnalyticsService.levelEnd(mode: "rush", score: score, won: false)
         case .demo:
             break   // démo : aucun score enregistré ni soumis
         }
@@ -1780,6 +1837,102 @@ class GameScene: SKScene {
         ]))
     }
 
+    // MARK: - Rush
+
+    /// Décompte de lancement (« READY… 3, 2, 1, GO! »), entrée bloquée le
+    /// temps de la séquence.
+    private func startRushCountdown() {
+        isAnimating = true
+        let label = SKLabelNode(text: "")
+        label.fontName = "AvenirNext-Heavy"
+        label.fontSize = 64
+        label.fontColor = ThemeManager.shared.active.logo
+        label.verticalAlignmentMode = .center
+        label.position = .zero
+        label.zPosition = 20
+        addChild(label)
+
+        let steps = [
+            String(localized: "rush.ready"), "3", "2", "1", String(localized: "rush.go")
+        ]
+        var actions: [SKAction] = []
+        for step in steps {
+            actions.append(SKAction.run {
+                label.text = step
+                label.setScale(0.7)
+                label.run(SKAction.scale(to: 1.0, duration: 0.18))
+            })
+            actions.append(SKAction.wait(forDuration: 0.6))
+        }
+        actions.append(SKAction.run { [weak self] in
+            label.removeFromParent()
+            self?.startRushTimer()
+        })
+        run(SKAction.sequence(actions))
+    }
+
+    private func startRushTimer() {
+        isAnimating = false
+        rushTimeRemaining = GameScene.rushDuration
+        updateRushTimerLabel()
+        run(SKAction.repeatForever(SKAction.sequence([
+            SKAction.wait(forDuration: 1.0),
+            SKAction.run { [weak self] in self?.tickRushTimer() }
+        ])), withKey: "rushTimer")
+    }
+
+    private func tickRushTimer() {
+        guard !rushEnded else { return }
+        rushTimeRemaining -= 1
+        updateRushTimerLabel()
+        if rushTimeRemaining <= 0 {
+            triggerRushTimeUp()
+        }
+    }
+
+    private func updateRushTimerLabel() {
+        rushTimerLabel?.text = "\(max(0, Int(rushTimeRemaining.rounded())))"
+    }
+
+    /// Chaîne particulièrement longue en Rush → bonus de temps, avec un
+    /// retour visuel discret près du chrono (le rythme doit rester rapide).
+    private func awardRushTimeBonus() {
+        rushTimeRemaining += GameScene.rushBonusSeconds
+        updateRushTimerLabel()
+        guard let timerLabel = rushTimerLabel else { return }
+        let bonus = SKLabelNode(text: "+\(Int(GameScene.rushBonusSeconds))s")
+        bonus.fontName = "AvenirNext-Bold"
+        bonus.fontSize = 20
+        bonus.fontColor = UIColor(red: 0.35, green: 0.70, blue: 0.45, alpha: 1)
+        bonus.verticalAlignmentMode = .center
+        bonus.position = CGPoint(x: timerLabel.position.x + 46, y: timerLabel.position.y)
+        bonus.zPosition = 20
+        addChild(bonus)
+        bonus.run(SKAction.sequence([
+            SKAction.group([
+                SKAction.moveBy(x: 0, y: 24, duration: 0.6),
+                SKAction.fadeOut(withDuration: 0.6)
+            ]),
+            SKAction.removeFromParent()
+        ]))
+    }
+
+    /// Fin de partie Rush : le chrono seul décide, jamais la grille.
+    private func triggerRushTimeUp() {
+        guard !rushEnded else { return }
+        rushEnded = true
+        removeAction(forKey: "rushTimer")
+        isAnimating = true
+        isWinState = false
+        SoundManager.shared.playLose()
+        InterstitialAdManager.shared.markGameCompleted()
+        syncDisplayedScore()
+        recordScore()
+        run(SKAction.wait(forDuration: 0.4)) { [weak self] in
+            self?.showGameOverPanel()
+        }
+    }
+
     private func showGameOverPanel() {
         // Le panneau affiche le total : plus question d'attendre une bulle.
         syncDisplayedScore()
@@ -1827,9 +1980,14 @@ class GameScene: SKScene {
         panel.addChild(bg)
 
         // Titre
-        let titleText = isWinState
-            ? String(localized: "game_over.perfect_title")
-            : String(localized: "game_over.game_over_title")
+        let titleText: String
+        if mode == .rush {
+            titleText = String(localized: "rush.time_up_title")
+        } else if isWinState {
+            titleText = String(localized: "game_over.perfect_title")
+        } else {
+            titleText = String(localized: "game_over.game_over_title")
+        }
         let title = SKLabelNode(text: titleText)
         title.fontName = "AvenirNext-Heavy"
         title.fontSize = 44
@@ -1926,7 +2084,7 @@ class GameScene: SKScene {
         }
 
         // Record
-        let scores = GameState.highScores()
+        let scores = mode == .rush ? GameState.rushHighScores() : GameState.highScores()
         let isNewRecord = scores.first == score && score > 0
 
         if isNewRecord {
@@ -1971,8 +2129,9 @@ class GameScene: SKScene {
         sep2.position = CGPoint(x: 0, y: -76)
         panel.addChild(sep2)
 
-        // Bouton Rejouer — masqué en mode Défi (une seule partie par jour).
-        if mode == .normal {
+        // Bouton Rejouer — masqué en mode Défi (une seule partie par jour) ;
+        // en Rush, "Rejouer" EST le CTA principal (courtes sessions répétées).
+        if mode == .normal || mode == .rush {
             let replayBtn = SKNode()
             replayBtn.name = "replayBtn"
             replayBtn.position = CGPoint(x: 0, y: -140)
@@ -2125,6 +2284,13 @@ class GameScene: SKScene {
                 self.hammerArmed = false
                 self.boosterBar?.isHidden = false
                 self.refreshBoosterButtons()
+                if self.mode == .rush {
+                    self.removeAction(forKey: "rushTimer")
+                    self.rushEnded = false
+                    self.rushTimeRemaining = GameScene.rushDuration
+                    self.updateRushTimerLabel()
+                    self.startRushCountdown()
+                }
             }
         ]))
     }

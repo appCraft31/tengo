@@ -127,16 +127,20 @@ class LeaderboardScene: SKScene {
         // Bouton retour — style bulle jeu
         addBackButton(atY: bottomY + 90)
 
-        // Boutons Game Center : Défi du jour + Mondial, côte à côte
+        // Boutons Game Center : Défi du jour, Mondial, Rush
         if GKLocalPlayer.local.isAuthenticated {
             addLeaderboardButton(name: "dailyLeaderboard",
                                  title: String(localized: "leaderboard.daily_button", defaultValue: "Défi du jour"),
                                  color: UIColor(red: 0.86, green: 0.82, blue: 0.97, alpha: 1),
-                                 at: CGPoint(x: -88, y: bottomY + 190))
+                                 at: CGPoint(x: -100, y: bottomY + 190))
             addLeaderboardButton(name: "worldLeaderboard",
                                  title: String(localized: "leaderboard.world_button"),
                                  color: UIColor(red: 0.72, green: 0.88, blue: 0.98, alpha: 1),
-                                 at: CGPoint(x: 88, y: bottomY + 190))
+                                 at: CGPoint(x: 100, y: bottomY + 190))
+            addLeaderboardButton(name: "rushLeaderboard",
+                                 title: String(localized: "leaderboard.rush_button"),
+                                 color: UIColor(red: 0.99, green: 0.84, blue: 0.70, alpha: 1),
+                                 at: CGPoint(x: 0, y: bottomY + 250))
         }
     }
 
@@ -288,6 +292,11 @@ class LeaderboardScene: SKScene {
             if node.name == "dailyLeaderboard" || node.parent?.name == "dailyLeaderboard" {
                 NotificationCenter.default.post(name: .tenGOShowGameCenter, object: nil,
                                                 userInfo: ["leaderboardID": AppConfig.gameCenterDailyLeaderboardID])
+                return
+            }
+            if node.name == "rushLeaderboard" || node.parent?.name == "rushLeaderboard" {
+                NotificationCenter.default.post(name: .tenGOShowGameCenter, object: nil,
+                                                userInfo: ["leaderboardID": AppConfig.gameCenterRushLeaderboardID])
                 return
             }
         }
