@@ -184,6 +184,21 @@ class MenuScene: SKScene {
                       at: CGPoint(x: 0, y: stack()),
                       accent: theme.color(forValue: 3), fontSize: 20)
 
+        // Missions — pastille rouge si une récompense attend d'être réclamée.
+        let missionsBtn = addMenuButton(text: String(localized: "menu.missions"), name: "missions",
+                      width: buttonWidth, height: buttonHeight,
+                      at: CGPoint(x: 0, y: stack()),
+                      accent: theme.color(forValue: 7), fontSize: 20)
+        if MissionManager.shared.hasUnclaimedReward {
+            let badge = SKShapeNode(circleOfRadius: 7)
+            badge.fillColor = UIColor(red: 0.92, green: 0.32, blue: 0.30, alpha: 1)
+            badge.strokeColor = UIColor(white: 1, alpha: 0.9)
+            badge.lineWidth = 1.5
+            badge.position = CGPoint(x: buttonWidth / 2 - 26, y: buttonHeight / 2 - 10)
+            badge.zPosition = 1
+            missionsBtn.addChild(badge)
+        }
+
         // Bouton « pub récompensée » (gauche, 3/4 de la hauteur). L'achat
         // « sans pub » vit désormais dans la Boutique (section Pièces).
         addWatchAdButton()
@@ -534,6 +549,12 @@ class MenuScene: SKScene {
                     self.navigateToLeaderboard()
                 }
                 return
+            case "missions":
+                animateTap(node.parent ?? node)
+                run(SKAction.wait(forDuration: 0.12)) {
+                    self.navigateToMissions()
+                }
+                return
             case "watchAd":
                 animateTap(node.parent ?? node)
                 presentRewardedAd()
@@ -632,6 +653,12 @@ class MenuScene: SKScene {
 
     private func navigateToLeaderboard() {
         let scene = LeaderboardScene(size: size)
+        scene.scaleMode = .aspectFill
+        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+    }
+
+    private func navigateToMissions() {
+        let scene = MissionsScene(size: size)
         scene.scaleMode = .aspectFill
         view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
     }
