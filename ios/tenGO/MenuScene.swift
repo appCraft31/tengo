@@ -159,13 +159,14 @@ class MenuScene: SKScene {
 
         // Défi du jour — secondaire
         let dailyDone = DailyChallenge.isCompletedToday()
+        let dailyAccent = dailyDone
+            ? UIColor(red: 0.90, green: 0.90, blue: 0.89, alpha: 1)
+            : theme.color(forValue: 6)
         let dailyButton = addMenuButton(
             text: String(localized: "menu.daily", defaultValue: "Défi du jour"),
             name: "dailyChallenge",
             width: buttonWidth, height: buttonHeight, at: CGPoint(x: 0, y: stack()),
-            accent: dailyDone
-                ? UIColor(red: 0.90, green: 0.90, blue: 0.89, alpha: 1)
-                : theme.color(forValue: 6),
+            accent: dailyAccent,
             fontSize: 21)
         if dailyDone {
             dailyButton.alpha = 0.5
@@ -176,6 +177,34 @@ class MenuScene: SKScene {
             check.verticalAlignmentMode = .center
             check.position = CGPoint(x: buttonWidth / 2 - 30, y: 0)
             dailyButton.addChild(check)
+        }
+
+        // Série en cours — affichage proéminent (flamme + prochaine récompense),
+        // sur le bouton qui mène justement au jeu du jour.
+        let streak = StreakManager.shared.current
+        if streak > 0 {
+            let textColor = contrastingText(on: dailyAccent)
+            let shields = StreakManager.shared.shieldCount
+            let flameText = shields > 0 ? "🔥 \(streak) · 🛡️\(shields)" : "🔥 \(streak)"
+            let flame = SKLabelNode(text: flameText)
+            flame.fontName = "AvenirNext-Bold"
+            flame.fontSize = 14
+            flame.fontColor = textColor
+            flame.horizontalAlignmentMode = .left
+            flame.verticalAlignmentMode = .center
+            flame.position = CGPoint(x: -buttonWidth / 2 + 20, y: buttonHeight / 2 - 14)
+            dailyButton.addChild(flame)
+
+            if let nextDay = StreakManager.shared.nextMilestone {
+                let next = SKLabelNode(text: String(format: String(localized: "streak.next_reward"), nextDay))
+                next.fontName = "AvenirNext-Medium"
+                next.fontSize = 10
+                next.fontColor = textColor.withAlphaComponent(0.75)
+                next.horizontalAlignmentMode = .left
+                next.verticalAlignmentMode = .center
+                next.position = CGPoint(x: -buttonWidth / 2 + 20, y: -buttonHeight / 2 + 13)
+                dailyButton.addChild(next)
+            }
         }
 
         // Boutique — tertiaire
