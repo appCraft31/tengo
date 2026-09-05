@@ -17,6 +17,8 @@ class MenuScene: SKScene {
     private var coinLabel: SKLabelNode?
     private var coinChip: SKNode?
     private var shopGuide: CoachMarkOverlay?
+    /// Panneau de détail de progression (XP/Niveau), ouvert au tap sur le chip niveau.
+    private var levelOverlay: LevelProgressOverlay?
     /// Bouton « regarder une pub pour +10 pièces » + badge de quota restant.
     private var watchAdButton: SKNode?
     private var watchAdBadge: SKLabelNode?
@@ -124,6 +126,8 @@ class MenuScene: SKScene {
         addIconButton(systemName: "gearshape.fill", name: "parametres", at: CGPoint(x: edgeX, y: topRowY))
         // Solde de pièces à gauche de l'engrenage (bord droit ancré).
         addCoinChip(rightEdgeX: edgeX - 36, atY: topRowY)
+        // Niveau à droite du trophée (bord gauche ancré) — miroir du chip pièces.
+        addLevelChip(leftEdgeX: -edgeX + 36, atY: topRowY)
 
         // Pile de boutons centrée : tous de même gabarit, la hiérarchie passe
         // par la couleur et la graisse du texte, pas par la taille.
@@ -260,6 +264,35 @@ class MenuScene: SKScene {
         addChild(container)
         coinLabel = number
         coinChip = container
+    }
+
+    /// Niveau du joueur (système XP/Levels). Pastille discrète, tap → détail
+    /// de progression. Chip ancré par son bord gauche (symétrique du chip pièces).
+    private func addLevelChip(leftEdgeX: CGFloat, atY y: CGFloat) {
+        let container = SKNode()
+        container.name = "levelChip"
+
+        let label = SKLabelNode(text: String(format: String(localized: "level.chip.label"), LevelManager.shared.level))
+        label.fontName = "AvenirNext-Medium"
+        label.fontSize = 19
+        label.fontColor = UIColor(white: 0.35, alpha: 1)
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .center
+        label.name = "levelChip"
+
+        let height: CGFloat = 40
+        let width = max(label.frame.width + 40, 70)
+
+        let bg = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: height / 2)
+        bg.fillColor = ThemeManager.shared.active.accent.withAlphaComponent(0.14)
+        bg.strokeColor = ThemeManager.shared.active.accent.withAlphaComponent(0.30)
+        bg.lineWidth = 1
+        bg.name = "levelChip"
+
+        container.position = CGPoint(x: leftEdgeX + width / 2, y: y)
+        container.addChild(bg)
+        container.addChild(label)
+        addChild(container)
     }
 
     /// Bouton rond « regarder une pub → +10 pièces », à gauche, aux 3/4 de la
@@ -451,6 +484,11 @@ class MenuScene: SKScene {
             if overlay.parent == nil { settingsOverlay = nil }
             return
         }
+        if let overlay = levelOverlay, overlay.parent != nil {
+            overlay.handleTouch(at: point)
+            levelOverlay = nil
+            return
+        }
 
         for node in nodes(at: point) {
             guard let name = node.parent?.name ?? node.name else { continue }
@@ -499,6 +537,10 @@ class MenuScene: SKScene {
             case "watchAd":
                 animateTap(node.parent ?? node)
                 presentRewardedAd()
+                return
+            case "levelChip":
+                animateTap(node.parent ?? node)
+                levelOverlay = LevelProgressOverlay.present(in: self)
                 return
             default: break
             }
