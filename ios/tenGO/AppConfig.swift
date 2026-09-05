@@ -78,6 +78,8 @@ enum AppConfig {
         static let streakRewardedMilestone = "tenGO_streakRewardedMilestone"
         /// Boucliers de série en poche (protègent un jour manqué), cf. StreakManager.
         static let streakShieldCount = "tenGO_streakShieldCount"
+        /// Migration one-shot du palier de série hérité de la 2.3.0 (cf. StreakManager).
+        static let streakMilestoneMigrated = "tenGO_streakMilestoneMigrated"
         /// Thèmes possédés (liste d'identifiants) ; le thème par défaut est toujours possédé.
         static let ownedThemes = "tenGO_ownedThemes"
         /// Identifiant du thème actif.

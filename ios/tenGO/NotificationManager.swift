@@ -24,6 +24,11 @@ final class NotificationManager {
     private let defaults = UserDefaults.standard
     private let dailyAvailableID = "tenGO.dailyAvailable"
     private let streakAtRiskID = "tenGO.streakAtRisk"
+    /// Ancien rappel générique du soir (« Une pause zen ? »), supprimé du code.
+    /// Un UNCalendarNotificationTrigger répétitif SURVIT à la mise à jour de
+    /// l'app : sans annulation explicite, les joueurs qui avaient autorisé les
+    /// notifications en 2.3.0 continueraient de le recevoir indéfiniment.
+    private let legacyReminderID = "tenGO.dailyReminder"
 
     /// Nombre de parties avant de proposer les notifications.
     private let promptThreshold = 3
@@ -76,6 +81,9 @@ final class NotificationManager {
     // lui-même ne dépend d'aucune donnée joueur).
 
     private func scheduleDailyAvailable() {
+        // Purge de l'ancien rappel générique hérité de la 2.3.0 (cf. legacyReminderID).
+        center.removePendingNotificationRequests(withIdentifiers: [legacyReminderID])
+
         let content = UNMutableNotificationContent()
         content.title = String(localized: "notif.daily_available_title", defaultValue: "Défi du jour 🧩")
         content.body = String(localized: "notif.daily_available_body", defaultValue: "Un nouveau défi t'attend !")
@@ -92,18 +100,30 @@ final class NotificationManager {
     // le contenu embarque la vraie série du joueur, donc pas de trigger
     // répétitif générique possible : un tir unique, refait à chaque fois).
 
-    /// À appeler après toute partie jouée, et à chaque ouverture de l'app :
-    /// si la série est active et pas encore sécurisée aujourd'hui, programme
-    /// un rappel personnalisé ce soir ; sinon annule tout rappel en attente.
+    /// À appeler après toute partie jouée, et à chaque ouverture de l'app.
+    ///
+    /// Le rappel vise TOUJOURS la prochaine soirée où la série sera réellement
+    /// en jeu : ce soir si elle n'est pas encore sécurisée et que 20 h n'est pas
+    /// passé, demain soir sinon. Une première version ne programmait que pour
+    /// le jour courant — le joueur qui n'ouvre pas l'app de la journée, c'est-à-
+    /// dire le seul que ce rappel doit atteindre, n'en recevait donc jamais.
     func rescheduleStreakAtRisk() {
         center.removePendingNotificationRequests(withIdentifiers: [streakAtRiskID])
 
         let streak = StreakManager.shared.current
-        guard streak > 0, !StreakManager.shared.hasPlayedToday() else { return }
+        guard streak > 0 else { return }
 
         let calendar = Calendar.current
-        guard let fireDate = calendar.date(bySettingHour: streakAtRiskHour, minute: 0, second: 0, of: Date()),
-              fireDate > Date() else { return }
+        let now = Date()
+        guard let tonight = calendar.date(bySettingHour: streakAtRiskHour, minute: 0, second: 0, of: now) else { return }
+        let fireDate: Date
+        if !StreakManager.shared.hasPlayedToday(), tonight > now {
+            fireDate = tonight
+        } else if let tomorrow = calendar.date(byAdding: .day, value: 1, to: tonight) {
+            fireDate = tomorrow
+        } else {
+            return
+        }
 
         let content = UNMutableNotificationContent()
         content.title = String(format: String(localized: "notif.streak_at_risk_title"), streak)

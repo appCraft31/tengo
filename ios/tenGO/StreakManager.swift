@@ -24,15 +24,19 @@ final class StreakManager {
     /// Achievements (#11/#12), pas encore construits : les paliers ci-dessous
     /// substituent pièces + boosters en attendant, en conservant la même
     /// progression d'ampleur.
+    /// Barème calibré sur le catalogue de la boutique (tous les thèmes réunis
+    /// = 1 400 pièces, premier pack acheté = 500) : une première version
+    /// distribuait 5 000 pièces sur l'année, ce qui rendait la boutique
+    /// gratuite en une semaine et l'achat de pièces sans objet.
     static let milestones: [(day: Int, coins: Int, booster: Booster?, boosterQty: Int)] = [
-        (3, 50, nil, 0),
+        (3, 25, nil, 0),
         (7, 0, .hint, 1),
-        (14, 50, .shuffle, 1),
-        (21, 250, nil, 0),
-        (30, 150, .hammer, 1),
-        (50, 500, nil, 0),
-        (100, 1000, nil, 0),
-        (365, 3000, nil, 0),
+        (14, 30, .shuffle, 1),
+        (21, 75, nil, 0),
+        (30, 60, .hammer, 1),
+        (50, 150, nil, 0),
+        (100, 300, nil, 0),
+        (365, 1000, nil, 0),
     ]
 
     /// Nombre maximum de boucliers détenus simultanément — le Shield doit
@@ -64,7 +68,9 @@ final class StreakManager {
         let calendar = Calendar.current
         let today = calendar.startOfDay(for: date)
         let lastDay = calendar.startOfDay(for: Date(timeIntervalSinceReferenceDate: lastInterval))
-        return calendar.dateComponents([.day], from: lastDay, to: today).day == 0
+        // <= 0 et non == 0 : une dernière partie « dans le futur » (horloge
+        // reculée) doit compter comme jouée, pas déclencher un rappel.
+        return (calendar.dateComponents([.day], from: lastDay, to: today).day ?? 0) <= 0
     }
 
     /// À appeler au lancement d'une partie. Met à jour la série selon le jour
@@ -84,6 +90,11 @@ final class StreakManager {
         let gap = calendar.dateComponents([.day], from: lastDay, to: today).day ?? 0
 
         switch gap {
+        case ..<0:
+            // Horloge reculée ou changement de fuseau vers l'ouest : la
+            // « dernière partie » est dans le futur. Ne rien casser et
+            // surtout ne pas brûler un bouclier pour un artefact d'horloge.
+            return false
         case 0:
             return false                  // déjà compté aujourd'hui
         case 1:
@@ -105,6 +116,7 @@ final class StreakManager {
     /// n'est payé qu'une fois dans la vie du joueur). Retourne les pièces gagnées.
     @discardableResult
     func awardMilestones(currentStreak: Int) -> Int {
+        migrateRewardedMilestoneIfNeeded()
         let alreadyRewarded = defaults.integer(forKey: AppConfig.UserDefaultsKey.streakRewardedMilestone)
         var gainedCoins = 0
         var highest = alreadyRewarded
@@ -122,6 +134,20 @@ final class StreakManager {
             defaults.set(highest, forKey: AppConfig.UserDefaultsKey.streakRewardedMilestone)
         }
         return gainedCoins
+    }
+
+    /// L'ancien barème (2.3.0) s'arrêtait à 30 jours et stockait le jour du
+    /// dernier palier payé dans la même clé. Un joueur arrivé à 30 jours avant
+    /// la mise à jour verrait donc le palier 21, qui n'existait pas chez lui,
+    /// filtré à jamais par `milestone.day > alreadyRewarded`. On le ramène à 20
+    /// pour qu'il touche ce palier comme tout le monde — sans rouvrir les
+    /// paliers 3/7/14 qu'il a bien perçus.
+    private func migrateRewardedMilestoneIfNeeded() {
+        let key = AppConfig.UserDefaultsKey.streakRewardedMilestone
+        guard defaults.integer(forKey: key) == 30,
+              !defaults.bool(forKey: AppConfig.UserDefaultsKey.streakMilestoneMigrated) else { return }
+        defaults.set(20, forKey: key)
+        defaults.set(true, forKey: AppConfig.UserDefaultsKey.streakMilestoneMigrated)
     }
 
     // MARK: - Streak Shield
