@@ -26,7 +26,14 @@ final class LevelManager {
     static let xpGameCompleted = 10
     static let xpChainTier5 = 5
     static let xpChainTier10 = 15
-    static let xpPerCombo = 10
+    /// XP par chaîne validée. Le GDD parle de « +10 par combo » (§22) en
+    /// pensant à un événement rare ; dans tenGO une « chaîne validée » est
+    /// simplement un coup, et il y en a une vingtaine par partie. À 10 XP
+    /// pièce, la première partie faisait gagner ~3 niveaux d'un coup et vidait
+    /// la progression de son sens. 1 XP par coup, plafonné, garde le geste
+    /// récompensé sans écraser la courbe.
+    static let xpPerChain = 1
+    static let xpChainsCap = 25
     static let xpPerfectBoard = 50
     static let xpDailyChallenge = 30
     static let xpDailyChallengePerfect = 75
@@ -90,16 +97,16 @@ final class LevelManager {
     // MARK: - Gains
 
     /// Fin d'une partie normale. Réutilise les données déjà trackées par
-    /// GameScene (plus longue chaîne, combos créés, grille vidée ou non).
+    /// GameScene (plus longue chaîne, nombre de coups, grille vidée ou non).
     @discardableResult
-    func awardForGame(score: Int, longestChain: Int, combosCreated: Int, isPerfect: Bool) -> GainResult {
+    func awardForGame(score: Int, longestChain: Int, chainsCommitted: Int, isPerfect: Bool) -> GainResult {
         var xp = LevelManager.xpGameCompleted
         if longestChain >= 10 {
             xp += LevelManager.xpChainTier10
         } else if longestChain >= 5 {
             xp += LevelManager.xpChainTier5
         }
-        xp += max(0, combosCreated) * LevelManager.xpPerCombo
+        xp += min(LevelManager.xpChainsCap, max(0, chainsCommitted) * LevelManager.xpPerChain)
         if isPerfect {
             xp += LevelManager.xpPerfectBoard
         }

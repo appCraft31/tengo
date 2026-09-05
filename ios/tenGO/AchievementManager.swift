@@ -54,6 +54,8 @@ struct AchievementDefinition {
 
 enum AchievementManager {
 
+    /// Récompenses volontairement modestes : 26 succès crédités d'un coup
+    /// pèsent lourd face aux 1 400 pièces du catalogue boutique complet.
     static let catalog: [AchievementDefinition] = {
         let chainTargets = [5, 10, 15, 20, 25]
         let perfectTargets = [1, 5, 10, 25, 50]
@@ -68,42 +70,42 @@ enum AchievementManager {
             list.append(AchievementDefinition(
                 id: "chain\(target)", category: .chain, target: target,
                 titleKey: "achievement.chain.title", descKey: "achievement.chain.desc",
-                coinReward: 10 + target, xpReward: target,
+                coinReward: 5 + target / 2, xpReward: target,
                 currentValue: { PlayerStatsManager.shared.bestChainEver }))
         }
         for target in perfectTargets {
             list.append(AchievementDefinition(
                 id: "perfect\(target)", category: .perfect, target: target,
                 titleKey: "achievement.perfect.title", descKey: "achievement.perfect.desc",
-                coinReward: 20 + target, xpReward: target * 2,
+                coinReward: 10 + target / 2, xpReward: target * 2,
                 currentValue: { PlayerStatsManager.shared.perfectBoardsTotal }))
         }
         for target in scoreZenTargets {
             list.append(AchievementDefinition(
                 id: "scoreZen\(target)", category: .score, target: target,
                 titleKey: "achievement.score_zen.title", descKey: "achievement.score_zen.desc",
-                coinReward: 30, xpReward: 25,
+                coinReward: 15, xpReward: 25,
                 currentValue: { GameState.highScores().first ?? 0 }))
         }
         for target in scoreRushTargets {
             list.append(AchievementDefinition(
                 id: "scoreRush\(target)", category: .score, target: target,
                 titleKey: "achievement.score_rush.title", descKey: "achievement.score_rush.desc",
-                coinReward: 30, xpReward: 25,
+                coinReward: 15, xpReward: 25,
                 currentValue: { GameState.rushBest() }))
         }
         for target in streakTargets {
             list.append(AchievementDefinition(
                 id: "streak\(target)", category: .daily, target: target,
                 titleKey: "achievement.streak.title", descKey: "achievement.streak.desc",
-                coinReward: 20 + target, xpReward: target,
+                coinReward: 10 + target / 2, xpReward: target,
                 currentValue: { StreakManager.shared.best }))
         }
         for target in dailyTotalTargets {
             list.append(AchievementDefinition(
                 id: "dailyTotal\(target)", category: .daily, target: target,
                 titleKey: "achievement.daily_total.title", descKey: "achievement.daily_total.desc",
-                coinReward: 20 + target, xpReward: target,
+                coinReward: 10 + target / 2, xpReward: target,
                 currentValue: { PlayerStatsManager.shared.totalDailyCompletions }))
         }
         return list
