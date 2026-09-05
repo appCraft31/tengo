@@ -35,16 +35,40 @@ enum DailyChallenge {
         let grid: GridModel
         let twist: DailyTwist
         let dayKey: Int
+        /// Difficulté mesurée de la grille retenue (1-100, cf. GridValidator).
+        let difficulty: Int
+    }
+
+    /// Difficulté visée, en rotation sur la semaine (GDD §61 : Daily Easy /
+    /// Medium / Hard). Déterministe : tous les joueurs ont la même cible le
+    /// même jour, comme la grille elle-même.
+    enum Target: Int, CaseIterable {
+        case easy = 30, medium = 55, hard = 78
+
+        static func forDay(_ dayKey: Int) -> Target {
+            // 4 jours faciles/moyens pour 3 durs sur la semaine : le Défi doit
+            // rester une habitude quotidienne, pas un mur.
+            let cycle: [Target] = [.easy, .medium, .hard, .medium, .easy, .hard, .medium]
+            return cycle[abs(dayKey) % cycle.count]
+        }
     }
 
     // MARK: - API
 
     /// Construit le défi du jour pour la date donnée (par défaut : maintenant).
+    /// Grille du jour déjà construite (la validation coûte quelques dizaines
+    /// de millisecondes ; la refaire à chaque navigation serait gâché).
+    /// Accès main-thread uniquement, comme tout le reste de la navigation.
+    private static var cached: Today?
+
     static func make(for date: Date = Date()) -> Today {
         let key = dayKey(for: date)
+        if let cached, cached.dayKey == key { return cached }
         let twist = DailyTwist.allCases[abs(key) % DailyTwist.allCases.count]
-        let grid = solvableGrid(dayKey: key, twist: twist)
-        return Today(grid: grid, twist: twist, dayKey: key)
+        let selected = solvableGrid(dayKey: key, twist: twist)
+        let today = Today(grid: selected.grid, twist: twist, dayKey: key, difficulty: selected.difficulty)
+        cached = today
+        return today
     }
 
     /// Le défi du jour a-t-il déjà été complété aujourd'hui ?
@@ -60,19 +84,25 @@ enum DailyChallenge {
 
     // MARK: - Génération déterministe validée
 
-    /// Génère plusieurs candidates (graine dérivée déterministe) et sélectionne
-    /// la plus RETORSE : le moins de paires/coups évidents (somme 10 en ≤ 2 cases),
-    /// tout en gardant assez de matière pour scorer (« corsé mais juste »).
-    /// Le joueur doit alors construire des chemins longs plutôt que cueillir des paires.
-    private static func solvableGrid(dayKey: Int, twist: DailyTwist) -> GridModel {
+    /// Génère des candidates déterministes, les VALIDE, et retient celle dont
+    /// la difficulté mesurée est la plus proche de la cible du jour.
+    ///
+    /// L'ancienne version prenait systématiquement la plus retorse : toutes
+    /// les grilles sortaient alors en haut de l'échelle (74-95 sur 100,
+    /// mesuré), sans aucune respiration d'un jour à l'autre.
+    ///
+    /// Coût maîtrisé : le tri grossier (paires, matière) se fait sur les 80
+    /// candidates ; les simulations de partie, elles, ne tournent que sur les
+    /// meilleures — c'est ce qui rend la mesure abordable sur l'appareil.
+    private static func solvableGrid(dayKey: Int, twist: DailyTwist) -> (grid: GridModel, difficulty: Int) {
         let base = UInt64(bitPattern: Int64(dayKey))
         let candidates = 80
-        let materialFloor = 6   // nb min de coups courts (≤4) → la grille reste jouable
+        let finalists = 6
+        let materialFloor = GridValidator.minimumShortGroups
+        let target = Target.forDay(dayKey).rawValue
 
-        var best: GridModel?
-        var bestEasy = Int.max
-        var bestTotal = 0
-        var anyPlayable: GridModel?   // repli si aucune candidate n'atteint le seuil
+        var pool: [(grid: GridModel, easy: Int)] = []
+        var anyPlayable: GridModel?
 
         for offset in 0..<candidates {
             var generator = SeededGenerator(seed: base &+ UInt64(offset))
@@ -80,23 +110,41 @@ enum DailyChallenge {
             apply(twist, to: &grid, using: &generator)
             guard grid.isSolvable() else { continue }
             if anyPlayable == nil { anyPlayable = grid }
+            guard grid.countSumTenGroups(maxLen: 4) >= materialFloor else { continue }
+            pool.append((grid, grid.countSumTenGroups(maxLen: 2)))
+        }
 
-            let total = grid.countSumTenGroups(maxLen: 4)
-            guard total >= materialFloor else { continue }
-            let easy = grid.countSumTenGroups(maxLen: 2)   // paires évidentes
-            // Le moins de paires possible ; à égalité, on garde le plus de matière.
-            if easy < bestEasy || (easy == bestEasy && total > bestTotal) {
-                bestEasy = easy
-                bestTotal = total
-                best = grid
+        // Finalistes : un échantillon étalé sur toute la plage de « paires
+        // évidentes », pour que la cible facile comme la cible dure trouve
+        // chacune une candidate plausible.
+        pool.sort { $0.easy < $1.easy }
+        var picked: [GridModel] = []
+        if !pool.isEmpty {
+            let step = max(1, pool.count / finalists)
+            for index in stride(from: 0, to: pool.count, by: step) where picked.count < finalists {
+                picked.append(pool[index].grid)
+            }
+        }
+
+        var best: (grid: GridModel, difficulty: Int)?
+        var bestDistance = Int.max
+        for grid in picked {
+            var rng = SeededGenerator(seed: base &+ 0xD1FF)
+            let assessment = GridValidator.assess(grid, playouts: 3, using: &rng)
+            guard assessment.isPublishable else { continue }
+            let distance = abs(assessment.difficulty - target)
+            if distance < bestDistance {
+                bestDistance = distance
+                best = (grid, assessment.difficulty)
             }
         }
 
         if let best { return best }
-        if let anyPlayable { return anyPlayable }
-        // Repli ultime (quasi impossible) : grille sans twist, déjà jouable.
+        // Aucune candidate n'a passé la validation : on garde une grille
+        // jouable plutôt que de priver le joueur de son défi.
+        if let anyPlayable { return (anyPlayable, target) }
         var generator = SeededGenerator(seed: base)
-        return GridModel(using: &generator)
+        return (GridModel(using: &generator), target)
     }
 
     private static func apply<G: RandomNumberGenerator>(_ twist: DailyTwist, to grid: inout GridModel, using generator: inout G) {

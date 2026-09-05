@@ -183,6 +183,45 @@ struct GridModel {
         return seen.count
     }
 
+    /// Les groupes de somme 10 eux-mêmes (et non plus leur simple décompte),
+    /// dédupliqués par ensemble de cases. Sert à SIMULER des parties pour
+    /// mesurer la profondeur réelle d'une grille (cf. GridValidator) : sans
+    /// les coups, on ne peut que compter, pas jouer.
+    func sumTenGroups(maxLen: Int) -> [[(row: Int, col: Int)]] {
+        var seen = Set<UInt64>()
+        var groups: [[(row: Int, col: Int)]] = []
+
+        func explore(row: Int, col: Int, sum: Int, depth: Int, mask: UInt64, path: [(row: Int, col: Int)]) {
+            if sum == 10 {
+                if seen.insert(mask).inserted { groups.append(path) }
+                return
+            }
+            if sum > 10 || depth >= maxLen { return }
+            for dr in -1...1 {
+                for dc in -1...1 {
+                    guard dr != 0 || dc != 0 else { continue }
+                    let nr = row + dr, nc = col + dc
+                    guard nr >= 0 && nr < GridModel.rows else { continue }
+                    guard nc >= 0 && nc < GridModel.cols else { continue }
+                    guard let nb = cells[nr][nc], !nb.isFrozen else { continue }
+                    let bit = UInt64(1) << (nr * GridModel.cols + nc)
+                    guard mask & bit == 0 else { continue }
+                    explore(row: nr, col: nc, sum: sum + nb.value, depth: depth + 1,
+                            mask: mask | bit, path: path + [(row: nr, col: nc)])
+                }
+            }
+        }
+
+        for row in 0..<GridModel.rows {
+            for col in 0..<GridModel.cols {
+                guard let b = cells[row][col], !b.isFrozen else { continue }
+                let bit = UInt64(1) << (row * GridModel.cols + col)
+                explore(row: row, col: col, sum: b.value, depth: 1, mask: bit, path: [(row: row, col: col)])
+            }
+        }
+        return groups
+    }
+
     // DFS: does any path of sum exactly 10 exist? (les bulles gelées sont intraversables)
     func hasValidMove() -> Bool {
         for row in 0..<GridModel.rows {
