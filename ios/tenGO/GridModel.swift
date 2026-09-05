@@ -35,6 +35,22 @@ struct GridModel {
         blocked = state.blocked ?? GridModel.emptyMask()
     }
 
+    /// Mode Puzzles : disposition fixe validée hors ligne (cf. PuzzleCatalog).
+    /// Format « colonnes séparées par | , valeurs de bas en haut ».
+    init(puzzleLayout: String) {
+        var grid: [[BubbleModel?]] = Array(repeating: Array(repeating: nil, count: GridModel.cols),
+                                           count: GridModel.rows)
+        for (col, column) in puzzleLayout.split(separator: "|", omittingEmptySubsequences: false).enumerated() {
+            guard col < GridModel.cols else { break }
+            for (row, character) in column.enumerated() {
+                guard row < GridModel.rows, let value = character.wholeNumberValue, (1...9).contains(value) else { continue }
+                grid[row][col] = BubbleModel(value: value, row: row, col: col)
+            }
+        }
+        cells = grid
+        blocked = GridModel.emptyMask()
+    }
+
     private init(cells: [[BubbleModel?]], blocked: [[Bool]]? = nil) {
         self.cells = cells
         self.blocked = blocked ?? GridModel.emptyMask()

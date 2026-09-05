@@ -71,7 +71,9 @@ final class PlayerStatsManager {
             defaults.set(totalRushGames + 1, forKey: AppConfig.UserDefaultsKey.statsTotalRushGames)
         case .daily:
             defaults.set(totalDailyCompletions + 1, forKey: AppConfig.UserDefaultsKey.statsTotalDaily)
-        case .normal, .demo:
+        case .normal, .demo, .puzzle:
+            // Les puzzles résolus se comptent depuis PuzzleProgress, qui suit
+            // déjà les étoiles par niveau — pas de compteur redondant ici.
             break
         }
     }
