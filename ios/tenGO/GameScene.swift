@@ -15,11 +15,13 @@ class GameScene: SKScene {
 
     // MARK: - Init
 
-    enum Mode { case normal, daily, demo, rush, puzzle }
+    enum Mode { case normal, daily, demo, rush, puzzle, duel }
 
     private let mode: Mode
     private var dailyToday: DailyChallenge.Today?
     private var puzzleLevel: PuzzleLevel?
+    private var duelSeed: UInt64 = 0
+    private var duelCode: String?
     private var obstacleNodes: [SKNode] = []
 
     // MARK: - Démo (auto-player, capture vidéo marketing)
@@ -59,6 +61,18 @@ class GameScene: SKScene {
         self.mode = .demo
         self.demoSeed = demoSeed
         self.demoSpeed = max(0.25, demoSpeed)
+        self.resuming = false
+        super.init(size: size)
+    }
+
+    /// Mode Duel : grille reconstruite depuis la graine du duel — c'est ce
+    /// déterminisme qui permet de ne transmettre qu'un entier au lieu d'une
+    /// grille entière. `duelCode` est nil pour le challenger (le duel n'existe
+    /// pas encore : il sera créé avec son score), renseigné pour l'adversaire.
+    init(size: CGSize, duelSeed: UInt64, duelCode: String?) {
+        self.mode = .duel
+        self.duelSeed = duelSeed
+        self.duelCode = duelCode
         self.resuming = false
         super.init(size: size)
     }
@@ -142,6 +156,8 @@ class GameScene: SKScene {
     private var isWinState = false
     /// Pièces créditées à la fin de cette partie (affiché dans le panel game-over).
     private var coinsEarnedThisGame = 0
+    /// Ligne d'état du duel dans le panneau de fin (publication, puis issue).
+    private var duelStatusLabel: SKLabelNode?
     /// Étoiles obtenues sur le niveau de puzzle qui vient d'être terminé.
     private var puzzleStarsEarned = 0
     /// XP créditée à la fin de cette partie (affiché dans le panel game-over).
@@ -227,6 +243,9 @@ class GameScene: SKScene {
             gridModel = today.grid
         } else if mode == .demo {
             var generator = SeededGenerator(seed: demoSeed)
+            gridModel = GridModel(using: &generator)
+        } else if mode == .duel {
+            var generator = SeededGenerator(seed: duelSeed)
             gridModel = GridModel(using: &generator)
         } else if mode == .puzzle, let puzzle = puzzleLevel {
             gridModel = GridModel(puzzleLayout: puzzle.layout)
@@ -1811,10 +1830,58 @@ class GameScene: SKScene {
             MissionManager.shared.reportGameEnded(isPerfect: isWinState)
             PlayerStatsManager.shared.reportGameEnded(mode: mode, isPerfect: isWinState)
             AnalyticsService.levelEnd(mode: "puzzle", score: score, won: isWinState)
+        case .duel:
+            lastXPResult = LevelManager.shared.awardForDuel()
+            MissionManager.shared.reportGameEnded(isPerfect: isWinState)
+            PlayerStatsManager.shared.reportGameEnded(mode: mode, isPerfect: isWinState)
+            AnalyticsService.levelEnd(mode: "duel", score: score, won: isWinState)
+            publishDuelResult()
         case .demo:
             break   // démo : aucun score enregistré ni soumis
         }
         if mode != .demo { checkAchievements() }
+    }
+
+    /// Publie le résultat du duel : création du duel pour le challenger,
+    /// ajout de son score pour l'adversaire. Le réseau peut échouer sans que
+    /// la partie soit perdue pour autant — le message le dit alors clairement.
+    private func publishDuelResult() {
+        let finalScore = score
+        let code = duelCode
+        let seed = duelSeed
+        Task { @MainActor in
+            do {
+                let duel: Duel
+                if let code {
+                    duel = try await DuelService.shared.submitOpponentScore(code: code, score: finalScore)
+                } else {
+                    duel = try await DuelService.shared.createDuel(seed: seed, score: finalScore)
+                    self.duelCode = duel.code
+                }
+                self.updateDuelStatus(for: duel)
+            } catch {
+                self.duelStatusLabel?.text = error.localizedDescription
+            }
+        }
+    }
+
+    @MainActor
+    private func updateDuelStatus(for duel: Duel) {
+        guard let uid = FirebaseService.shared.uid else { return }
+        if let outcome = duel.outcome(for: uid) {
+            let rival = duel.rivalName(for: uid)
+            let key: String
+            switch outcome {
+            case .win:  key = "duel.result_win"
+            case .loss: key = "duel.result_loss"
+            case .draw: key = "duel.result_draw"
+            }
+            let theirs = uid == duel.challengerUid ? (duel.opponentScore ?? 0) : duel.challengerScore
+            duelStatusLabel?.text = String(format: String(localized: String.LocalizationValue(key)), rival, theirs)
+        } else {
+            // Le challenger vient de créer le duel : il repart avec le code.
+            duelStatusLabel?.text = String(format: String(localized: "duel.share_code"), duel.code)
+        }
     }
 
     /// Crédite et annonce les succès nouvellement débloqués depuis le
@@ -2135,7 +2202,9 @@ class GameScene: SKScene {
 
         // Titre
         let titleText: String
-        if mode == .puzzle {
+        if mode == .duel {
+            titleText = String(localized: "duel.finished_title")
+        } else if mode == .puzzle {
             titleText = isWinState
                 ? String(localized: "puzzle.solved_title")
                 : String(localized: "puzzle.stuck_title")
@@ -2241,6 +2310,21 @@ class GameScene: SKScene {
             panel.addChild(levelUpLabel)
         }
 
+        // Mode Duel : l'état de publication puis l'issue remplacent la
+        // comparaison au record, qui n'a pas de sens sur une grille partagée.
+        if mode == .duel {
+            let status = SKLabelNode(text: String(localized: "duel.publishing"))
+            status.fontName = "AvenirNext-DemiBold"
+            status.fontSize = 17
+            status.fontColor = UIColor(white: 0.32, alpha: 1)
+            status.verticalAlignmentMode = .center
+            status.numberOfLines = 2
+            status.preferredMaxLayoutWidth = panelW - 60
+            status.position = CGPoint(x: 0, y: 26)
+            panel.addChild(status)
+            duelStatusLabel = status
+        }
+
         // Mode Puzzles : les étoiles remplacent la comparaison au record, qui
         // n'a pas de sens sur une grille fixe.
         if mode == .puzzle {
@@ -2260,8 +2344,8 @@ class GameScene: SKScene {
         let scores = mode == .rush ? GameState.rushHighScores() : GameState.highScores()
         let isNewRecord = scores.first == score && score > 0
 
-        if mode == .puzzle {
-            // rien : la rangée d'étoiles occupe déjà cette place
+        if mode == .puzzle || mode == .duel {
+            // rien : les étoiles ou l'issue du duel occupent déjà cette place
         } else if isNewRecord {
             let record = SKLabelNode(text: String(localized: "game_over.new_record"))
             record.fontName = "AvenirNext-Bold"
@@ -2653,9 +2737,12 @@ class GameScene: SKScene {
             // Depuis un puzzle, « retour » ramène à la liste des niveaux :
             // renvoyer au menu principal obligerait à tout renaviguer pour
             // enchaîner le niveau suivant.
-            let destination: SKScene = self.mode == .puzzle
-                ? PuzzleLevelsScene(size: self.size, world: self.puzzleLevel?.world ?? 1)
-                : MenuScene(size: self.size)
+            let destination: SKScene
+            switch self.mode {
+            case .puzzle: destination = PuzzleLevelsScene(size: self.size, world: self.puzzleLevel?.world ?? 1)
+            case .duel:   destination = DuelScene(size: self.size)
+            default:      destination = MenuScene(size: self.size)
+            }
             destination.scaleMode = .aspectFill
             self.view?.presentScene(destination, transition: SKTransition.fade(withDuration: 0.3))
         }

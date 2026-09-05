@@ -41,6 +41,7 @@ final class LevelManager {
     static let xpSuperMission = 40
     static let xpRush = 20
     static let xpPuzzleSolved = 40
+    static let xpDuel = 25
 
     /// Titres de niveau (palier → clé de localisation), du plus bas au plus
     /// haut. `currentTitle` retient le plus haut palier atteint.
@@ -140,6 +141,11 @@ final class LevelManager {
     func awardForPuzzle(completed: Bool) -> GainResult {
         add(completed ? LevelManager.xpPuzzleSolved : LevelManager.xpGameCompleted)
     }
+
+    /// Fin d'une partie de Duel (GDD §22 : duel gagné +40 ; on récompense la
+    /// participation, l'issue ne dépendant pas que du joueur).
+    @discardableResult
+    func awardForDuel() -> GainResult { add(LevelManager.xpDuel) }
 
     /// Déblocage d'un succès (cf. AchievementManager.checkForNewUnlocks).
     @discardableResult

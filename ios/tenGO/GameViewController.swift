@@ -112,6 +112,12 @@ class GameViewController: UIViewController {
         )
         NotificationCenter.default.addObserver(
             self,
+            selector: #selector(openDuelFromLink),
+            name: .tenGOOpenDuel,
+            object: nil
+        )
+        NotificationCenter.default.addObserver(
+            self,
             selector: #selector(adFreeDidChange),
             name: .tenGOAdFreeChanged,
             object: nil
@@ -225,6 +231,16 @@ class GameViewController: UIViewController {
 
     @objc private func openDailyFromLink() {
         openDaily()
+    }
+
+    /// Ouvre l'écran Duel avec le code reçu par lien, prêt à être accepté.
+    @objc private func openDuelFromLink() {
+        guard let skView = gameView else { return }
+        let scene = DuelScene(size: CGSize(width: 750, height: 1334))
+        scene.incomingCode = DeepLink.consumePendingDuelCode()
+        scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        scene.scaleMode = .aspectFill
+        skView.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
     }
 
     /// Ouvre directement le Défi du jour (depuis un lien externe / événement intégré).
