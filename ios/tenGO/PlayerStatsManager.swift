@@ -55,10 +55,16 @@ final class PlayerStatsManager {
         }
     }
 
+    /// Une grille vient d'être entièrement vidée. Séparé de la fin de partie :
+    /// en Rush, le joueur peut vider plusieurs grilles dans la même partie.
+    func reportPerfectBoard() {
+        defaults.set(perfectBoardsTotal + 1, forKey: AppConfig.UserDefaultsKey.statsPerfectTotal)
+    }
+
     /// Fin d'une partie (normal, daily ou rush). `isPerfect` : grille vidée.
     func reportGameEnded(mode: GameScene.Mode, isPerfect: Bool) {
         if isPerfect {
-            defaults.set(perfectBoardsTotal + 1, forKey: AppConfig.UserDefaultsKey.statsPerfectTotal)
+            reportPerfectBoard()
         }
         switch mode {
         case .rush:

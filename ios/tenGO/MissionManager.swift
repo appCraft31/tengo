@@ -40,22 +40,26 @@ struct MissionDefinition {
     let titleKey: String
 }
 
+/// Récompenses calibrées sur l'économie existante (~60 pièces/jour en 2.3.0)
+/// et sur le catalogue boutique (1 400 pièces pour tous les thèmes) : une
+/// première version distribuait jusqu'à 195 pièces/jour, rendant l'achat de
+/// pièces sans objet.
 enum MissionCatalog {
     static let regular: [MissionDefinition] = [
-        MissionDefinition(id: "chain5x2", kind: .chainAtLeast, param: 5, target: 2, coinReward: 25, isSuper: false, titleKey: "mission.chain_at_least"),
-        MissionDefinition(id: "chain7x1", kind: .chainAtLeast, param: 7, target: 1, coinReward: 25, isSuper: false, titleKey: "mission.chain_at_least"),
-        MissionDefinition(id: "score3000", kind: .cumulativeScore, param: 0, target: 3000, coinReward: 20, isSuper: false, titleKey: "mission.cumulative_score"),
-        MissionDefinition(id: "score6000", kind: .cumulativeScore, param: 0, target: 6000, coinReward: 35, isSuper: false, titleKey: "mission.cumulative_score"),
-        MissionDefinition(id: "games2", kind: .gamesPlayed, param: 0, target: 2, coinReward: 20, isSuper: false, titleKey: "mission.games_played"),
-        MissionDefinition(id: "games3", kind: .gamesPlayed, param: 0, target: 3, coinReward: 30, isSuper: false, titleKey: "mission.games_played"),
-        MissionDefinition(id: "perfect1", kind: .perfectBoards, param: 0, target: 1, coinReward: 40, isSuper: false, titleKey: "mission.perfect_boards"),
-        MissionDefinition(id: "moves20", kind: .movesPlayed, param: 0, target: 20, coinReward: 25, isSuper: false, titleKey: "mission.moves_played"),
-        MissionDefinition(id: "moves35", kind: .movesPlayed, param: 0, target: 35, coinReward: 35, isSuper: false, titleKey: "mission.moves_played"),
+        MissionDefinition(id: "chain5x2", kind: .chainAtLeast, param: 5, target: 2, coinReward: 12, isSuper: false, titleKey: "mission.chain_at_least"),
+        MissionDefinition(id: "chain7x1", kind: .chainAtLeast, param: 7, target: 1, coinReward: 12, isSuper: false, titleKey: "mission.chain_at_least"),
+        MissionDefinition(id: "score3000", kind: .cumulativeScore, param: 0, target: 3000, coinReward: 10, isSuper: false, titleKey: "mission.cumulative_score"),
+        MissionDefinition(id: "score6000", kind: .cumulativeScore, param: 0, target: 6000, coinReward: 18, isSuper: false, titleKey: "mission.cumulative_score"),
+        MissionDefinition(id: "games2", kind: .gamesPlayed, param: 0, target: 2, coinReward: 10, isSuper: false, titleKey: "mission.games_played"),
+        MissionDefinition(id: "games3", kind: .gamesPlayed, param: 0, target: 3, coinReward: 15, isSuper: false, titleKey: "mission.games_played"),
+        MissionDefinition(id: "perfect1", kind: .perfectBoards, param: 0, target: 1, coinReward: 20, isSuper: false, titleKey: "mission.perfect_boards"),
+        MissionDefinition(id: "moves20", kind: .movesPlayed, param: 0, target: 20, coinReward: 12, isSuper: false, titleKey: "mission.moves_played"),
+        MissionDefinition(id: "moves35", kind: .movesPlayed, param: 0, target: 35, coinReward: 18, isSuper: false, titleKey: "mission.moves_played"),
     ]
 
     static let superMissions: [MissionDefinition] = [
-        MissionDefinition(id: "chain15x1", kind: .chainAtLeast, param: 15, target: 1, coinReward: 100, isSuper: true, titleKey: "mission.chain_at_least"),
-        MissionDefinition(id: "score15000", kind: .cumulativeScore, param: 0, target: 15000, coinReward: 100, isSuper: true, titleKey: "mission.cumulative_score"),
+        MissionDefinition(id: "chain15x1", kind: .chainAtLeast, param: 15, target: 1, coinReward: 45, isSuper: true, titleKey: "mission.chain_at_least"),
+        MissionDefinition(id: "score15000", kind: .cumulativeScore, param: 0, target: 15000, coinReward: 45, isSuper: true, titleKey: "mission.cumulative_score"),
     ]
 
     static func definition(for id: String) -> MissionDefinition? {
@@ -158,6 +162,15 @@ final class MissionManager {
         }
     }
 
+    /// Une grille vient d'être entièrement vidée. Séparé de la fin de partie :
+    /// en Rush, le joueur peut vider plusieurs grilles dans la même partie.
+    func reportPerfectBoard() {
+        rolloverIfNeeded()
+        updateEntries { def, value in
+            def.kind == .perfectBoards ? value + 1 : value
+        }
+    }
+
     /// Fin de partie (quel que soit le mode) : compte pour gamesPlayed et,
     /// si la grille a été vidée, pour perfectBoards.
     func reportGameEnded(isPerfect: Bool) {
@@ -203,7 +216,12 @@ final class MissionManager {
     /// cohérent avec l'esprit « one day, one set » du Défi du jour.
     private func rolloverIfNeeded(_ date: Date = Date()) {
         let key = MissionManager.dayKey(for: date)
-        guard defaults.integer(forKey: AppConfig.UserDefaultsKey.missionsDayKey) != key else { return }
+        let storedKey = defaults.integer(forKey: AppConfig.UserDefaultsKey.missionsDayKey)
+        // STRICTEMENT supérieur : avec une simple inégalité, reculer l'horloge
+        // d'un jour régénérait le même jeu de missions avec `claimed: false`,
+        // et les récompenses (dont les 100 pièces de la super mission)
+        // devenaient farmables à l'infini.
+        guard key > storedKey else { return }
 
         var generator = SeededGenerator(seed: UInt64(bitPattern: Int64(key)) &+ 0x4D_49_53)
         let chosenRegular = Array(MissionCatalog.regular.shuffled(using: &generator).prefix(MissionManager.missionsPerDay))

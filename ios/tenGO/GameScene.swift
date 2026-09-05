@@ -142,6 +142,14 @@ class GameScene: SKScene {
     private var rushTimeRemaining: TimeInterval = GameScene.rushDuration
     private var rushTimerLabel: SKLabelNode?
     private var rushEnded = false
+    /// Décompte de lancement en cours : bloque l'entrée sans passer par
+    /// `isAnimating`, que l'apparition de la grille remet à false.
+    private var rushCountdownActive = false
+    /// Chrono en marche (piloté par `update`, en temps réel).
+    private var rushTimerRunning = false
+    private var rushLastUpdate: TimeInterval = 0
+    /// Grille en cours de redistribution après avoir été vidée : chrono suspendu.
+    private var rushAwaitingBoard = false
 
     // MARK: - Boosters
     private var boosterBar: SKNode?
@@ -757,7 +765,7 @@ class GameScene: SKScene {
             return
         }
 
-        guard !isAnimating else { return }
+        guard !isAnimating, !rushCountdownActive else { return }
         guard let coord = gridCoord(for: point) else { return }
         // Une bulle gelée est intraversable tant que le givre n'a pas fondu.
         if gridModel.cells[coord.row][coord.col]?.isFrozen == true { return }
@@ -772,7 +780,7 @@ class GameScene: SKScene {
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard !isAnimating, !currentPath.isEmpty, let touch = touches.first else { return }
+        guard !isAnimating, !rushCountdownActive, !currentPath.isEmpty, let touch = touches.first else { return }
         let point = touch.location(in: self)
         guard let target = gridCoord(for: point) else { return }
         let last = currentPath.last!
@@ -843,7 +851,7 @@ class GameScene: SKScene {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard !isAnimating, !currentPath.isEmpty else { return }
+        guard !isAnimating, !rushCountdownActive, !currentPath.isEmpty else { return }
         if gridModel.pathSum(currentPath) == 10 {
             // L'haptique de validation est portée par le JuiceDirector
             // (motif proportionné à la longueur), déclenché dans commitPath.
@@ -1186,7 +1194,9 @@ class GameScene: SKScene {
 
     private func afterPop() {
         if gridModel.isGridEmpty() {
-            if mode == .demo { demoReseed() } else { triggerWin() }
+            if mode == .demo { demoReseed() }
+            else if mode == .rush { rushBoardCleared() }
+            else { triggerWin() }
             return
         }
 
@@ -1226,8 +1236,13 @@ class GameScene: SKScene {
                 demoReseed()
             } else if mode == .rush {
                 // Le chrono seul décide de la fin : une grille bloquée se
-                // régénère au lieu de mettre fin à la partie.
+                // remélange au lieu de mettre fin à la partie. Si le mélange
+                // ne suffit pas (repli de reshuffleValues inopérant quand il
+                // ne reste plus de bulles adjacentes), on redistribue une
+                // grille neuve — sinon le joueur resterait bloqué jusqu'à
+                // l'expiration du chrono.
                 performShuffle()
+                if !gridModel.hasValidMove() { rushReseed() }
             } else {
                 triggerLose()
             }
@@ -1729,7 +1744,7 @@ class GameScene: SKScene {
             coinsEarnedThisGame = CoinManager.shared.awardForScore(score)
             lastXPResult = LevelManager.shared.awardForGame(score: score,
                                                               longestChain: longestChain,
-                                                              combosCreated: combosCreated,
+                                                              chainsCommitted: combosCreated,
                                                               isPerfect: isWinState)
             MissionManager.shared.reportGameEnded(isPerfect: isWinState)
             PlayerStatsManager.shared.reportGameEnded(mode: mode, isPerfect: isWinState)
@@ -1764,7 +1779,12 @@ class GameScene: SKScene {
     private func checkAchievements() {
         let unlocked = AchievementManager.checkForNewUnlocks()
         guard let first = unlocked.first else { return }
-        let text = "🏆 " + AchievementManager.title(for: first)
+        // Un joueur qui met à jour l'app débloque d'un coup tous les succès
+        // que son historique de scores méritait déjà : n'en annoncer qu'un
+        // seul laisserait croire que les autres n'ont pas été crédités.
+        let text = unlocked.count > 1
+            ? "🏆 " + String(format: String(localized: "achievements.unlocked_multi"), unlocked.count)
+            : "🏆 " + AchievementManager.title(for: first)
         flashMessage(text, duration: 2.2)
     }
 
@@ -1856,8 +1876,13 @@ class GameScene: SKScene {
 
     /// Décompte de lancement (« READY… 3, 2, 1, GO! »), entrée bloquée le
     /// temps de la séquence.
+    ///
+    /// Le blocage passe par `rushCountdownActive` et NON par `isAnimating` :
+    /// après un « Rejouer », `setupGridAnimated` remet `isAnimating` à false
+    /// en fin d'apparition des bulles, c'est-à-dire en plein décompte — le
+    /// joueur pouvait alors marquer des points chrono à l'arrêt.
     private func startRushCountdown() {
-        isAnimating = true
+        rushCountdownActive = true
         let label = SKLabelNode(text: "")
         label.fontName = "AvenirNext-Heavy"
         label.fontSize = 64
@@ -1887,18 +1912,38 @@ class GameScene: SKScene {
     }
 
     private func startRushTimer() {
-        isAnimating = false
+        rushCountdownActive = false
         rushTimeRemaining = GameScene.rushDuration
+        rushLastUpdate = 0
+        rushTimerRunning = true
         updateRushTimerLabel()
-        run(SKAction.repeatForever(SKAction.sequence([
-            SKAction.wait(forDuration: 1.0),
-            SKAction.run { [weak self] in self?.tickRushTimer() }
-        ])), withKey: "rushTimer")
     }
 
-    private func tickRushTimer() {
-        guard !rushEnded else { return }
-        rushTimeRemaining -= 1
+    /// Décompte en temps RÉEL, volontairement hors SKAction : le hit-stop du
+    /// juice fait tomber `scene.speed` à 0,04 sur chaque grosse chaîne, ce qui
+    /// ralentissait d'autant un chrono piloté par action — une partie « 60 s »
+    /// durait en réalité plusieurs secondes de plus, et d'autant plus que le
+    /// joueur enchaînait. Inacceptable pour un mode qui alimente un classement.
+    override func update(_ currentTime: TimeInterval) {
+        guard mode == .rush, rushTimerRunning, !rushEnded else { return }
+
+        // Grille en cours de redistribution : le joueur ne peut pas jouer, le
+        // chrono ne doit pas courir. Il repart quand le plateau redevient
+        // jouable — vider la grille est récompensé, pas taxé.
+        if rushAwaitingBoard {
+            guard !isAnimating else { rushLastUpdate = 0; return }
+            rushAwaitingBoard = false
+        }
+
+        defer { rushLastUpdate = currentTime }
+        guard rushLastUpdate > 0 else { return }
+
+        // Un retour d'arrière-plan produit un delta énorme : on l'ignore
+        // plutôt que d'engloutir le chrono d'un coup.
+        let delta = currentTime - rushLastUpdate
+        guard delta > 0, delta < 1.0 else { return }
+
+        rushTimeRemaining -= delta
         updateRushTimerLabel()
         if rushTimeRemaining <= 0 {
             triggerRushTimeUp()
@@ -1906,7 +1951,7 @@ class GameScene: SKScene {
     }
 
     private func updateRushTimerLabel() {
-        rushTimerLabel?.text = "\(max(0, Int(rushTimeRemaining.rounded())))"
+        rushTimerLabel?.text = "\(max(0, Int(rushTimeRemaining.rounded(.up))))"
     }
 
     /// Chaîne particulièrement longue en Rush → bonus de temps, avec un
@@ -1932,11 +1977,58 @@ class GameScene: SKScene {
         ]))
     }
 
+    /// Grille vidée en Rush : c'est un exploit, pas une fin de partie. On
+    /// crédite le bonus et on redistribue une grille neuve — le chrono seul
+    /// décide de la fin (sinon `triggerWin` enregistrait le score une
+    /// première fois, puis `triggerRushTimeUp` une seconde à l'échéance).
+    private func rushBoardCleared() {
+        juice.resetTimeScale()
+        SoundManager.shared.playWin()
+        let bonus = 1000
+        syncDisplayedScore()
+        score += bonus
+        MissionManager.shared.reportScore(bonus)
+        MissionManager.shared.reportPerfectBoard()
+        PlayerStatsManager.shared.reportPerfectBoard()
+        showScorePopup(points: bonus, at: CGPoint(x: 0, y: 50), tier: .large)
+        juice.onWin(at: CGPoint(x: 0, y: 0), accent: ThemeManager.shared.active.accent)
+        checkAchievements()
+        rushReseed()
+    }
+
+    /// Redistribue une grille neuve sans interrompre la partie (même patron
+    /// que `demoReseed`). `reshuffleValues` ne suffirait pas : elle travaille
+    /// sur les bulles existantes et laisserait une grille vidée... vide.
+    private func rushReseed() {
+        isAnimating = true
+        rushAwaitingBoard = true
+        let fadeOut = SKAction.sequence([
+            SKAction.fadeOut(withDuration: 0.18),
+            SKAction.removeFromParent()
+        ])
+        for row in 0..<GridModel.rows {
+            for col in 0..<GridModel.cols { bubbleNodes[row][col]?.run(fadeOut) }
+        }
+        run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.24),
+            SKAction.run { [weak self] in
+                guard let self else { return }
+                var generator = SystemRandomNumberGenerator()
+                self.gridModel = GridModel(using: &generator)
+                self.bubbleNodes = [[BubbleNode?]](
+                    repeating: [BubbleNode?](repeating: nil, count: GridModel.cols),
+                    count: GridModel.rows
+                )
+                self.setupGridAnimated()   // remet isAnimating à false en fin d'apparition
+            }
+        ]))
+    }
+
     /// Fin de partie Rush : le chrono seul décide, jamais la grille.
     private func triggerRushTimeUp() {
         guard !rushEnded else { return }
         rushEnded = true
-        removeAction(forKey: "rushTimer")
+        rushTimerRunning = false
         isAnimating = true
         isWinState = false
         SoundManager.shared.playLose()
@@ -2296,11 +2388,17 @@ class GameScene: SKScene {
                 )
                 self.setupGridAnimated()
                 self.coinsEarnedThisGame = 0
+                // Sans cette remise à nil, le panneau de la partie suivante
+                // réaffichait le gain d'XP (et le « Niveau supérieur ! ») de la
+                // précédente — typiquement au 2e passage du Défi du jour, où
+                // aucun XP n'est recrédité.
+                self.lastXPResult = nil
                 self.hammerArmed = false
                 self.boosterBar?.isHidden = false
                 self.refreshBoosterButtons()
                 if self.mode == .rush {
-                    self.removeAction(forKey: "rushTimer")
+                    self.rushTimerRunning = false
+                    self.rushAwaitingBoard = false
                     self.rushEnded = false
                     self.rushTimeRemaining = GameScene.rushDuration
                     self.updateRushTimerLabel()
