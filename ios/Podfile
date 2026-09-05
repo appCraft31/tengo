@@ -5,4 +5,8 @@ target 'tenGO' do
   pod 'Google-Mobile-Ads-SDK'
   pod 'GoogleMobileAdsMediationVungle'
   pod 'FirebaseAnalytics'
+  # Socle multijoueur asynchrone (Duel, Amis, Leagues) — cf. FirebaseService.swift.
+  # Auth anonyme : aucune friction de connexion, conforme à l'esprit du jeu.
+  pod 'FirebaseAuth'
+  pod 'FirebaseFirestore'
 end

@@ -1,0 +1,68 @@
+rules_version = '2';
+
+// Règles de sécurité Firestore — tenGO
+//
+// Principe : le client n'est jamais digne de confiance. Ces règles sont la
+// seule barrière tant qu'aucune Cloud Function ne valide les scores (cf. #30).
+// Elles ne prouvent pas qu'un score est honnête — elles garantissent qu'un
+// joueur ne peut pas réécrire le score d'un autre, ni rejouer un duel déjà
+// tranché, ni inventer un score aberrant.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    // Borne de plausibilité : au barème du jeu, un score au-delà reste hors
+    // d'atteinte. Filet grossier contre les valeurs fantaisistes, en attendant
+    // la vérification par rejeu côté serveur (#30).
+    function isPlausibleScore(value) {
+      return value is int && value >= 0 && value <= 100000;
+    }
+
+    // Profil public minimal : seul le nom affiché dans un duel.
+    match /players/{uid} {
+      allow read: if isSignedIn();
+      allow create, update: if isSignedIn()
+                            && request.auth.uid == uid
+                            && request.resource.data.name is string
+                            && request.resource.data.name.size() <= 40;
+      allow delete: if false;
+    }
+
+    // Un duel : une graine de grille, le score du challenger, puis celui de
+    // l'adversaire. Lisible par qui connaît le code (il est partagé
+    // volontairement), mais écrivable seulement dans un sens.
+    match /duels/{duelId} {
+      allow read: if isSignedIn();
+
+      // Le challenger crée le duel et ne peut s'y inscrire que lui-même.
+      allow create: if isSignedIn()
+                    && request.resource.data.challengerUid == request.auth.uid
+                    && request.resource.data.seed is int
+                    && isPlausibleScore(request.resource.data.challengerScore)
+                    && request.resource.data.opponentUid == null;
+
+      // L'adversaire ne peut que remplir SA moitié, une seule fois, sans
+      // toucher à la graine ni au score du challenger.
+      allow update: if isSignedIn()
+                    && resource.data.opponentUid == null
+                    && request.resource.data.opponentUid == request.auth.uid
+                    && request.resource.data.opponentUid != resource.data.challengerUid
+                    && request.resource.data.seed == resource.data.seed
+                    && request.resource.data.challengerUid == resource.data.challengerUid
+                    && request.resource.data.challengerScore == resource.data.challengerScore
+                    && isPlausibleScore(request.resource.data.opponentScore);
+
+      // Un duel tranché reste au dossier : pas d'effacement.
+      allow delete: if false;
+    }
+
+    // Tout le reste est fermé par défaut.
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
