@@ -121,6 +121,8 @@ class GameScene: SKScene {
     private var isWinState = false
     /// Pièces créditées à la fin de cette partie (affiché dans le panel game-over).
     private var coinsEarnedThisGame = 0
+    /// XP créditée à la fin de cette partie (affiché dans le panel game-over).
+    private var lastXPResult: LevelManager.GainResult?
 
     // MARK: - Boosters
     private var boosterBar: SKNode?
@@ -1664,11 +1666,16 @@ class GameScene: SKScene {
             GameCenterManager.shared.submitScore(score)
             GameState.clear()
             coinsEarnedThisGame = CoinManager.shared.awardForScore(score)
+            lastXPResult = LevelManager.shared.awardForGame(score: score,
+                                                              longestChain: longestChain,
+                                                              combosCreated: combosCreated,
+                                                              isPerfect: isWinState)
             AnalyticsService.levelEnd(mode: "normal", score: score, won: isWinState)
         case .daily:
-            // Pièces offertes une seule fois, à la première complétion du jour.
+            // Pièces et XP offertes une seule fois, à la première complétion du jour.
             if !DailyChallenge.isCompletedToday() {
                 CoinManager.shared.awardDailyChallenge()
+                lastXPResult = LevelManager.shared.awardForDailyChallenge(isPerfect: isWinState)
             }
             DailyChallenge.markCompleted()
             GameCenterManager.shared.submitDailyScore(score)
@@ -1838,24 +1845,73 @@ class GameScene: SKScene {
         panel.addChild(scoreDisplay)
         animateScoreCountUp(label: scoreDisplay, target: score)
 
-        // Pièces gagnées cette partie (mode normal) : icône pièce + montant (sans emoji).
-        if coinsEarnedThisGame > 0 {
-            let coinLine = SKNode()
-            coinLine.position = CGPoint(x: 0, y: 118)
-            let label = SKLabelNode(text: "+\(coinsEarnedThisGame)")
-            label.fontName = "AvenirNext-Bold"
-            label.fontSize = 22
-            label.fontColor = UIColor(red: 0.78, green: 0.55, blue: 0.12, alpha: 1)
-            label.verticalAlignmentMode = .center
-            label.horizontalAlignmentMode = .left
-            let coin = CoinIcon.make(radius: 12)
-            let gap: CGFloat = 8
-            let contentW = 24 + gap + label.frame.width
-            coin.position = CGPoint(x: -contentW / 2 + 12, y: 0)
-            label.position = CGPoint(x: -contentW / 2 + 24 + gap, y: 0)
-            coinLine.addChild(coin)
-            coinLine.addChild(label)
-            panel.addChild(coinLine)
+        // Pièces et XP gagnées cette partie, sur une même ligne (icône pièce +
+        // montant, puis XP si créditée — sans emoji).
+        let xpGainedThisGame = lastXPResult?.xpGained ?? 0
+        if coinsEarnedThisGame > 0 || xpGainedThisGame > 0 {
+            let rewardLine = SKNode()
+            rewardLine.position = CGPoint(x: 0, y: 118)
+
+            var pieces: [(node: SKNode, width: CGFloat)] = []
+
+            if coinsEarnedThisGame > 0 {
+                let group = SKNode()
+                let label = SKLabelNode(text: "+\(coinsEarnedThisGame)")
+                label.fontName = "AvenirNext-Bold"
+                label.fontSize = 22
+                label.fontColor = UIColor(red: 0.78, green: 0.55, blue: 0.12, alpha: 1)
+                label.verticalAlignmentMode = .center
+                label.horizontalAlignmentMode = .left
+                let coin = CoinIcon.make(radius: 12)
+                let gap: CGFloat = 8
+                let width = 24 + gap + label.frame.width
+                coin.position = CGPoint(x: -width / 2 + 12, y: 0)
+                label.position = CGPoint(x: -width / 2 + 24 + gap, y: 0)
+                group.addChild(coin)
+                group.addChild(label)
+                pieces.append((group, width))
+            }
+
+            if xpGainedThisGame > 0 {
+                let label = SKLabelNode(text: String(format: String(localized: "game_over.xp_gained"), xpGainedThisGame))
+                label.fontName = "AvenirNext-Bold"
+                label.fontSize = 22
+                label.fontColor = UIColor(red: 0.31, green: 0.52, blue: 0.85, alpha: 1)
+                label.verticalAlignmentMode = .center
+                label.horizontalAlignmentMode = .center
+                pieces.append((label, label.frame.width))
+            }
+
+            let interGap: CGFloat = 28
+            let totalWidth = pieces.reduce(0) { $0 + $1.width } + interGap * CGFloat(max(0, pieces.count - 1))
+            var cursorX = -totalWidth / 2
+            for piece in pieces {
+                piece.node.position.x = cursorX + piece.width / 2
+                rewardLine.addChild(piece.node)
+                cursorX += piece.width + interGap
+            }
+
+            panel.addChild(rewardLine)
+        }
+
+        // Niveau supérieur atteint cette partie : petite mise en avant discrète
+        // entre le titre et le séparateur (événement rare, pas de mise en page dédiée).
+        if let xpResult = lastXPResult, xpResult.leveledUp {
+            let burst = PopEffects.makeBurst(color: ThemeManager.shared.active.accent, tier: .small)
+            burst.position = CGPoint(x: 0, y: 150)
+            burst.zPosition = 16
+            panel.addChild(burst)
+
+            let levelUpText = String(localized: "game_over.level_up") + " "
+                + String(format: String(localized: "game_over.new_level"), xpResult.newLevel, LevelManager.shared.currentTitle)
+            let levelUpLabel = SKLabelNode(text: levelUpText)
+            levelUpLabel.fontName = "AvenirNext-Bold"
+            levelUpLabel.fontSize = 14
+            levelUpLabel.fontColor = UIColor(red: 0.31, green: 0.52, blue: 0.85, alpha: 1)
+            levelUpLabel.verticalAlignmentMode = .center
+            levelUpLabel.position = CGPoint(x: 0, y: 150)
+            levelUpLabel.zPosition = 17
+            panel.addChild(levelUpLabel)
         }
 
         // Record
