@@ -217,6 +217,12 @@ class MenuScene: SKScene {
                       at: CGPoint(x: 0, y: stack()),
                       accent: theme.color(forValue: 3), fontSize: 20)
 
+        // Succès — progression cumulée, jamais réclamée manuellement.
+        addMenuButton(text: String(localized: "menu.achievements"), name: "achievements",
+                      width: buttonWidth, height: buttonHeight,
+                      at: CGPoint(x: 0, y: stack()),
+                      accent: theme.color(forValue: 8), fontSize: 20)
+
         // Missions — pastille rouge si une récompense attend d'être réclamée.
         let missionsBtn = addMenuButton(text: String(localized: "menu.missions"), name: "missions",
                       width: buttonWidth, height: buttonHeight,
@@ -582,6 +588,12 @@ class MenuScene: SKScene {
                     self.navigateToMissions()
                 }
                 return
+            case "achievements":
+                animateTap(node.parent ?? node)
+                run(SKAction.wait(forDuration: 0.12)) {
+                    self.navigateToAchievements()
+                }
+                return
             case "rush":
                 animateTap(node.parent ?? node)
                 run(SKAction.wait(forDuration: 0.12)) {
@@ -702,6 +714,12 @@ class MenuScene: SKScene {
         let scene = GameScene(size: size, startRush: true)
         scene.scaleMode = .aspectFill
         view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+    }
+
+    private func navigateToAchievements() {
+        let scene = AchievementsScene(size: size)
+        scene.scaleMode = .aspectFill
+        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
     }
 
     private func navigateToProfile() {

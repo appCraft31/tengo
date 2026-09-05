@@ -1098,6 +1098,7 @@ class GameScene: SKScene {
             MissionManager.shared.reportMove()
             MissionManager.shared.reportChain(length: length)
             PlayerStatsManager.shared.reportChain(length: length)
+            checkAchievements()
         }
         if mode == .rush && length >= GameScene.rushBonusChainLength {
             awardRushTimeBonus()
@@ -1755,6 +1756,16 @@ class GameScene: SKScene {
         case .demo:
             break   // démo : aucun score enregistré ni soumis
         }
+        if mode != .demo { checkAchievements() }
+    }
+
+    /// Crédite et annonce les succès nouvellement débloqués depuis le
+    /// dernier contrôle (réutilise le message éphémère de la partie).
+    private func checkAchievements() {
+        let unlocked = AchievementManager.checkForNewUnlocks()
+        guard let first = unlocked.first else { return }
+        let text = "🏆 " + AchievementManager.title(for: first)
+        flashMessage(text, duration: 2.2)
     }
 
     private func triggerWin() {
