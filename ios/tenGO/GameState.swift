@@ -14,6 +14,7 @@ struct GameState: Codable {
 
     private static let savedGameKey = "tengo_saved_game"
     private static let highScoresKey = "tengo_high_scores"
+    private static let rushHighScoresKey = "tengo_rush_high_scores"
 
     // MARK: - Persistence
 
@@ -50,5 +51,22 @@ struct GameState: Codable {
 
     static func highScores() -> [Int] {
         UserDefaults.standard.array(forKey: highScoresKey) as? [Int] ?? []
+    }
+
+    // MARK: - Rush (classement local séparé — monnaie de score différente du mode Zen)
+
+    static func addRushScore(_ score: Int) {
+        var scores = rushHighScores()
+        scores.append(score)
+        scores.sort(by: >)
+        UserDefaults.standard.set(Array(scores.prefix(10)), forKey: rushHighScoresKey)
+    }
+
+    static func rushHighScores() -> [Int] {
+        UserDefaults.standard.array(forKey: rushHighScoresKey) as? [Int] ?? []
+    }
+
+    static func rushBest() -> Int {
+        rushHighScores().first ?? 0
     }
 }

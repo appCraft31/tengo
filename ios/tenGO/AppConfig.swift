@@ -42,6 +42,9 @@ enum AppConfig {
     /// Idéalement configuré en réinitialisation quotidienne.
     static let gameCenterDailyLeaderboardID = "com.tengo.leaderboard.daily"
 
+    /// Classement du mode Rush — à créer dans App Store Connect.
+    static let gameCenterRushLeaderboardID = "com.tengo.leaderboard.rush"
+
     // MARK: - UserDefaults keys
 
     enum UserDefaultsKey {

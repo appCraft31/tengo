@@ -62,6 +62,22 @@ final class GameCenterManager: NSObject {
         }
     }
 
+    func submitRushScore(_ score: Int) {
+        guard GKLocalPlayer.local.isAuthenticated else { return }
+        GKLeaderboard.submitScore(
+            score,
+            context: 0,
+            player: GKLocalPlayer.local,
+            leaderboardIDs: [AppConfig.gameCenterRushLeaderboardID]
+        ) { error in
+            if let error {
+                print("[GameCenter] Erreur soumission score Rush : \(error.localizedDescription)")
+            } else {
+                print("[GameCenter] Score Rush \(score) soumis avec succès")
+            }
+        }
+    }
+
     func showLeaderboard(_ leaderboardID: String = AppConfig.gameCenterLeaderboardID, from viewController: UIViewController) {
         guard GKLocalPlayer.local.isAuthenticated else { return }
         let gcVC = GKGameCenterViewController(

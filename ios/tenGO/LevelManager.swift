@@ -32,6 +32,7 @@ final class LevelManager {
     static let xpDailyChallengePerfect = 75
     static let xpMission = 15
     static let xpSuperMission = 40
+    static let xpRush = 20
 
     /// Titres de niveau (palier → clé de localisation), du plus bas au plus
     /// haut. `currentTitle` retient le plus haut palier atteint.
@@ -117,6 +118,12 @@ final class LevelManager {
     @discardableResult
     func awardForMission(isSuper: Bool) -> GainResult {
         add(isSuper ? LevelManager.xpSuperMission : LevelManager.xpMission)
+    }
+
+    /// Fin d'une partie Rush (forfait fixe, indépendant du score — cf. GDD §22).
+    @discardableResult
+    func awardForRush() -> GainResult {
+        add(LevelManager.xpRush)
     }
 
     // MARK: - Private
