@@ -15,10 +15,11 @@ class GameScene: SKScene {
 
     // MARK: - Init
 
-    enum Mode { case normal, daily, demo, rush }
+    enum Mode { case normal, daily, demo, rush, puzzle }
 
     private let mode: Mode
     private var dailyToday: DailyChallenge.Today?
+    private var puzzleLevel: PuzzleLevel?
     private var obstacleNodes: [SKNode] = []
 
     // MARK: - Démo (auto-player, capture vidéo marketing)
@@ -58,6 +59,16 @@ class GameScene: SKScene {
         self.mode = .demo
         self.demoSeed = demoSeed
         self.demoSpeed = max(0.25, demoSpeed)
+        self.resuming = false
+        super.init(size: size)
+    }
+
+    /// Mode Puzzles : grille fixe validée hors ligne, objectif « vider la
+    /// grille ». Le nombre de coups est invariant (somme/10), c'est le score
+    /// — donc la qualité du découpage en chaînes — qui décide des étoiles.
+    init(size: CGSize, puzzle: PuzzleLevel) {
+        self.mode = .puzzle
+        self.puzzleLevel = puzzle
         self.resuming = false
         super.init(size: size)
     }
@@ -131,6 +142,8 @@ class GameScene: SKScene {
     private var isWinState = false
     /// Pièces créditées à la fin de cette partie (affiché dans le panel game-over).
     private var coinsEarnedThisGame = 0
+    /// Étoiles obtenues sur le niveau de puzzle qui vient d'être terminé.
+    private var puzzleStarsEarned = 0
     /// XP créditée à la fin de cette partie (affiché dans le panel game-over).
     private var lastXPResult: LevelManager.GainResult?
 
@@ -215,6 +228,8 @@ class GameScene: SKScene {
         } else if mode == .demo {
             var generator = SeededGenerator(seed: demoSeed)
             gridModel = GridModel(using: &generator)
+        } else if mode == .puzzle, let puzzle = puzzleLevel {
+            gridModel = GridModel(puzzleLayout: puzzle.layout)
         } else if mode == .rush {
             var generator = SystemRandomNumberGenerator()
             gridModel = GridModel(using: &generator)
@@ -433,7 +448,25 @@ class GameScene: SKScene {
     private func setupUI() {
         let logoY = gridTop + 95
 
-        if mode == .rush {
+        if mode == .puzzle, let puzzle = puzzleLevel {
+            // Le numéro de niveau et l'objectif remplacent le logo : en mode
+            // Puzzles, le joueur doit savoir ce qu'on attend de lui.
+            let label = SKLabelNode(text: String(format: String(localized: "puzzle.level_label"), puzzle.index))
+            label.fontName = "AvenirNext-Heavy"
+            label.fontSize = 34
+            label.fontColor = ThemeManager.shared.active.logo
+            label.verticalAlignmentMode = .center
+            label.position = CGPoint(x: 0, y: logoY + 8)
+            addChild(label)
+
+            let goal = SKLabelNode(text: String(localized: "puzzle.goal_clear"))
+            goal.fontName = "AvenirNext-Medium"
+            goal.fontSize = 15
+            goal.fontColor = ThemeManager.shared.active.logo.withAlphaComponent(0.65)
+            goal.verticalAlignmentMode = .center
+            goal.position = CGPoint(x: 0, y: logoY - 22)
+            addChild(goal)
+        } else if mode == .rush {
             // Le chrono remplace le logo décoratif : c'est l'information la
             // plus importante à l'écran en Rush.
             let timer = SKLabelNode(text: "60")
@@ -1768,6 +1801,16 @@ class GameScene: SKScene {
             MissionManager.shared.reportGameEnded(isPerfect: false)
             PlayerStatsManager.shared.reportGameEnded(mode: mode, isPerfect: false)
             AnalyticsService.levelEnd(mode: "rush", score: score, won: false)
+        case .puzzle:
+            if let puzzle = puzzleLevel, isWinState {
+                let stars = puzzle.stars(forScore: score)
+                PuzzleProgress.shared.record(world: puzzle.world, index: puzzle.index, stars: stars)
+                puzzleStarsEarned = stars
+            }
+            lastXPResult = LevelManager.shared.awardForPuzzle(completed: isWinState)
+            MissionManager.shared.reportGameEnded(isPerfect: isWinState)
+            PlayerStatsManager.shared.reportGameEnded(mode: mode, isPerfect: isWinState)
+            AnalyticsService.levelEnd(mode: "puzzle", score: score, won: isWinState)
         case .demo:
             break   // démo : aucun score enregistré ni soumis
         }
@@ -1794,13 +1837,17 @@ class GameScene: SKScene {
         SoundManager.shared.playWin()
         InterstitialAdManager.shared.markGameCompleted()
         isWinState = true
-        let bonus = 1000
+        // Le bonus de victoire fausserait les seuils d'étoiles du mode
+        // Puzzles, calculés hors ligne sur le seul score des chaînes.
+        let bonus = mode == .puzzle ? 0 : 1000
         // Le bonus de victoire a lui aussi sa bulle : on rattrape d'abord les
         // gains encore en vol, puis on laisse le +1000 créditer à son arrivée.
         syncDisplayedScore()
         score += bonus
-        if mode != .demo { MissionManager.shared.reportScore(bonus) }
-        showScorePopup(points: bonus, at: CGPoint(x: 0, y: 50), tier: .large)
+        if bonus > 0 {
+            if mode != .demo { MissionManager.shared.reportScore(bonus) }
+            showScorePopup(points: bonus, at: CGPoint(x: 0, y: 50), tier: .large)
+        }
         // Vider la grille est LE moment fort du jeu, et il n'était jusqu'ici
         // souligné par rien.
         juice.onWin(at: CGPoint(x: 0, y: 0),
@@ -2088,7 +2135,11 @@ class GameScene: SKScene {
 
         // Titre
         let titleText: String
-        if mode == .rush {
+        if mode == .puzzle {
+            titleText = isWinState
+                ? String(localized: "puzzle.solved_title")
+                : String(localized: "puzzle.stuck_title")
+        } else if mode == .rush {
             titleText = String(localized: "rush.time_up_title")
         } else if isWinState {
             titleText = String(localized: "game_over.perfect_title")
@@ -2190,11 +2241,28 @@ class GameScene: SKScene {
             panel.addChild(levelUpLabel)
         }
 
+        // Mode Puzzles : les étoiles remplacent la comparaison au record, qui
+        // n'a pas de sens sur une grille fixe.
+        if mode == .puzzle {
+            let stars = SKLabelNode(text: String(repeating: "★", count: puzzleStarsEarned)
+                                    + String(repeating: "☆", count: 3 - puzzleStarsEarned))
+            stars.fontName = "AvenirNext-Bold"
+            stars.fontSize = 34
+            stars.fontColor = isWinState
+                ? UIColor(red: 0.95, green: 0.72, blue: 0.20, alpha: 1)
+                : UIColor(white: 0.60, alpha: 1)
+            stars.verticalAlignmentMode = .center
+            stars.position = CGPoint(x: 0, y: 30)
+            panel.addChild(stars)
+        }
+
         // Record
         let scores = mode == .rush ? GameState.rushHighScores() : GameState.highScores()
         let isNewRecord = scores.first == score && score > 0
 
-        if isNewRecord {
+        if mode == .puzzle {
+            // rien : la rangée d'étoiles occupe déjà cette place
+        } else if isNewRecord {
             let record = SKLabelNode(text: String(localized: "game_over.new_record"))
             record.fontName = "AvenirNext-Bold"
             record.fontSize = 20
@@ -2238,7 +2306,7 @@ class GameScene: SKScene {
 
         // Bouton Rejouer — masqué en mode Défi (une seule partie par jour) ;
         // en Rush, "Rejouer" EST le CTA principal (courtes sessions répétées).
-        if mode == .normal || mode == .rush {
+        if mode == .normal || mode == .rush || mode == .puzzle {
             let replayBtn = SKNode()
             replayBtn.name = "replayBtn"
             replayBtn.position = CGPoint(x: 0, y: -140)
@@ -2379,6 +2447,10 @@ class GameScene: SKScene {
                 // Défi du jour : on rejoue la MÊME grille (déterministe), pas une nouvelle.
                 if self.mode == .daily, let today = self.dailyToday {
                     self.gridModel = today.grid
+                } else if self.mode == .puzzle, let puzzle = self.puzzleLevel {
+                    // Un puzzle se rejoue à l'identique : c'est tout l'intérêt
+                    // de retenter pour décrocher une étoile de plus.
+                    self.gridModel = GridModel(puzzleLayout: puzzle.layout)
                 } else {
                     self.gridModel = GridModel()
                 }
@@ -2388,6 +2460,7 @@ class GameScene: SKScene {
                 )
                 self.setupGridAnimated()
                 self.coinsEarnedThisGame = 0
+                self.puzzleStarsEarned = 0
                 // Sans cette remise à nil, le panneau de la partie suivante
                 // réaffichait le gain d'XP (et le « Niveau supérieur ! ») de la
                 // précédente — typiquement au 2e passage du Défi du jour, où
@@ -2577,9 +2650,14 @@ class GameScene: SKScene {
         let rootVC = view?.window?.rootViewController ?? UIViewController()
         InterstitialAdManager.shared.maybeShow(trigger: .home, from: rootVC) { [weak self] in
             guard let self else { return }
-            let menu = MenuScene(size: self.size)
-            menu.scaleMode = .aspectFill
-            self.view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.3))
+            // Depuis un puzzle, « retour » ramène à la liste des niveaux :
+            // renvoyer au menu principal obligerait à tout renaviguer pour
+            // enchaîner le niveau suivant.
+            let destination: SKScene = self.mode == .puzzle
+                ? PuzzleLevelsScene(size: self.size, world: self.puzzleLevel?.world ?? 1)
+                : MenuScene(size: self.size)
+            destination.scaleMode = .aspectFill
+            self.view?.presentScene(destination, transition: SKTransition.fade(withDuration: 0.3))
         }
     }
 }

@@ -40,6 +40,7 @@ final class LevelManager {
     static let xpMission = 15
     static let xpSuperMission = 40
     static let xpRush = 20
+    static let xpPuzzleSolved = 40
 
     /// Titres de niveau (palier → clé de localisation), du plus bas au plus
     /// haut. `currentTitle` retient le plus haut palier atteint.
@@ -131,6 +132,13 @@ final class LevelManager {
     @discardableResult
     func awardForRush() -> GainResult {
         add(LevelManager.xpRush)
+    }
+
+    /// Fin d'un niveau de puzzle : plein tarif s'il est résolu, consolation
+    /// s'il est abandonné en cours (le joueur a quand même joué).
+    @discardableResult
+    func awardForPuzzle(completed: Bool) -> GainResult {
+        add(completed ? LevelManager.xpPuzzleSolved : LevelManager.xpGameCompleted)
     }
 
     /// Déblocage d'un succès (cf. AchievementManager.checkForNewUnlocks).

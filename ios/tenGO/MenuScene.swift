@@ -217,6 +217,12 @@ class MenuScene: SKScene {
                       at: CGPoint(x: 0, y: stack()),
                       accent: theme.color(forValue: 3), fontSize: 20)
 
+        // Puzzles — contenu permanent, à côté des modes générés.
+        addMenuButton(text: String(localized: "menu.puzzles"), name: "puzzles",
+                      width: buttonWidth, height: buttonHeight,
+                      at: CGPoint(x: 0, y: stack()),
+                      accent: theme.color(forValue: 9), fontSize: 20)
+
         // Succès — progression cumulée, jamais réclamée manuellement.
         addMenuButton(text: String(localized: "menu.achievements"), name: "achievements",
                       width: buttonWidth, height: buttonHeight,
@@ -594,6 +600,12 @@ class MenuScene: SKScene {
                     self.navigateToAchievements()
                 }
                 return
+            case "puzzles":
+                animateTap(node.parent ?? node)
+                run(SKAction.wait(forDuration: 0.12)) {
+                    self.navigateToPuzzles()
+                }
+                return
             case "rush":
                 animateTap(node.parent ?? node)
                 run(SKAction.wait(forDuration: 0.12)) {
@@ -714,6 +726,14 @@ class MenuScene: SKScene {
         let scene = GameScene(size: size, startRush: true)
         scene.scaleMode = .aspectFill
         view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+    }
+
+    private func navigateToPuzzles() {
+        // Un seul monde livré : on ouvre directement sa liste de niveaux
+        // plutôt qu'un écran de sélection de monde à une seule entrée.
+        let scene = PuzzleLevelsScene(size: size, world: 1)
+        scene.scaleMode = .aspectFill
+        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
     }
 
     private func navigateToAchievements() {
