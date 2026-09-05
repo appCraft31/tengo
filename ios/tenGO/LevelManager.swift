@@ -30,6 +30,8 @@ final class LevelManager {
     static let xpPerfectBoard = 50
     static let xpDailyChallenge = 30
     static let xpDailyChallengePerfect = 75
+    static let xpMission = 15
+    static let xpSuperMission = 40
 
     /// Titres de niveau (palier → clé de localisation), du plus bas au plus
     /// haut. `currentTitle` retient le plus haut palier atteint.
@@ -109,6 +111,12 @@ final class LevelManager {
     func awardForDailyChallenge(isPerfect: Bool) -> GainResult {
         let xp = isPerfect ? LevelManager.xpDailyChallengePerfect : LevelManager.xpDailyChallenge
         return add(xp)
+    }
+
+    /// Réclamation d'une mission quotidienne (cf. MissionManager.claim).
+    @discardableResult
+    func awardForMission(isSuper: Bool) -> GainResult {
+        add(isSuper ? LevelManager.xpSuperMission : LevelManager.xpMission)
     }
 
     // MARK: - Private

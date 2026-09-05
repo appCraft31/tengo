@@ -1051,6 +1051,10 @@ class GameScene: SKScene {
         combosCreated += 1
         longestChain = max(longestChain, length)
         currentPath = []
+        if mode != .demo {
+            MissionManager.shared.reportMove()
+            MissionManager.shared.reportChain(length: length)
+        }
 
         // Palier d'intensité. Battre son record de chaîne dans la partie fait
         // monter le ressenti d'un cran — le score, lui, ne bouge pas d'un point.
@@ -1063,6 +1067,7 @@ class GameScene: SKScene {
         // Le score réel est crédité tout de suite (sauvegarde, records) ; le
         // compteur affiché, lui, attend l'arrivée de la bulle « +N ».
         score += points
+        if mode != .demo { MissionManager.shared.reportScore(points) }
         showScorePopup(points: points, at: popupOrigin, tier: tier)
 
         SoundManager.shared.playCombo(length: length)
@@ -1670,12 +1675,14 @@ class GameScene: SKScene {
                                                               longestChain: longestChain,
                                                               combosCreated: combosCreated,
                                                               isPerfect: isWinState)
+            MissionManager.shared.reportGameEnded(isPerfect: isWinState)
             AnalyticsService.levelEnd(mode: "normal", score: score, won: isWinState)
         case .daily:
             // Pièces et XP offertes une seule fois, à la première complétion du jour.
             if !DailyChallenge.isCompletedToday() {
                 CoinManager.shared.awardDailyChallenge()
                 lastXPResult = LevelManager.shared.awardForDailyChallenge(isPerfect: isWinState)
+                MissionManager.shared.reportGameEnded(isPerfect: isWinState)
             }
             DailyChallenge.markCompleted()
             GameCenterManager.shared.submitDailyScore(score)
@@ -1697,6 +1704,7 @@ class GameScene: SKScene {
         // gains encore en vol, puis on laisse le +1000 créditer à son arrivée.
         syncDisplayedScore()
         score += bonus
+        if mode != .demo { MissionManager.shared.reportScore(bonus) }
         showScorePopup(points: bonus, at: CGPoint(x: 0, y: 50), tier: .large)
         // Vider la grille est LE moment fort du jeu, et il n'était jusqu'ici
         // souligné par rien.

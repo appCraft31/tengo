@@ -94,5 +94,9 @@ enum AppConfig {
         static let noAdsPurchased = "tenGO_noAdsPurchased"
         /// XP total cumulé (système de niveaux, cf. LevelManager).
         static let totalXP = "tenGO_totalXP"
+        /// Jour (clé AAAAMMJJ) du jeu de missions quotidiennes en cours.
+        static let missionsDayKey = "tenGO_missionsDayKey"
+        /// État des missions du jour (JSON encodé), cf. MissionManager.
+        static let missionsProgress = "tenGO_missionsProgress"
     }
 }

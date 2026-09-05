@@ -3576,6 +3576,71 @@
         }
       }
     },
+    "menu.missions": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missions"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Misiones"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missionen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missioni"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missões"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "ミッション"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "任务"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "미션"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missies"
+          }
+        }
+      }
+    },
     "menu.new_game": {
       "extractionState": "manual",
       "localizations": {
@@ -3897,6 +3962,526 @@
           "stringUnit": {
             "state": "translated",
             "value": "连接。相加。释放。"
+          }
+        }
+      }
+    },
+    "mission.chain_at_least": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réalise %d chaîne(s) de %d bulles ou plus"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Make %d chain(s) of %d bubbles or more"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consigue %d cadena(s) de %d burbujas o más"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bilde %d Kette(n) mit %d oder mehr Blasen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Crea %d catena/e da %d bolle o più"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Faça %d corrente(s) de %d bolhas ou mais"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "バブル%2$d個以上のチェーンを%1$d回作る"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "达成 %1$d 次 %2$d 颗以上气泡连锁"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%2$d개 이상 버블 체인을 %1$d번 만들기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maak %d ketting(en) van %d of meer bubbels"
+          }
+        }
+      }
+    },
+    "mission.cumulative_score": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Marque %d points cumulés aujourd'hui"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Score %d cumulative points today"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Consigue %d puntos acumulados hoy"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Sammle heute %d Punkte"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Totalizza %d punti oggi"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Some %d pontos hoje"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日中に%d点を獲得する"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天累计获得 %d 分"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "오늘 %d점 누적 획득하기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Behaal vandaag %d punten"
+          }
+        }
+      }
+    },
+    "mission.games_played": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termine %d partie(s)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Finish %d game(s)"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termina %d partida(s)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Beende %d Spiel(e)"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Completa %d partita/e"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Termine %d partida(s)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d回プレイを終える"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完成 %d 局游戏"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "%d판 플레이 완료하기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speel %d potje(s) uit"
+          }
+        }
+      }
+    },
+    "mission.moves_played": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valide %d chaînes au total"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Validate %d chains in total"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valida %d cadenas en total"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bestätige insgesamt %d Ketten"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Convalida %d catene in totale"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Valide %d correntes no total"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "合計%d回チェーンを成立させる"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "共完成 %d 次连锁"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "총 %d개의 체인 만들기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Bevestig in totaal %d kettingen"
+          }
+        }
+      }
+    },
+    "mission.perfect_boards": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vide complètement %d grille(s)"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Clear %d board(s) completely"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Vacía por completo %d tablero(s)"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Räume %d Spielfeld(er) komplett leer"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Svuota completamente %d griglia/e"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Esvazie completamente %d tabuleiro(s)"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "グリッドを%d回完全にクリアする"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "完全清空 %d 次棋盘"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "보드를 %d번 완전히 비우기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Maak %d bord(en) helemaal leeg"
+          }
+        }
+      }
+    },
+    "missions.claim": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Réclamer"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claim"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Reclamar"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Abholen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Riscuoti"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Resgatar"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "受け取る"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "领取"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "받기"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Claimen"
+          }
+        }
+      }
+    },
+    "missions.super_badge": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SUPER MISSION"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SUPER MISSION"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SÚPER MISIÓN"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SUPER-MISSION"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SUPER MISSIONE"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SUPER MISSÃO"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "スーパーミッション"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "超级任务"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "슈퍼 미션"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "SUPER MISSIE"
+          }
+        }
+      }
+    },
+    "missions.title": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missions du jour"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Today's Missions"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Misiones del día"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Tagesmissionen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missioni del giorno"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missões do dia"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日のミッション"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日任务"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "오늘의 미션"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Missies van vandaag"
           }
         }
       }
