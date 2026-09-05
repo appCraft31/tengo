@@ -6046,132 +6046,132 @@
         }
       }
     },
-    "notif.daily_body": {
+    "notif.streak_at_risk_body": {
       "extractionState": "manual",
       "localizations": {
-        "de": {
+        "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ein Raster wartet auf dich 🌿"
+            "value": "Joue aujourd'hui avant minuit pour ne pas la perdre."
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A grid is waiting for you 🌿"
+            "value": "Play today before it resets to keep it alive."
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una cuadrícula te espera 🌿"
+            "value": "Juega hoy antes de que se reinicie para no perderla."
           }
         },
-        "fr": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Une grille t'attend 🌿"
+            "value": "Spiele heute, bevor sie zurückgesetzt wird."
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una griglia ti aspetta 🌿"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "新しいグリッドが待っています 🌿"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "새로운 그리드가 기다려요 🌿"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Een raster wacht op je 🌿"
+            "value": "Gioca oggi prima che si azzeri per non perderla."
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uma grade espera por você 🌿"
+            "value": "Jogue hoje antes que ela seja reiniciada."
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "リセットされる前に今日プレイしよう。"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "一局新棋盘在等你 🌿"
+            "value": "今天再玩一局，别让连续记录中断。"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "초기화되기 전에 오늘 플레이하세요."
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Speel vandaag nog voordat je reeks reset."
           }
         }
       }
     },
-    "notif.daily_title": {
+    "notif.streak_at_risk_title": {
       "extractionState": "manual",
       "localizations": {
-        "de": {
+        "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Eine Zen-Pause?"
+            "value": "🔥 Ta série de %d jours t'attend"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "A zen break?"
+            "value": "🔥 Your %d-day streak is waiting"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "¿Una pausa zen?"
+            "value": "🔥 Tu racha de %d días te espera"
           }
         },
-        "fr": {
+        "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Une pause zen ?"
+            "value": "🔥 Deine %d-Tage-Serie wartet auf dich"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Una pausa zen?"
-          }
-        },
-        "ja": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "ひと息つきませんか？"
-          }
-        },
-        "ko": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "잠깐 쉬어갈까요?"
-          }
-        },
-        "nl": {
-          "stringUnit": {
-            "state": "translated",
-            "value": "Even een zen-pauze?"
+            "value": "🔥 La tua serie di %d giorni ti aspetta"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Uma pausa zen?"
+            "value": "🔥 Sua sequência de %d dias está esperando"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %d日連続の記録が待っています"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "来一段禅意时光？"
+            "value": "🔥 你的连续 %d 天记录在等你"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 %d일 연속 기록이 기다리고 있어요"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "🔥 Je reeks van %d dagen wacht op je"
           }
         }
       }
@@ -7407,6 +7407,71 @@
           "stringUnit": {
             "state": "translated",
             "value": "触感反馈"
+          }
+        }
+      }
+    },
+    "settings.notifications": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifications"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notificaciones"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Mitteilungen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notifiche"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Notificações"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通知"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "通知"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "알림"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Meldingen"
           }
         }
       }
