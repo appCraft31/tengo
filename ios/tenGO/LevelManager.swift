@@ -126,6 +126,12 @@ final class LevelManager {
         add(LevelManager.xpRush)
     }
 
+    /// Déblocage d'un succès (cf. AchievementManager.checkForNewUnlocks).
+    @discardableResult
+    func awardForAchievement(xp: Int) -> GainResult {
+        add(xp)
+    }
+
     // MARK: - Private
 
     @discardableResult

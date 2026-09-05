@@ -109,5 +109,7 @@ enum AppConfig {
         static let statsTotalChains = "tenGO_statsTotalChains"
         static let statsTotalRushGames = "tenGO_statsTotalRushGames"
         static let statsTotalDaily = "tenGO_statsTotalDaily"
+        /// Identifiants des succès déjà débloqués (crédités), cf. AchievementManager.
+        static let achievementsUnlocked = "tenGO_achievementsUnlocked"
     }
 }
