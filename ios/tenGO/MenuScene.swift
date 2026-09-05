@@ -207,6 +207,12 @@ class MenuScene: SKScene {
             }
         }
 
+        // Rush — variante compétitive (60 secondes), à côté du Zen sans pression.
+        addMenuButton(text: String(localized: "menu.rush", defaultValue: "Rush ⚡"), name: "rush",
+                      width: buttonWidth, height: buttonHeight,
+                      at: CGPoint(x: 0, y: stack()),
+                      accent: theme.color(forValue: 2), fontSize: 20)
+
         // Boutique — tertiaire
         addMenuButton(text: String(localized: "menu.shop", defaultValue: "Boutique"), name: "boutique",
                       width: buttonWidth, height: buttonHeight,
@@ -584,6 +590,12 @@ class MenuScene: SKScene {
                     self.navigateToMissions()
                 }
                 return
+            case "rush":
+                animateTap(node.parent ?? node)
+                run(SKAction.wait(forDuration: 0.12)) {
+                    self.navigateToRush()
+                }
+                return
             case "watchAd":
                 animateTap(node.parent ?? node)
                 presentRewardedAd()
@@ -690,6 +702,12 @@ class MenuScene: SKScene {
         let scene = MissionsScene(size: size)
         scene.scaleMode = .aspectFill
         view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+    }
+
+    private func navigateToRush() {
+        let scene = GameScene(size: size, startRush: true)
+        scene.scaleMode = .aspectFill
+        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
     }
 
     private func navigateToTutorial() {
