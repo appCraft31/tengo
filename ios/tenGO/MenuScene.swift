@@ -17,8 +17,6 @@ class MenuScene: SKScene {
     private var coinLabel: SKLabelNode?
     private var coinChip: SKNode?
     private var shopGuide: CoachMarkOverlay?
-    /// Panneau de détail de progression (XP/Niveau), ouvert au tap sur le chip niveau.
-    private var levelOverlay: LevelProgressOverlay?
     /// Bouton « regarder une pub pour +10 pièces » + badge de quota restant.
     private var watchAdButton: SKNode?
     private var watchAdBadge: SKLabelNode?
@@ -534,12 +532,6 @@ class MenuScene: SKScene {
             if overlay.parent == nil { settingsOverlay = nil }
             return
         }
-        if let overlay = levelOverlay, overlay.parent != nil {
-            overlay.handleTouch(at: point)
-            levelOverlay = nil
-            return
-        }
-
         for node in nodes(at: point) {
             guard let name = node.parent?.name ?? node.name else { continue }
             switch name {
@@ -602,7 +594,9 @@ class MenuScene: SKScene {
                 return
             case "levelChip":
                 animateTap(node.parent ?? node)
-                levelOverlay = LevelProgressOverlay.present(in: self)
+                run(SKAction.wait(forDuration: 0.12)) {
+                    self.navigateToProfile()
+                }
                 return
             default: break
             }
@@ -708,6 +702,12 @@ class MenuScene: SKScene {
         let scene = GameScene(size: size, startRush: true)
         scene.scaleMode = .aspectFill
         view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+    }
+
+    private func navigateToProfile() {
+        let scene = ProfileScene(size: size)
+        scene.scaleMode = .aspectFill
+        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
     }
 
     private func navigateToTutorial() {
