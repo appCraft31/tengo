@@ -56,6 +56,17 @@ final class StreakManager {
         StreakManager.milestones.map(\.day).first { $0 > current }
     }
 
+    /// Le joueur a-t-il déjà joué aujourd'hui (calendrier local) ? Utile pour
+    /// savoir si la série est encore « à risque » aujourd'hui — cf. la
+    /// notification de rappel de série (NotificationManager).
+    func hasPlayedToday(_ date: Date = Date()) -> Bool {
+        guard let lastInterval = lastPlayedInterval() else { return false }
+        let calendar = Calendar.current
+        let today = calendar.startOfDay(for: date)
+        let lastDay = calendar.startOfDay(for: Date(timeIntervalSinceReferenceDate: lastInterval))
+        return calendar.dateComponents([.day], from: lastDay, to: today).day == 0
+    }
+
     /// À appeler au lancement d'une partie. Met à jour la série selon le jour
     /// (calendrier local — c'est « aujourd'hui » du point de vue du joueur).
     /// Retourne `true` si un Streak Shield vient d'être consommé pour éviter
