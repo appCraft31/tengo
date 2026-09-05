@@ -1097,6 +1097,7 @@ class GameScene: SKScene {
         if mode != .demo {
             MissionManager.shared.reportMove()
             MissionManager.shared.reportChain(length: length)
+            PlayerStatsManager.shared.reportChain(length: length)
         }
         if mode == .rush && length >= GameScene.rushBonusChainLength {
             awardRushTimeBonus()
@@ -1730,6 +1731,7 @@ class GameScene: SKScene {
                                                               combosCreated: combosCreated,
                                                               isPerfect: isWinState)
             MissionManager.shared.reportGameEnded(isPerfect: isWinState)
+            PlayerStatsManager.shared.reportGameEnded(mode: mode, isPerfect: isWinState)
             AnalyticsService.levelEnd(mode: "normal", score: score, won: isWinState)
         case .daily:
             // Pièces et XP offertes une seule fois, à la première complétion du jour.
@@ -1737,6 +1739,7 @@ class GameScene: SKScene {
                 CoinManager.shared.awardDailyChallenge()
                 lastXPResult = LevelManager.shared.awardForDailyChallenge(isPerfect: isWinState)
                 MissionManager.shared.reportGameEnded(isPerfect: isWinState)
+                PlayerStatsManager.shared.reportGameEnded(mode: mode, isPerfect: isWinState)
             }
             DailyChallenge.markCompleted()
             GameCenterManager.shared.submitDailyScore(score)
@@ -1747,6 +1750,7 @@ class GameScene: SKScene {
             GameCenterManager.shared.submitRushScore(score)
             lastXPResult = LevelManager.shared.awardForRush()
             MissionManager.shared.reportGameEnded(isPerfect: false)
+            PlayerStatsManager.shared.reportGameEnded(mode: mode, isPerfect: false)
             AnalyticsService.levelEnd(mode: "rush", score: score, won: false)
         case .demo:
             break   // démo : aucun score enregistré ni soumis

@@ -103,5 +103,11 @@ enum AppConfig {
         static let missionsDayKey = "tenGO_missionsDayKey"
         /// État des missions du jour (JSON encodé), cf. MissionManager.
         static let missionsProgress = "tenGO_missionsProgress"
+        /// Statistiques cumulées du joueur (Profil), cf. PlayerStatsManager.
+        static let statsBestChain = "tenGO_statsBestChain"
+        static let statsPerfectTotal = "tenGO_statsPerfectTotal"
+        static let statsTotalChains = "tenGO_statsTotalChains"
+        static let statsTotalRushGames = "tenGO_statsTotalRushGames"
+        static let statsTotalDaily = "tenGO_statsTotalDaily"
     }
 }
