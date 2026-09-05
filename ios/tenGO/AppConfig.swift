@@ -115,5 +115,7 @@ enum AppConfig {
         static let achievementsUnlocked = "tenGO_achievementsUnlocked"
         /// Étoiles par niveau de puzzle : préfixe + monde + index (cf. PuzzleProgress).
         static let puzzleStarsPrefix = "tenGO_puzzleStars_"
+        /// Codes des duels auxquels ce joueur a pris part (cf. DuelHistory).
+        static let duelHistory = "tenGO_duelHistory"
     }
 }

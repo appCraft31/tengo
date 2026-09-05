@@ -52,11 +52,12 @@ put() {  # token, chemin, corps → code http
     --data-binary "$3" "$BASE/$2" -o /dev/null -w "%{http_code}"
 }
 
+EXPIRY="2099-01-01T00:00:00Z"
 duel_body() {  # uid challenger, score
-  printf '{"fields":{"seed":{"integerValue":"42"},"challengerUid":{"stringValue":"%s"},"challengerScore":{"integerValue":"%s"},"opponentUid":{"nullValue":null}}}' "$1" "$2"
+  printf '{"fields":{"seed":{"integerValue":"42"},"challengerUid":{"stringValue":"%s"},"challengerName":{"stringValue":"A"},"challengerScore":{"integerValue":"%s"},"expiresAt":{"timestampValue":"%s"},"opponentUid":{"nullValue":null}}}' "$1" "$2" "$EXPIRY"
 }
 answer_body() {  # score challenger, uid adversaire, score adversaire
-  printf '{"fields":{"seed":{"integerValue":"42"},"challengerUid":{"stringValue":"%s"},"challengerScore":{"integerValue":"%s"},"opponentUid":{"stringValue":"%s"},"opponentScore":{"integerValue":"%s"}}}' "$UID1" "$1" "$2" "$3"
+  printf '{"fields":{"seed":{"integerValue":"42"},"challengerUid":{"stringValue":"%s"},"challengerName":{"stringValue":"A"},"challengerScore":{"integerValue":"%s"},"expiresAt":{"timestampValue":"%s"},"opponentUid":{"stringValue":"%s"},"opponentName":{"stringValue":"B"},"opponentScore":{"integerValue":"%s"}}}' "$UID1" "$1" "$EXPIRY" "$2" "$3"
 }
 
 check "écrire son propre profil"                    ALLOW "$(put "$TOK1" "players/$UID1" '{"fields":{"name":{"stringValue":"moi"}}}')"
@@ -71,6 +72,7 @@ check "créer un duel au score aberrant"             DENY  "$(put "$TOK1" "duels
 check "adversaire renseigne son score"              ALLOW "$(put "$TOK2" "duels/$DUEL" "$(answer_body 1500 "$UID2" 1200)")"
 check "challenger réécrit son score après coup"     DENY  "$(put "$TOK1" "duels/$DUEL" "$(answer_body 99000 "$UID2" 1200)")"
 check "rejouer un duel déjà tranché"                DENY  "$(put "$TOK2" "duels/$DUEL" "$(answer_body 1500 "$UID2" 3000)")"
+check "LISTER tous les duels (le code doit rester le secret)" DENY "$(curl -s -H "Authorization: Bearer $TOK1" "$BASE/duels" -o /dev/null -w '%{http_code}')"
 check "supprimer un duel"                           DENY  "$(curl -s -X DELETE -H "Authorization: Bearer $TOK1" "$BASE/duels/$DUEL" -o /dev/null -w '%{http_code}')"
 
 # Ménage : les règles interdisent la suppression côté client, il faut donc un
