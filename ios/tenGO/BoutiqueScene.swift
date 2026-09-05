@@ -918,8 +918,18 @@ class BoutiqueScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         defer { dragStartY = nil }
         guard let touch = touches.first else { return }
-        if isDragging { isDragging = false; return }
         let point = touch.location(in: self)
+
+        // Un geste entamé ET relâché sur la barre d'onglets navigue, même si
+        // le doigt a glissé : le contenu défilant s'arrête au-dessus d'elle,
+        // donc ce geste-là n'est jamais un défilement.
+        if returnDestination == .menu, let startY = dragStartY, startY < viewportBottom,
+           let tab = TabBar.tab(at: point, in: self) {
+            isDragging = false
+            if tab != .shop { TabBar.present(tab, from: self) }
+            return
+        }
+        if isDragging { isDragging = false; return }
 
         // Guide d'achat. Deux sorties seulement : acheter, ou « Plus tard ».
         // Tout autre tap laisse le guide en place (la cible pulse).
@@ -972,10 +982,6 @@ class BoutiqueScene: SKScene {
                                       card: contentNode.childNode(withName: "booster:\(raw)"))
                 return
             }
-        }
-
-        if returnDestination == .menu, let tab = TabBar.tab(at: point, in: self), tab != .shop {
-            TabBar.present(tab, from: self)
         }
     }
 

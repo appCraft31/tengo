@@ -28,13 +28,21 @@ enum Tab: String, CaseIterable {
 
 enum TabBar {
 
-    static let height: CGFloat = 84
+    static let height: CGFloat = 96
+
+    /// Nom du nœud racine : il sert aussi à retrouver la barre pour le
+    /// hit-test géométrique (cf. `tab(at:in:)`).
+    static let nodeName = "tabBar"
 
     /// Construit la barre pour la scène hôte. `width` est la largeur
     /// réellement visible (la scène est rognée par aspectFill).
     static func make(width: CGFloat, selected: Tab) -> SKNode {
         let bar = SKNode()
+        bar.name = nodeName
         bar.zPosition = 20
+        // Largeur mémorisée : le hit-test découpe la barre en parts égales
+        // plutôt que de compter sur les nœuds sous le doigt.
+        bar.userData = ["width": width]
 
         let separator = SKShapeNode(rectOf: CGSize(width: width, height: 1))
         separator.fillColor = ThemeManager.shared.active.logo.withAlphaComponent(0.14)
@@ -53,40 +61,45 @@ enum TabBar {
             item.position = CGPoint(x: x, y: 0)
             bar.addChild(item)
 
-            // Zone tactile généreuse : les libellés sont petits, la cible ne
-            // doit pas l'être.
+            // Zone tactile pleine largeur. L'alpha n'est pas nul : SpriteKit
+            // écarte du hit-test une forme entièrement transparente, et le
+            // coach-mark a besoin d'un cadre à entourer.
             let hit = SKShapeNode(rectOf: CGSize(width: slot, height: height))
-            hit.fillColor = .clear
+            hit.fillColor = UIColor(white: 1, alpha: 0.001)
             hit.strokeColor = .clear
             hit.name = item.name
             item.addChild(hit)
 
             let accent = ThemeManager.shared.active.logo
-            let tint = isSelected ? accent : accent.withAlphaComponent(0.42)
+            let tint = isSelected ? accent : accent.withAlphaComponent(0.45)
 
-            let icon = tab.icon.node(size: 24, color: tint)
-            icon.position = CGPoint(x: 0, y: 10)
+            let icon = tab.icon.node(size: 40, color: tint)
+            icon.position = CGPoint(x: 0, y: 14)
             item.addChild(icon)
 
             let label = SKLabelNode(text: String(localized: String.LocalizationValue(tab.titleKey)))
             label.fontName = isSelected ? "AvenirNext-DemiBold" : "AvenirNext-Medium"
-            label.fontSize = 11
+            label.fontSize = 14
             label.fontColor = tint
             label.verticalAlignmentMode = .center
-            label.position = CGPoint(x: 0, y: -12)
+            label.position = CGPoint(x: 0, y: -25)
             item.addChild(label)
         }
         return bar
     }
 
-    /// Onglet touché, s'il y en a un. La scène hôte décide de la navigation :
-    /// la barre ne connaît pas les scènes.
+    /// Onglet touché, s'il y en a un. Le découpage est géométrique et non
+    /// fondé sur les nœuds sous le doigt : un tap entre l'icône et le libellé
+    /// doit compter, et il ne comptait pas quand la cible était une forme
+    /// transparente. La scène hôte décide de la navigation ; la barre ne
+    /// connaît pas les scènes.
     static func tab(at point: CGPoint, in scene: SKScene) -> Tab? {
-        for node in scene.nodes(at: point) {
-            guard let name = node.name ?? node.parent?.name, name.hasPrefix("tab_") else { continue }
-            return Tab(rawValue: String(name.dropFirst("tab_".count)))
-        }
-        return nil
+        guard let bar = scene.childNode(withName: "//\(nodeName)"),
+              let width = bar.userData?["width"] as? CGFloat else { return nil }
+        let local = bar.convert(point, from: scene)
+        guard abs(local.y) <= height / 2, abs(local.x) <= width / 2 else { return nil }
+        let index = Int((local.x + width / 2) / (width / CGFloat(Tab.allCases.count)))
+        return Tab.allCases[min(max(index, 0), Tab.allCases.count - 1)]
     }
 
     /// Ouvre l'écran d'un onglet. Regroupé ici pour que les quatre scènes de

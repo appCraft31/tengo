@@ -145,7 +145,7 @@ class MenuScene: SKScene {
         blocks.append(contentsOf: [dailyH, tilesH])
 
         let bandTop = topRowY - 245
-        let bandBottom = -halfH + bottomInset + TabBar.height
+        let bandBottom = -halfH + bottomInset + TabBar.height + 18
         let available = bandTop - bandBottom
         let blocksH = blocks.reduce(0, +)
         let gap = min(80, max(24, (available - blocksH) / CGFloat(blocks.count - 1)))
@@ -196,7 +196,7 @@ class MenuScene: SKScene {
         label.verticalAlignmentMode = .center
 
         // Icône et libellé centrés comme un seul bloc.
-        let iconSize: CGFloat = 34, inner: CGFloat = 16
+        let iconSize: CGFloat = 44, inner: CGFloat = 18
         let contentW = iconSize + inner + label.frame.width
         let icon = VectorIcon.play.node(size: iconSize, color: ink)
         icon.position = CGPoint(x: -contentW / 2 + iconSize / 2, y: 0)
@@ -262,8 +262,8 @@ class MenuScene: SKScene {
 
         // Série : flamme + jours, puis les boucliers restants s'il y en a.
         let streak = StreakManager.shared.current
-        let flame = VectorIcon.flame.node(size: 28, color: ink)
-        flame.position = CGPoint(x: leftX + 14, y: 22)
+        let flame = VectorIcon.flame.node(size: 36, color: ink)
+        flame.position = CGPoint(x: leftX + 18, y: 22)
         card.addChild(flame)
 
         let days = SKLabelNode(text: "\(streak)")
@@ -272,13 +272,13 @@ class MenuScene: SKScene {
         days.fontColor = ink
         days.horizontalAlignmentMode = .left
         days.verticalAlignmentMode = .center
-        days.position = CGPoint(x: leftX + 36, y: 22)
+        days.position = CGPoint(x: leftX + 44, y: 22)
         card.addChild(days)
 
         let shields = StreakManager.shared.shieldCount
         if shields > 0 {
-            let x = leftX + 46 + days.frame.width + 22
-            let shield = VectorIcon.shield.node(size: 22, color: ink.withAlphaComponent(0.85))
+            let x = leftX + 54 + days.frame.width + 26
+            let shield = VectorIcon.shield.node(size: 30, color: ink.withAlphaComponent(0.85))
             shield.position = CGPoint(x: x, y: 22)
             card.addChild(shield)
 
@@ -288,7 +288,7 @@ class MenuScene: SKScene {
             count.fontColor = ink.withAlphaComponent(0.85)
             count.horizontalAlignmentMode = .left
             count.verticalAlignmentMode = .center
-            count.position = CGPoint(x: x + 16, y: 22)
+            count.position = CGPoint(x: x + 21, y: 22)
             card.addChild(count)
         }
 
@@ -350,8 +350,8 @@ class MenuScene: SKScene {
             node.addChild(bg)
 
             let ink = contrastingText(on: tile.accent)
-            let icon = tile.icon.node(size: 46, color: ink)
-            icon.position = CGPoint(x: 0, y: 34)
+            let icon = tile.icon.node(size: 64, color: ink)
+            icon.position = CGPoint(x: 0, y: 30)
             node.addChild(icon)
 
             let title = SKLabelNode(text: tile.title)
