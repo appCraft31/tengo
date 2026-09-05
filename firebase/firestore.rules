@@ -36,13 +36,19 @@ service cloud.firestore {
     // l'adversaire. Lisible par qui connaît le code (il est partagé
     // volontairement), mais écrivable seulement dans un sens.
     match /duels/{duelId} {
-      allow read: if isSignedIn();
+      // `get` seulement, jamais `list` : le code du duel EST le secret, donc
+      // il ne faut pas pouvoir énumérer la collection pour les découvrir.
+      allow get: if isSignedIn();
+      allow list: if false;
 
       // Le challenger crée le duel et ne peut s'y inscrire que lui-même.
       allow create: if isSignedIn()
                     && request.resource.data.challengerUid == request.auth.uid
                     && request.resource.data.seed is int
                     && isPlausibleScore(request.resource.data.challengerScore)
+                    && request.resource.data.challengerName is string
+                    && request.resource.data.challengerName.size() <= 40
+                    && request.resource.data.expiresAt is timestamp
                     && request.resource.data.opponentUid == null;
 
       // L'adversaire ne peut que remplir SA moitié, une seule fois, sans
@@ -54,7 +60,10 @@ service cloud.firestore {
                     && request.resource.data.seed == resource.data.seed
                     && request.resource.data.challengerUid == resource.data.challengerUid
                     && request.resource.data.challengerScore == resource.data.challengerScore
-                    && isPlausibleScore(request.resource.data.opponentScore);
+                    && isPlausibleScore(request.resource.data.opponentScore)
+                    && request.resource.data.opponentName is string
+                    && request.resource.data.opponentName.size() <= 40
+                    && request.resource.data.expiresAt == resource.data.expiresAt;
 
       // Un duel tranché reste au dossier : pas d'effacement.
       allow delete: if false;

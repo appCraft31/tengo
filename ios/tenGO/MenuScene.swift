@@ -217,6 +217,12 @@ class MenuScene: SKScene {
                       at: CGPoint(x: 0, y: stack()),
                       accent: theme.color(forValue: 3), fontSize: 20)
 
+        // Duel — compétition asynchrone entre deux joueurs.
+        addMenuButton(text: String(localized: "menu.duel"), name: "duel",
+                      width: buttonWidth, height: buttonHeight,
+                      at: CGPoint(x: 0, y: stack()),
+                      accent: theme.color(forValue: 1), fontSize: 20)
+
         // Puzzles — contenu permanent, à côté des modes générés.
         addMenuButton(text: String(localized: "menu.puzzles"), name: "puzzles",
                       width: buttonWidth, height: buttonHeight,
@@ -604,6 +610,14 @@ class MenuScene: SKScene {
                 animateTap(node.parent ?? node)
                 run(SKAction.wait(forDuration: 0.12)) {
                     self.navigateToPuzzles()
+                }
+                return
+            case "duel":
+                animateTap(node.parent ?? node)
+                run(SKAction.wait(forDuration: 0.12)) {
+                    let scene = DuelScene(size: self.size)
+                    scene.scaleMode = .aspectFill
+                    self.view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
                 }
                 return
             case "rush":
