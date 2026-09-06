@@ -30,18 +30,35 @@ Il sert aussi à **recalibrer** les bornes de `GridValidator.difficultyScore` :
 des bornes devinées avaient produit un score saturé (74-95 pour toutes les
 grilles), inutilisable pour viser une difficulté.
 
-## `puzzle_gen.swift` — génération des niveaux du mode Puzzles (issue #19)
+## `puzzle_gen/` — génération des niveaux du mode Puzzles (issue #19)
 
 ```bash
-swift ios/tools/puzzle_gen.swift > ios/tenGO/PuzzleCatalog.swift
+swiftc -O -o /tmp/puzzle_gen ios/tenGO/ScoreRules.swift ios/tools/puzzle_gen/main.swift
+/tmp/puzzle_gen > ios/tenGO/PuzzleCatalog.swift
 ```
 
 Génère les niveaux et **prouve** leur solvabilité complète par recherche
 exhaustive avant de les retenir ; les seuils d'étoiles dérivent du meilleur
 score réellement atteignable.
 
-⚠️ Contrairement à `grid_audit`, cet outil **recopie** les règles du jeu
-(gravité, adjacence, barème de score) au lieu de les importer, parce qu'il
-manipule une représentation compacte propre à la génération (masques de bits).
-Toute modification des règles dans `GridModel` ou `GameScene.scoreForPath` doit
-être répercutée ici, sinon les niveaux publiés deviennent faux.
+⚠️ Contrairement à `grid_audit`, cet outil **recopie** la gravité et l'adjacence
+au lieu de les importer, parce qu'il manipule une représentation compacte propre
+à la génération (masques de bits). Toute modification de ces règles dans
+`GridModel` doit être répercutée ici, sinon les niveaux publiés deviennent faux.
+
+Le **barème**, lui, est importé depuis `ScoreRules` : les seuils d'étoiles en
+dérivent directement, et une copie qui dérive rendrait les 20 niveaux faux sans
+que rien n'échoue.
+
+## `score_test/` — barème du score (issue #15)
+
+```bash
+swiftc -O -o /tmp/score_test ios/tenGO/ScoreRules.swift ios/tools/score_test/main.swift
+/tmp/score_test
+```
+
+Vérifie le barème sur le code réel : valeurs attendues de 0 à 10 bulles,
+croissance stricte, rendement par bulle croissant (la propriété que le GDD §34
+appelle « longer chains = exponentially better »), et chaîne maximale possible
+sur un plateau de 63 cellules. Sort en erreur si un cas échoue — c'est le
+substitut au target XCTest, que le projet n'a pas.
