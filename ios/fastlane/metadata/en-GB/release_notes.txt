@@ -1,5 +1,22 @@
-The grid comes alive. Chains react more distinctly, and the intensity builds as your chain grows longer.
+TEN·GO 3.0 — the biggest update since launch.
 
-Boosters are now clear: they only appear once you've earned them, each one explains itself the first time you own it, and your first hint is on us.
+NEW MODES
+• Duel — challenge a friend on the exact same grid, each plays whenever
+• Rush — 60 seconds on the clock, for those who like the pressure
+• Puzzles — 20 grids to solve, every one guaranteed solvable
 
-New "Reduced effects" setting to bring back a calm look at any time.
+PROGRESSION
+• 100 experience levels and titles to earn
+• Daily missions, a day streak and 26 achievements
+• A Profile screen gathering all your stats
+
+REDESIGNED HOME
+Four clear tabs replace the long list of buttons. Everything is within thumb's reach.
+
+NO MORE AD BANNER
+It's gone. The game now fills the whole screen.
+
+BALANCING
+Long chains score substantially more than before, and your records stay comparable.
+
+Finger tracing responds better: gestures started right after a move are no longer lost.
