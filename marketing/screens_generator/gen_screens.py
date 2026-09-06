@@ -4,8 +4,14 @@
 import os, subprocess, sys, shutil
 
 S = os.path.dirname(os.path.abspath(__file__))
-R = os.path.join(S, "render")
-OUT = os.path.join(R, "out")
+# SHOTS_DIR : d'où viennent les captures d'écran (render = iOS,
+# render_android = Android) ; OUT_DIR : où atterrissent les panneaux rendus.
+R = os.environ.get("SHOTS_DIR") or os.path.join(S, "render")
+if not os.path.isabs(R):
+    R = os.path.join(S, R)
+OUT = os.environ.get("OUT_DIR") or os.path.join(S, "render", "out")
+if not os.path.isabs(OUT):
+    OUT = os.path.join(S, OUT)
 CHROME = "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 # ---------------------------------------------------------------- formats
@@ -230,6 +236,10 @@ def render(p, lang, fmt, out_png):
 if __name__ == "__main__":
     only = sys.argv[1:] or None  # ex: "1 fr phone" pour un rendu unique
     os.makedirs(OUT, exist_ok=True)
+    # FORMATS=play,ipad pour ne rendre que ce dont la fiche Play a besoin.
+    wanted = os.environ.get("FORMATS")
+    if wanted:
+        FORMATS = {k: v for k, v in FORMATS.items() if k in wanted.split(",")}
     if only:
         p, lang, fmt = int(only[0]), only[1], only[2]
         out = os.path.join(OUT, f"p{p}_{lang}_{fmt}.png")
@@ -243,5 +253,5 @@ if __name__ == "__main__":
                     out = os.path.join(OUT, f"p{p}_{lang}_{fmt}.png")
                     render(p, lang, fmt, out)
                     n += 1
-                    print(f"\r{n}/180", end="", flush=True)
+                    print(f"\r{n}/{len(T) * len(PANELS) * len(FORMATS)}", end="", flush=True)
         print("\nterminé")

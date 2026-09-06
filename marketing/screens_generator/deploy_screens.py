@@ -4,7 +4,12 @@ import os, shutil, glob
 
 # Même dossier que gen_screens.py : les trois scripts du pipeline partageaient
 # jadis trois chemins différents, dont un scratchpad de session éphémère.
-OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "render", "out")
+OUT = os.environ.get("OUT_DIR") or os.path.join(os.path.dirname(os.path.abspath(__file__)), "render", "out")
+if not os.path.isabs(OUT):
+    OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), OUT)
+# IOS=0 pour ne distribuer que la fiche Play (panneaux rendus depuis les
+# captures Android) sans toucher aux captures App Store.
+DO_IOS = os.environ.get("IOS", "1") == "1"
 
 # Nombre de panneaux (ASC en accepte 10, Play 8).
 PANELS = 8
@@ -24,7 +29,7 @@ AND_LOCALES = {
 
 n_ios = n_and = 0
 
-for loc, lang in IOS_LOCALES.items():
+for loc, lang in (IOS_LOCALES.items() if DO_IOS else {}.items()):
     d = os.path.join(IOS, loc)
     os.makedirs(d, exist_ok=True)
     for p in range(1, PANELS + 1):
@@ -33,8 +38,10 @@ for loc, lang in IOS_LOCALES.items():
                     f"{d}/iPad Pro (12.9-inch) (3rd generation)-{p}.png")
         n_ios += 2
 
-# Play volontairement désactivé : l'app Android est en 1.4.1 et n'a ni Duel,
-# ni Rush, ni Profil. Y pousser ces captures décrirait une app qui n'existe pas.
+# Play : `PLAY=1 IOS=0 OUT_DIR=render/out_android deploy_screens.py`, à partir
+# de panneaux rendus depuis les captures ANDROID (cf. capture_langs_android.sh).
+# La fiche Play doit montrer l'app Android — depuis la 3.0 elle a les mêmes
+# écrans, mais ce sont ses captures à elle qui doivent y figurer.
 for loc, lang in ({} if os.environ.get("PLAY") != "1" else AND_LOCALES).items():
     base = os.path.join(AND, loc, "images")
     for sub, fmt in [("phoneScreenshots", "play"),

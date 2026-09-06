@@ -46,3 +46,5 @@ ios/fastlane/screenshots_backup_*/
 
 # Captures et rendus intermédiaires du générateur de screenshots (artefacts)
 marketing/screens_generator/render/
+# Captures brutes de l'émulateur Android (régénérables : capture_langs_android.sh).
+marketing/screens_generator/render_android/
