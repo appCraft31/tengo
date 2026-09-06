@@ -134,7 +134,21 @@ class GameScene: SKScene {
     private var strokeNode: SKNode?
     /// Point lumineux de tête, qui suit le doigt sans être reconstruit.
     private var trailComet: SKSpriteNode?
-    private var isAnimating = false
+    private var isAnimating = false {
+        didSet {
+            if oldValue && !isAnimating { resumePendingTouchIfNeeded() }
+        }
+    }
+
+    /// Position du doigt posé pendant une animation. Le geste n'est plus jeté :
+    /// il attend que la main lui soit rendue.
+    ///
+    /// Sans cela, poser le doigt pendant les 0,4 à 0,8 s qui suivent un coup
+    /// (disparition, gravité, hit-stop) ne démarrait aucun chemin — et comme
+    /// `touchesMoved` sort sur `currentPath.isEmpty`, le geste ne reprenait
+    /// JAMAIS ensuite : il fallait relever le doigt et recommencer. Sur un
+    /// joueur qui enchaîne, un geste sur deux était perdu en silence.
+    private var pendingTouchPoint: CGPoint?
 
     // MARK: - Score
 
@@ -830,7 +844,21 @@ class GameScene: SKScene {
             return
         }
 
-        guard !isAnimating, !rushCountdownActive else { return }
+        guard !rushCountdownActive else { return }
+
+        // Tout ce qui précède (boutons, boosters, marteau, modales) a déjà eu sa
+        // chance ; ce qui arrive ici vise la grille. Si une animation tourne, on
+        // retient le geste au lieu de le jeter.
+        if isAnimating {
+            pendingTouchPoint = point
+            return
+        }
+        beginPath(at: point)
+    }
+
+    /// Démarre un chemin sous le doigt. Sans effet si le point ne tombe pas sur
+    /// une bulle sélectionnable.
+    private func beginPath(at point: CGPoint) {
         guard let coord = gridCoord(for: point) else { return }
         // Une bulle gelée est intraversable tant que le givre n'a pas fondu.
         if gridModel.cells[coord.row][coord.col]?.isFrozen == true { return }
@@ -844,9 +872,29 @@ class GameScene: SKScene {
         updatePathLine()
     }
 
+    /// L'animation vient de se terminer et un doigt est resté posé : le chemin
+    /// démarre là où ce doigt se trouve MAINTENANT, pas là où il s'était posé —
+    /// il a pu glisser entre-temps.
+    private func resumePendingTouchIfNeeded() {
+        guard let point = pendingTouchPoint else { return }
+        pendingTouchPoint = nil
+        guard mode != .demo, !rushCountdownActive, gameOverPanel == nil,
+              currentPath.isEmpty else { return }
+        beginPath(at: point)
+    }
+
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard !isAnimating, !rushCountdownActive, !currentPath.isEmpty, let touch = touches.first else { return }
+        guard let touch = touches.first else { return }
         let point = touch.location(in: self)
+
+        // Le doigt bouge pendant l'animation : on suit sa position, sans quoi
+        // le chemin reprendrait à l'endroit où il s'est posé, souvent plusieurs
+        // bulles en arrière.
+        if isAnimating {
+            if pendingTouchPoint != nil { pendingTouchPoint = point }
+            return
+        }
+        guard !rushCountdownActive, !currentPath.isEmpty else { return }
         guard let target = gridCoord(for: point) else { return }
         let last = currentPath.last!
 
@@ -916,6 +964,11 @@ class GameScene: SKScene {
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        // AVANT toute sortie anticipée : un doigt relâché pendant l'animation
+        // ne doit pas laisser un geste en attente, sinon la fin de l'animation
+        // ferait démarrer un chemin fantôme sans personne sur l'écran.
+        pendingTouchPoint = nil
+
         guard !isAnimating, !rushCountdownActive, !currentPath.isEmpty else { return }
         if gridModel.pathSum(currentPath) == 10 {
             // L'haptique de validation est portée par le JuiceDirector
@@ -927,6 +980,7 @@ class GameScene: SKScene {
     }
 
     override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        pendingTouchPoint = nil
         cancelPath()
     }
 
