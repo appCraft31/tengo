@@ -43,3 +43,6 @@ ios/fastlane/report.xml
 ios/fastlane/Preview.html
 ios/fastlane/.env.default
 ios/fastlane/screenshots_backup_*/
+
+# Captures et rendus intermédiaires du générateur de screenshots (artefacts)
+marketing/screens_generator/render/

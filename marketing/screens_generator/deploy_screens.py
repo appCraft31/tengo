@@ -2,7 +2,12 @@
 # Distribue les rendus vers les arborescences fastlane (ASC + Play).
 import os, shutil, glob
 
-OUT = "/private/tmp/claude-501/-Users-nicolas-StudioProjects-tenGO/f5f7da44-b45a-4058-88ad-c6c360ba25d9/scratchpad/render/out"
+# Même dossier que gen_screens.py : les trois scripts du pipeline partageaient
+# jadis trois chemins différents, dont un scratchpad de session éphémère.
+OUT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "render", "out")
+
+# Nombre de panneaux (ASC en accepte 10, Play 8).
+PANELS = 8
 IOS = "/Users/nicolas/StudioProjects/tenGO/ios/fastlane/screenshots"
 AND = "/Users/nicolas/StudioProjects/tenGO/android/fastlane/metadata/android"
 
@@ -22,13 +27,15 @@ n_ios = n_and = 0
 for loc, lang in IOS_LOCALES.items():
     d = os.path.join(IOS, loc)
     os.makedirs(d, exist_ok=True)
-    for p in range(1, 7):
+    for p in range(1, PANELS + 1):
         shutil.copy(f"{OUT}/p{p}_{lang}_phone.png", f"{d}/iPhone 6.5 inch-{p}.png")
         shutil.copy(f"{OUT}/p{p}_{lang}_ipad.png",
                     f"{d}/iPad Pro (12.9-inch) (3rd generation)-{p}.png")
         n_ios += 2
 
-for loc, lang in AND_LOCALES.items():
+# Play volontairement désactivé : l'app Android est en 1.4.1 et n'a ni Duel,
+# ni Rush, ni Profil. Y pousser ces captures décrirait une app qui n'existe pas.
+for loc, lang in ({} if os.environ.get("PLAY") != "1" else AND_LOCALES).items():
     base = os.path.join(AND, loc, "images")
     for sub, fmt in [("phoneScreenshots", "play"),
                      ("sevenInchScreenshots", "ipad"),
@@ -37,7 +44,7 @@ for loc, lang in AND_LOCALES.items():
         os.makedirs(d, exist_ok=True)
         for old in glob.glob(os.path.join(d, "*")):
             os.remove(old)
-        for p in range(1, 7):
+        for p in range(1, PANELS + 1):
             shutil.copy(f"{OUT}/p{p}_{lang}_{fmt}.png", f"{d}/{p}.png")
             n_and += 1
 
