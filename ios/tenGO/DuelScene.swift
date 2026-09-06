@@ -153,6 +153,19 @@ class DuelScene: SKScene {
         left.position = CGPoint(x: -cardWidth / 2 + 20, y: 0)
         row.addChild(left)
 
+        // Duel lancé par ce joueur et toujours sans adversaire : c'est ici
+        // qu'on revient quand on a oublié d'envoyer le code sur le moment.
+        // Sans ce rattrapage, un duel créé mais non partagé est perdu.
+        let shareable = !duel.isComplete && !duel.isExpired && duel.challengerUid == uid
+        if shareable {
+            row.name = "duelShare:\(duel.code)"
+            bg.name = row.name
+            let icon = VectorIcon.share.node(size: 20,
+                                             color: ThemeManager.shared.active.logo.withAlphaComponent(0.75))
+            icon.position = CGPoint(x: cardWidth / 2 - 26, y: 0)
+            row.addChild(icon)
+        }
+
         let text: String
         var color = UIColor(white: 0.42, alpha: 1)
         if duel.isComplete, let outcome = duel.outcome(for: uid) {
@@ -178,7 +191,7 @@ class DuelScene: SKScene {
         right.fontColor = color
         right.horizontalAlignmentMode = .right
         right.verticalAlignmentMode = .center
-        right.position = CGPoint(x: cardWidth / 2 - 20, y: 0)
+        right.position = CGPoint(x: cardWidth / 2 - (shareable ? 48 : 20), y: 0)
         row.addChild(right)
     }
 
@@ -241,6 +254,11 @@ class DuelScene: SKScene {
         let point = touch.location(in: self)
         for node in nodes(at: point) {
             guard let name = node.parent?.name ?? node.name else { continue }
+            if name.hasPrefix("duelShare:") {
+                let code = String(name.dropFirst("duelShare:".count))
+                DuelShare.present(code: code, from: presenter)
+                return
+            }
             switch name {
             case "startDuel":
                 startDuel()

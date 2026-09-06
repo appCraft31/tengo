@@ -26,6 +26,7 @@ enum VectorIcon: String {
     case puzzle   = "IconPuzzle"
     case flame    = "IconFlame"
     case shield   = "IconShield"
+    case share    = "IconShare"
 
     /// Nœud dimensionné et teinté, prêt à être positionné.
     func node(size: CGFloat, color: UIColor) -> SKNode {

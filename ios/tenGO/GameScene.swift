@@ -172,6 +172,8 @@ class GameScene: SKScene {
     private var coinsEarnedThisGame = 0
     /// Ligne d'état du duel dans le panneau de fin (publication, puis issue).
     private var duelStatusLabel: SKLabelNode?
+    /// Code du duel proposé au partage sur le panneau de fin.
+    private var duelShareCode: String?
     /// Étoiles obtenues sur le niveau de puzzle qui vient d'être terminé.
     private var puzzleStarsEarned = 0
     /// XP créditée à la fin de cette partie (affiché dans le panel game-over).
@@ -762,6 +764,14 @@ class GameScene: SKScene {
                 }
                 if name == "homePanelBtn" {
                     run(SKAction.wait(forDuration: 0.08)) { [weak self] in self?.goBackToMenu() }
+                    return
+                }
+                if name == "duelShareBtn", let code = duelShareCode {
+                    node.parent?.run(SKAction.sequence([
+                        SKAction.scale(to: 0.93, duration: 0.07),
+                        SKAction.scale(to: 1.0, duration: 0.1)
+                    ]))
+                    DuelShare.present(code: code, from: view?.window?.rootViewController)
                     return
                 }
                 // Relances contextuelles : on enchaîne directement sur l'autre
@@ -1996,9 +2006,55 @@ class GameScene: SKScene {
             let theirs = uid == duel.challengerUid ? (duel.opponentScore ?? 0) : duel.challengerScore
             duelStatusLabel?.text = String(format: String(localized: String.LocalizationValue(key)), rival, theirs)
         } else {
-            // Le challenger vient de créer le duel : il repart avec le code.
+            // Le challenger vient de créer le duel : il repart avec le code, et
+            // surtout avec de quoi l'envoyer. C'est le seul moment où le duel
+            // peut réellement partir chez quelqu'un.
             duelStatusLabel?.text = String(format: String(localized: "duel.share_code"), duel.code)
+            addDuelShareButton(code: duel.code)
         }
+    }
+
+    /// Bouton « Partager le code » sur le panneau de fin d'un duel. Ajouté
+    /// après coup : le code n'existe qu'au retour du réseau, bien après la
+    /// construction du panneau.
+    private func addDuelShareButton(code: String) {
+        guard let panel = gameOverPanel, panel.childNode(withName: "duelShareBtn") == nil else { return }
+
+        let button = SKNode()
+        button.name = "duelShareBtn"
+        button.position = CGPoint(x: 0, y: -152)
+        panel.addChild(button)
+
+        let bg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
+        bg.fillColor = ThemeManager.shared.active.color(forValue: 4)
+        bg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+        bg.lineWidth = 1
+        bg.name = "duelShareBtn"
+        button.addChild(bg)
+
+        let ink = ThemeManager.shared.active.color(forValue: 4).readableInk()
+        let label = SKLabelNode(text: String(localized: "duel.share_button"))
+        label.fontName = "AvenirNext-DemiBold"
+        label.fontSize = 22
+        label.fontColor = ink
+        label.verticalAlignmentMode = .center
+
+        let iconSize: CGFloat = 24, inner: CGFloat = 12
+        let contentW = iconSize + inner + label.frame.width
+        let icon = VectorIcon.share.node(size: iconSize, color: ink)
+        icon.position = CGPoint(x: -contentW / 2 + iconSize / 2, y: 0)
+        label.horizontalAlignmentMode = .left
+        label.position = CGPoint(x: -contentW / 2 + iconSize + inner, y: 0)
+        button.addChild(icon)
+        button.addChild(label)
+
+        duelShareCode = code
+
+        // Le panneau est déjà en place : l'apparition doit se remarquer.
+        button.setScale(0.85)
+        button.alpha = 0
+        button.run(SKAction.group([SKAction.fadeIn(withDuration: 0.2),
+                                   SKAction.scale(to: 1.0, duration: 0.26)]))
     }
 
     /// Crédite et annonce les succès nouvellement débloqués depuis le
@@ -2617,6 +2673,11 @@ class GameScene: SKScene {
             replayLabel.fontColor = UIColor(white: 0.26, alpha: 1)
             replayLabel.verticalAlignmentMode = .center
             replayBtn.addChild(replayLabel)
+        } else if mode == .duel {
+            // Mode Duel : le bouton n'apparaît qu'une fois le code connu, donc
+            // après la publication (cf. updateDuelStatus). Le mode tombait
+            // jusqu'ici dans la branche « Classement du jour », qui n'a aucun
+            // rapport avec le duel qu'on vient de terminer.
         } else {
             // Mode Défi : à la place du rejeu, accès au classement du jour.
             let lbBtn = SKNode()
