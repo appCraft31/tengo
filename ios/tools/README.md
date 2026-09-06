@@ -62,3 +62,20 @@ croissance stricte, rendement par bulle croissant (la propriété que le GDD §3
 appelle « longer chains = exponentially better »), et chaîne maximale possible
 sur un plateau de 63 cellules. Sort en erreur si un cas échoue — c'est le
 substitut au target XCTest, que le projet n'a pas.
+
+## `rng_vectors/` — parité RNG avec Android
+
+```bash
+swiftc -O -o /tmp/rng_vectors \
+  ios/tenGO/GridModel.swift ios/tenGO/BubbleModel.swift ios/tenGO/SeededGenerator.swift \
+  ios/tenGO/DailyChallenge.swift ios/tenGO/AppConfig.swift ios/tenGO/GameState.swift \
+  ios/tenGO/GridValidator.swift ios/tenGO/ScoreRules.swift ios/tools/rng_vectors/main.swift
+TZ=Europe/Paris /tmp/rng_vectors
+```
+
+Imprime, à partir du code réel, les tirages `Int.random` / `shuffled` /
+`randomElement` pour la graine 42, la grille `GridModel(using:)` correspondante
+et la grille du Défi du 10 septembre 2026. Ces valeurs sont recopiées dans les
+tests Android (`SwiftRngParityTest`, `DailyChallengeTest`) : c'est le garde-fou
+de l'iso-grille iOS ↔ Android, dont dépend le Duel. À relancer si `GridModel`,
+`SeededGenerator`, `DailyChallenge` ou `GridValidator` change.
