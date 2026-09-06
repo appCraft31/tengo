@@ -696,7 +696,7 @@ class MenuScene: SKScene {
                 run(SKAction.wait(forDuration: 0.12)) {
                     let scene = DuelScene(size: self.size)
                     scene.scaleMode = .aspectFill
-                    self.view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+                    self.view?.presentScene(scene, transition: SceneTransition.crossFade(0.28))
                 }
                 return
             case "rush":
@@ -721,7 +721,7 @@ class MenuScene: SKScene {
 
         // Onglets en dernier : un bloc d'action posé au-dessus garde la main.
         if let tab = TabBar.tab(at: point, in: self), tab != .play {
-            TabBar.present(tab, from: self)
+            TabBar.present(tab, from: self, current: .play)
         }
     }
 
@@ -791,27 +791,27 @@ class MenuScene: SKScene {
     private func navigateToGame(savedState: GameState?) {
         let scene = GameScene(size: size, savedState: savedState)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+        view?.presentScene(scene, transition: SceneTransition.crossFade(0.35))
     }
 
     private func navigateToDailyChallenge() {
         let today = DailyChallenge.make()
         let scene = GameScene(size: size, daily: today)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+        view?.presentScene(scene, transition: SceneTransition.crossFade(0.35))
     }
 
     private func navigateToBoutique(guided: Bool = false) {
         let scene = BoutiqueScene(size: size)
         scene.guidedPurchase = guided
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
+        view?.presentScene(scene, transition: SceneTransition.crossFade(0.3))
     }
 
     private func navigateToRush() {
         let scene = GameScene(size: size, startRush: true)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+        view?.presentScene(scene, transition: SceneTransition.crossFade(0.35))
     }
 
     private func navigateToPuzzles() {
@@ -819,18 +819,18 @@ class MenuScene: SKScene {
         // plutôt qu'un écran de sélection de monde à une seule entrée.
         let scene = PuzzleLevelsScene(size: size, world: 1)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+        view?.presentScene(scene, transition: SceneTransition.crossFade(0.28))
     }
 
     private func navigateToProfile() {
         let scene = ProfileScene(size: size)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+        view?.presentScene(scene, transition: SceneTransition.crossFade(0.28))
     }
 
     private func navigateToTutorial() {
         let scene = TutorialScene(size: size)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+        view?.presentScene(scene, transition: SceneTransition.crossFade(0.28))
     }
 }

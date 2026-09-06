@@ -190,7 +190,7 @@ class DuelScene: SKScene {
         let seed = UInt64.random(in: 1...UInt64.max)
         let scene = GameScene(size: size, duelSeed: seed, duelCode: nil)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
+        view?.presentScene(scene, transition: SceneTransition.crossFade(0.3))
     }
 
     private func promptForCode() {
@@ -227,7 +227,7 @@ class DuelScene: SKScene {
                                            duel.challengerName, duel.challengerScore)
                 let scene = GameScene(size: size, duelSeed: duel.seed, duelCode: duel.code)
                 scene.scaleMode = .aspectFill
-                view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+                view?.presentScene(scene, transition: SceneTransition.crossFade(0.35))
             } catch {
                 statusLabel?.text = error.localizedDescription
             }
@@ -253,7 +253,7 @@ class DuelScene: SKScene {
         }
 
         if let tab = TabBar.tab(at: point, in: self), tab != .social {
-            TabBar.present(tab, from: self)
+            TabBar.present(tab, from: self, current: .social)
         }
     }
 }

@@ -232,14 +232,14 @@ class AchievementsScene: SKScene {
             if name == "back" {
                 let menu = MenuScene(size: size)
                 menu.scaleMode = .aspectFill
-                view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.28))
+                view?.presentScene(menu, transition: SceneTransition.crossFade(0.28))
                 return
             }
             if name.hasPrefix("category_"), let raw = name.split(separator: "_").last,
                let newCategory = AchievementCategory(rawValue: String(raw)), newCategory != category {
                 let scene = AchievementsScene(size: size, category: newCategory)
                 scene.scaleMode = .aspectFill
-                view?.presentScene(scene, transition: SKTransition.crossFade(withDuration: 0.18))
+                view?.presentScene(scene, transition: SceneTransition.crossFade(0.18))
                 return
             }
         }

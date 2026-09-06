@@ -371,7 +371,7 @@ class GameScene: SKScene {
                 // Depuis le jeu : on sauvegarde l'état et on bascule au tuto
                 let tutorial = TutorialScene(size: self.size)
                 tutorial.scaleMode = .aspectFill
-                self.view?.presentScene(tutorial, transition: SKTransition.fade(withDuration: 0.3))
+                self.view?.presentScene(tutorial, transition: SceneTransition.crossFade(0.3))
             }
         }
         overlay.present(in: self)
@@ -2713,7 +2713,7 @@ class GameScene: SKScene {
         shop.returnDestination = pendingShopSnapshot != nil ? .game : .menu
         shop.scaleMode = .aspectFill
         pendingShopSnapshot = nil
-        view?.presentScene(shop, transition: SKTransition.fade(withDuration: 0.3))
+        view?.presentScene(shop, transition: SceneTransition.crossFade(0.3))
     }
 
     private func goBackToMenu() {
@@ -2736,7 +2736,7 @@ class GameScene: SKScene {
             default:      destination = MenuScene(size: self.size)
             }
             destination.scaleMode = .aspectFill
-            self.view?.presentScene(destination, transition: SKTransition.fade(withDuration: 0.3))
+            self.view?.presentScene(destination, transition: SceneTransition.crossFade(0.3))
         }
     }
 }
