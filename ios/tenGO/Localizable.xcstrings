@@ -3511,6 +3511,71 @@
         }
       }
     },
+    "duel.share_button": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Partager le code"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Share the code"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartir el código"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Code teilen"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Condividi il codice"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Compartilhar o código"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "コードを共有"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "分享代码"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "코드 공유"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Deel de code"
+          }
+        }
+      }
+    },
     "duel.share_code": {
       "extractionState": "manual",
       "localizations": {
@@ -3572,6 +3637,71 @@
           "stringUnit": {
             "state": "translated",
             "value": "Deel deze code: %@"
+          }
+        }
+      }
+    },
+    "duel.share_message": {
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Je te défie sur Ten Go ! Même grille, même départ. Mon code : %@"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "I challenge you on Ten Go! Same grid, same start. My code: %@"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "¡Te reto en Ten Go! La misma cuadrícula, el mismo comienzo. Mi código: %@"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ich fordere dich bei Ten Go heraus! Gleiches Feld, gleicher Start. Mein Code: %@"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ti sfido su Ten Go! Stessa griglia, stessa partenza. Il mio codice: %@"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Eu te desafio no Ten Go! Mesma grade, mesmo começo. Meu código: %@"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ten Go で勝負！同じ盤面、同じスタート。コード：%@"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "来 Ten Go 和我比一局！同一个棋盘，同样的开局。我的代码：%@"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ten Go에서 도전장을 보냅니다! 같은 보드, 같은 시작. 내 코드: %@"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ik daag je uit op Ten Go! Zelfde bord, zelfde start. Mijn code: %@"
           }
         }
       }
