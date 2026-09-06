@@ -147,6 +147,17 @@ class GameViewController: UIViewController {
         d.set([2140, 1980, 1760], forKey: "tengo_rush_high_scores")
         d.set(true, forKey: k.hasSeenTutorial)
         d.set(true, forKey: k.noAdsPurchased)          // boutique sans prix
+
+        // Tutoriels marqués comme vus : sans cela, le coach-mark d'un booster
+        // s'ouvre sur la première partie avec son voile sombre, et la capture
+        // de la grille sort grisée derrière une bulle d'aide.
+        d.set(true, forKey: k.hasSeenShopPurchaseGuide)
+        for booster in Booster.allCases {
+            d.set(true, forKey: k.boosterCoachSeenPrefix + booster.rawValue)
+            // Un joueur de niveau 25 n'a pas un inventaire vide : sans cela la
+            // barre de boosters se réduit à une pastille « Boutique ».
+            d.set(2, forKey: k.boosterInventoryPrefix + booster.rawValue)
+        }
     }
 
     override func viewDidAppear(_ animated: Bool) {
