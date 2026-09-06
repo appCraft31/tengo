@@ -98,6 +98,10 @@ platform :ios do
       screenshots_path: "./fastlane/screenshots",
       overwrite_screenshots: true,
       submit_for_review: false,
+      # precheck ne sait pas lire les achats in-app avec une clé API App Store
+      # Connect : il faisait échouer la lane APRÈS un upload pourtant réussi,
+      # ce qui rendait le résultat illisible. Même réglage que `release_notes`.
+      run_precheck_before_submit: false,
       force: true
     )
   end
