@@ -319,7 +319,6 @@ class GameScene: SKScene {
         queueBoosterCoachMarks()
         setupSettingsButton(in: view)
         HapticManager.prepare()
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     /// Bouton paramètres — même composant visuel et même position que sur la
@@ -377,13 +376,6 @@ class GameScene: SKScene {
         }
         overlay.present(in: self)
         settingsOverlay = overlay
-    }
-
-    /// Recalcule la mise en page basse quand la zone de jeu change (ex. apparition
-    /// de la bannière qui réduit la SKView). Appelé par le GameViewController.
-    func relayoutForViewChange() {
-        guard let view = view else { return }
-        repositionBottomRow(in: view)
     }
 
     private func repositionBottomRow(in view: SKView, animated: Bool = false) {

@@ -68,7 +68,6 @@ class BoutiqueScene: SKScene {
         // Capture de review App Store des achats in-app : « Sans pub » est déjà
         // en haut de page ; SHOP_COINS=1 défile en plus jusqu'aux packs.
         if ProcessInfo.processInfo.environment["SHOP_COINS"] == "1" { scrollTo(section: "coins") }
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
     }
 
     /// Défile pour amener le haut d'une section en haut de la zone visible.
@@ -532,7 +531,7 @@ class BoutiqueScene: SKScene {
     private static let noAdsBonusCoins = 500
 
     /// Achat du mod « sans pub » depuis la Boutique. Succès → +500 pièces,
-    /// rebuild (badge « Actif ») ; les pubs sont coupées via .tenGOAdFreeChanged.
+    /// rebuild (badge « Actif ») ; les interstitiels consultent `isPurchased`.
     private func handleNoAds() {
         guard !AdFreeManager.shared.isPurchased else { return }
         guard let product = StoreManager.shared.adFreeProduct else {

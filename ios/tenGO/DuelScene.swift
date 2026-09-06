@@ -25,7 +25,6 @@ class DuelScene: SKScene {
         addChild(ThemeBackground.make(for: ThemeManager.shared.active, size: size))
         presenter = view.window?.rootViewController
         setupUI()
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
 
         if let code = incomingCode {
             incomingCode = nil

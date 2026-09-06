@@ -28,7 +28,6 @@ class PuzzleLevelsScene: SKScene {
         backgroundColor = ThemeManager.shared.active.background
         addChild(ThemeBackground.make(for: ThemeManager.shared.active, size: size))
         setupUI()
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     // MARK: - UI

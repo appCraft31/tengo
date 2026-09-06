@@ -34,7 +34,6 @@ class TutorialScene: SKScene {
         setupBackground()
         setupChrome()
         showStep(0, animated: false)
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     // MARK: - Fond animé
