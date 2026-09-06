@@ -116,12 +116,7 @@ enum GridValidator {
     /// Miroir du barème de GameScene.scoreForPath — dupliqué ici pour que le
     /// validateur reste utilisable hors de la scène de jeu (outil d'audit).
     private static func scoreForPath(length: Int) -> Int {
-        switch length {
-        case 2: return 10
-        case 3: return 30
-        case 4: return 100
-        default: return 100 + 50 * (length - 4)
-        }
+        ScoreRules.points(forChain: length)
     }
 
     /// Difficulté 1-100. Trois composantes, toutes normalisées :

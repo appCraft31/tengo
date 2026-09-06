@@ -1,4 +1,3 @@
-#!/usr/bin/env swift
 //
 //  puzzle_gen.swift
 //  tenGO — pipeline de contenu du mode Puzzles (issue #19)
@@ -7,10 +6,13 @@
 //  démontré entièrement solvable, et ses seuils d'étoiles sont dérivés du
 //  meilleur score réellement atteignable (calculé, pas deviné).
 //
-//  Les règles sont recopiées à l'identique de GridModel.swift et de
-//  GameScene.scoreForPath — toute divergence invaliderait les niveaux.
+//  La gravité et l'adjacence sont recopiées de GridModel.swift (l'outil
+//  travaille sur des masques de bits, pas sur le modèle du jeu). Le BARÈME,
+//  lui, est importé : les seuils d'étoiles en dépendent directement.
 //
-//  Usage :  swift ios/tools/puzzle_gen.swift > ios/tenGO/PuzzleCatalog.swift
+//  Usage :
+//    swiftc -O -o /tmp/puzzle_gen ios/tenGO/ScoreRules.swift ios/tools/puzzle_gen/main.swift
+//    /tmp/puzzle_gen > ios/tenGO/PuzzleCatalog.swift
 //
 
 import Foundation
@@ -20,17 +22,10 @@ import Foundation
 let kRows = 9
 let kCols = 7
 
-/// Barème de GameScene.scoreForPath — superlinéaire : c'est lui qui fait
-/// qu'un même niveau peut rapporter beaucoup plus si on construit de longues
-/// chaînes plutôt que des paires.
-func scoreForPath(length: Int) -> Int {
-    switch length {
-    case 2: return 10
-    case 3: return 30
-    case 4: return 100
-    default: return 100 + 50 * (length - 4)
-    }
-}
+/// Barème du jeu, importé et non recopié : les seuils d'étoiles publiés en
+/// dépendent directement, et une copie qui dérive rendrait les 20 niveaux
+/// faux sans que rien n'échoue.
+func scoreForPath(length: Int) -> Int { ScoreRules.points(forChain: length) }
 
 /// RNG déterministe — même algorithme que SeededGenerator.swift (SplitMix64).
 struct Seeded: RandomNumberGenerator {

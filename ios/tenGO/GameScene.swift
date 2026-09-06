@@ -222,6 +222,9 @@ class GameScene: SKScene {
 
     // MARK: - UI nodes
 
+    /// Gain de la chaîne en cours, affiché dès qu'elle atteint 10 (GDD §34) :
+    /// c'est le seul moment où le nombre annoncé est celui qui sera marqué.
+    private var pathGainLabel: SKLabelNode?
     private var scoreLabel: SKLabelNode!
     private var sumLabel: SKLabelNode? // unused — somme masquée volontairement
     private var messageLabel: SKLabelNode!
@@ -968,6 +971,59 @@ class GameScene: SKScene {
         if let head = currentPath.last {
             moveComet(to: scenePos(row: head.row, col: head.col), tension: tension)
         }
+        updatePathGainLabel()
+    }
+
+    /// Rend lisible le barème pendant le geste : passer de 4 à 5 bulles fait
+    /// bondir le nombre de 100 à 200. Sans cela, « les chaînes longues valent
+    /// beaucoup plus » reste une règle invisible.
+    ///
+    /// N'apparaît qu'à somme exactement 10 : c'est la seule configuration où
+    /// le chemin est jouable, donc la seule où annoncer un gain est honnête.
+    private func updatePathGainLabel() {
+        guard currentPath.count >= 2, gridModel.pathSum(currentPath) == 10,
+              let head = currentPath.last else {
+            pathGainLabel?.removeFromParent()
+            pathGainLabel = nil
+            return
+        }
+
+        let points = scoreForPath(length: currentPath.count)
+        let label: SKLabelNode
+        if let existing = pathGainLabel {
+            label = existing
+        } else {
+            label = SKLabelNode(text: "")
+            label.fontName = "AvenirNext-Heavy"
+            label.verticalAlignmentMode = .center
+            label.horizontalAlignmentMode = .center
+            label.zPosition = 12
+            addChild(label)
+            pathGainLabel = label
+        }
+
+        // La taille et la teinte suivent le palier : le saut se voit avant même
+        // d'avoir lu le nombre.
+        let tier = PopTier(length: currentPath.count)
+        let previous = label.text
+        label.text = "+\(points)"
+        label.fontSize = tier == .small ? 30 : (tier == .medium ? 38 : 46)
+        label.fontColor = points >= 200
+            ? UIColor(red: 0.92, green: 0.55, blue: 0.14, alpha: 1)
+            : UIColor(white: 0.28, alpha: 0.92)
+
+        let target = scenePos(row: head.row, col: head.col)
+        label.position = CGPoint(x: target.x, y: target.y + 62)
+
+        // Petit sursaut à chaque changement de valeur, pas à chaque redessin.
+        if previous != label.text {
+            label.removeAllActions()
+            label.setScale(1)
+            label.run(SKAction.sequence([
+                SKAction.scale(to: 1.18, duration: 0.07),
+                SKAction.scale(to: 1.0, duration: 0.11)
+            ]))
+        }
     }
 
     /// Conteneur persistant du tracé : seuls ses enfants « stroke » sont
@@ -1023,6 +1079,8 @@ class GameScene: SKScene {
 
     /// Démonte intégralement le tracé (trait + comète + conteneur).
     private func clearTrail() {
+        pathGainLabel?.removeFromParent()
+        pathGainLabel = nil
         strokeNode?.removeFromParent()
         strokeNode = nil
         trailComet?.removeFromParent()
@@ -1035,12 +1093,7 @@ class GameScene: SKScene {
     // MARK: - Scoring
 
     private func scoreForPath(length: Int) -> Int {
-        switch length {
-        case 2: return 10
-        case 3: return 30
-        case 4: return 100
-        default: return 100 + 50 * (length - 4)
-        }
+        ScoreRules.points(forChain: length)
     }
 
     /// Met à jour le chiffre ; le pulse visuel est joué à l'arrivée du vol
