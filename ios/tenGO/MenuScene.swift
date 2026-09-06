@@ -187,7 +187,7 @@ class MenuScene: SKScene {
         bg.lineWidth = 1
         node.addChild(bg)
 
-        let ink = contrastingText(on: accent)
+        let ink = accent.readableInk()
         let label = SKLabelNode(text: String(localized: "menu.play"))
         label.fontName = "AvenirNext-Bold"
         label.fontSize = 34
@@ -234,7 +234,7 @@ class MenuScene: SKScene {
         let theme = ThemeManager.shared.active
         let done = DailyChallenge.isCompletedToday()
         let accent = done ? UIColor(red: 0.90, green: 0.90, blue: 0.89, alpha: 1) : theme.color(forValue: 6)
-        let ink = contrastingText(on: accent)
+        let ink = accent.readableInk()
         let half = height / 2
         let leftX = -cardWidth / 2 + 30
 
@@ -348,7 +348,7 @@ class MenuScene: SKScene {
             bg.lineWidth = 1
             node.addChild(bg)
 
-            let ink = contrastingText(on: tile.accent)
+            let ink = tile.accent.readableInk()
             let icon = tile.icon.node(size: 64, color: ink)
             icon.position = CGPoint(x: 0, y: 30)
             node.addChild(icon)
@@ -398,12 +398,6 @@ class MenuScene: SKScene {
         addChild(node)
     }
 
-    /// Couleur de texte lisible sur un fond (clair → foncé, sombre → blanc).
-    private func contrastingText(on color: UIColor) -> UIColor {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        color.getRed(&r, green: &g, blue: &b, alpha: &a)
-        return (0.299 * r + 0.587 * g + 0.114 * b) > 0.6 ? UIColor(white: 0.2, alpha: 1) : .white
-    }
 
     /// Solde de pièces dépensables (monnaie de la boutique).
     /// Pastille dorée + pièce vectorielle.
@@ -607,7 +601,7 @@ class MenuScene: SKScene {
 
         // Accentué → couleur du thème ; secondaire → pastille theme-aware (meilleur contraste).
         let fillColor = accent ?? theme.logo.withAlphaComponent(0.08)
-        let labelColor = accent != nil ? contrastingText(on: accent!) : theme.logo
+        let labelColor = accent != nil ? accent!.readableInk() : theme.logo
         let strokeColor = accent != nil ? UIColor(white: 0.68, alpha: 0.30) : theme.logo.withAlphaComponent(0.28)
 
         let bg = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: height / 2)

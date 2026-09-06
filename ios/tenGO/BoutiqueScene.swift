@@ -294,7 +294,7 @@ class BoutiqueScene: SKScene {
         card.name = "noAds"
         card.position = CGPoint(x: 0, y: cursor - h / 2)
 
-        let ink = contrastingText(on: theme.accent)
+        let ink = theme.accent.readableInk()
 
         // Halo pulsant derrière la carte (seulement tant que non acheté).
         if !purchased {
@@ -499,7 +499,7 @@ class BoutiqueScene: SKScene {
         pill.position = position
         card.addChild(pill)
 
-        let ink = affordable ? contrastingText(on: theme.accent) : UIColor(white: 0.45, alpha: 1)
+        let ink = affordable ? theme.accent.readableInk() : UIColor(white: 0.45, alpha: 1)
 
         let qty = SKLabelNode(text: "×\(quantity)")
         qty.name = name
@@ -610,7 +610,7 @@ class BoutiqueScene: SKScene {
             let label = SKLabelNode(text: product.displayPrice)
             label.fontName = "AvenirNext-Bold"
             label.fontSize = 16
-            label.fontColor = contrastingText(on: theme.accent)
+            label.fontColor = theme.accent.readableInk()
             label.verticalAlignmentMode = .center
             label.position = CGPoint(x: 0, y: -48)
             card.addChild(label)
@@ -635,7 +635,7 @@ class BoutiqueScene: SKScene {
         let label = SKLabelNode(text: priceText)
         label.fontName = "AvenirNext-Bold"
         label.fontSize = 16
-        label.fontColor = contrastingText(on: theme.accent)
+        label.fontColor = theme.accent.readableInk()
         label.verticalAlignmentMode = .center
         label.position = CGPoint(x: 0, y: -48)
         card.addChild(label)
@@ -737,7 +737,7 @@ class BoutiqueScene: SKScene {
             let label = SKLabelNode(text: String(localized: "shop.active", defaultValue: "Actif"))
             label.fontName = "AvenirNext-Bold"
             label.fontSize = 15
-            label.fontColor = contrastingText(on: theme.accent)
+            label.fontColor = theme.accent.readableInk()
             label.verticalAlignmentMode = .center
             label.position = CGPoint(x: 0, y: y)
             card.addChild(label)
@@ -836,14 +836,6 @@ class BoutiqueScene: SKScene {
         return TrailRenderer.make(path: path, style: style, accent: ThemeManager.shared.active.accent)
     }
 
-    // MARK: - Couleur de texte contrastée
-
-    private func contrastingText(on color: UIColor) -> UIColor {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        color.getRed(&r, green: &g, blue: &b, alpha: &a)
-        let luminance = 0.299 * r + 0.587 * g + 0.114 * b
-        return luminance > 0.6 ? UIColor(white: 0.18, alpha: 1) : .white
-    }
 
     // MARK: - Noms localisés
 

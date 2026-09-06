@@ -136,3 +136,23 @@ final class ThemeManager {
 
     func theme(id: String) -> Theme? { themes.first { $0.id == id } }
 }
+
+// MARK: - Lisibilité sur une couleur de fond
+
+extension UIColor {
+
+    /// Luminance perçue (0 = noir, 1 = blanc).
+    var perceivedLuminance: CGFloat {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        getRed(&r, green: &g, blue: &b, alpha: &a)
+        return 0.299 * r + 0.587 * g + 0.114 * b
+    }
+
+    /// Encre lisible posée sur cette couleur : foncée sur un fond clair,
+    /// blanche sur un fond sombre. Les thèmes vont du crème au bleu nuit,
+    /// aucune encre fixe ne tient sur les six.
+    func readableInk(threshold: CGFloat = 0.6) -> UIColor {
+        perceivedLuminance > threshold ? UIColor(white: 0.18, alpha: 1) : .white
+    }
+
+}
