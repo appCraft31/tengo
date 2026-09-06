@@ -49,6 +49,10 @@ class GameViewController: UIViewController {
         let scene: SKScene
         let env = ProcessInfo.processInfo.environment
 
+        // Doit précéder la construction de la scène : le Profil et le Duel
+        // lisent ces valeurs à l'affichage.
+        if env["SCREENSHOT_SEED_DATA"] == "1" { Self.seedShowcaseData() }
+
         #if DEBUG
         applyQAOverrides(env)
         #endif
@@ -74,6 +78,17 @@ class GameViewController: UIViewController {
             if env["SHOP_RETURN"] == "game" { shop.returnDestination = .game }
             #endif
             scene = shop
+        } else if let name = env["SCREENSHOT_SCENE"] {
+            // Captures des écrans qui ne sont pas des parties (fiche stores).
+            // Même esprit que SHOP_MODE ci-dessus : hors #if DEBUG, pour rester
+            // utilisable sur un build Release.
+            let size = CGSize(width: 750, height: 1334)
+            switch name {
+            case "profile": scene = ProfileScene(size: size)
+            case "duel":    scene = DuelScene(size: size)
+            case "puzzles": scene = PuzzleLevelsScene(size: size, world: 1)
+            default:        scene = MenuScene(size: size)
+            }
         } else {
             scene = MenuScene(size: CGSize(width: 750, height: 1334))
         }
@@ -109,12 +124,40 @@ class GameViewController: UIViewController {
         Task { await AdFreeManager.shared.refreshEntitlements() }
     }
 
+    /// Données de vitrine pour les captures de la fiche stores.
+    ///
+    /// Sur un simulateur vierge, le Profil affiche « Meilleur score 0 » et le
+    /// Duel une liste vide : invendable sur une fiche. Ces valeurs ne sont
+    /// écrites que sous `SCREENSHOT_SEED_DATA`, jamais par défaut, et restent
+    /// plausibles — une fiche doit montrer le jeu tel qu'on peut le vivre.
+    private static func seedShowcaseData() {
+        let d = UserDefaults.standard
+        let k = AppConfig.UserDefaultsKey.self
+        d.set(4820, forKey: k.totalXP)                 // niveau ~20
+        d.set(340, forKey: k.coinsBalance)
+        d.set(12, forKey: k.streakCurrent)
+        d.set(18, forKey: k.streakBest)
+        d.set(1, forKey: k.streakShieldCount)
+        d.set(9, forKey: k.statsBestChain)
+        d.set(7, forKey: k.statsPerfectTotal)
+        d.set(1463, forKey: k.statsTotalChains)
+        d.set(24, forKey: k.statsTotalRushGames)
+        d.set(31, forKey: k.statsTotalDaily)
+        d.set([4820, 4310, 3980, 3720, 3450], forKey: "tengo_high_scores")
+        d.set([2140, 1980, 1760], forKey: "tengo_rush_high_scores")
+        d.set(true, forKey: k.hasSeenTutorial)
+        d.set(true, forKey: k.noAdsPurchased)          // boutique sans prix
+    }
+
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         // Lien entrant reçu avant que l'observateur ne soit prêt (lancement à froid).
         if DeepLink.pendingDaily { openDaily() }
         let env = ProcessInfo.processInfo.environment
-        guard env["SCREENSHOT_DAILY"] != "1", env["DEMO_MODE"] != "1", env["BRAND_MODE"] != "1", env["SHOP_MODE"] != "1" else { return }
+        // Modes de capture : ni pubs, ni feuille Game Center — elle se
+        // superpose à l'écran et ruine la capture.
+        guard env["SCREENSHOT_DAILY"] != "1", env["DEMO_MODE"] != "1", env["BRAND_MODE"] != "1",
+              env["SHOP_MODE"] != "1", env["SCREENSHOT_SCENE"] == nil else { return }
 
         // QA (GAME_NORMAL) : démarre les pubs sans le flux de consentement, pour
         // tester au simulateur sans boîtes système bloquantes.
