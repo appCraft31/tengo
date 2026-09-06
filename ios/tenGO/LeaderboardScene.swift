@@ -37,7 +37,6 @@ class LeaderboardScene: SKScene {
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
         setupBackground()
         setupUI()
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     // MARK: - Fond animé
@@ -281,7 +280,7 @@ class LeaderboardScene: SKScene {
             if node.name == "back" || node.parent?.name == "back" {
                 let menu = MenuScene(size: size)
                 menu.scaleMode = .aspectFill
-                view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.28))
+                view?.presentScene(menu, transition: SceneTransition.fade(0.28))
                 return
             }
             if node.name == "worldLeaderboard" || node.parent?.name == "worldLeaderboard" {

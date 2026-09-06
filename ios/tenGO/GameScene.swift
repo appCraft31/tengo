@@ -319,7 +319,6 @@ class GameScene: SKScene {
         queueBoosterCoachMarks()
         setupSettingsButton(in: view)
         HapticManager.prepare()
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     /// Bouton paramètres — même composant visuel et même position que sur la
@@ -372,18 +371,11 @@ class GameScene: SKScene {
                 // Depuis le jeu : on sauvegarde l'état et on bascule au tuto
                 let tutorial = TutorialScene(size: self.size)
                 tutorial.scaleMode = .aspectFill
-                self.view?.presentScene(tutorial, transition: SKTransition.fade(withDuration: 0.3))
+                self.view?.presentScene(tutorial, transition: SceneTransition.fade(0.3))
             }
         }
         overlay.present(in: self)
         settingsOverlay = overlay
-    }
-
-    /// Recalcule la mise en page basse quand la zone de jeu change (ex. apparition
-    /// de la bannière qui réduit la SKView). Appelé par le GameViewController.
-    func relayoutForViewChange() {
-        guard let view = view else { return }
-        repositionBottomRow(in: view)
     }
 
     private func repositionBottomRow(in view: SKView, animated: Bool = false) {
@@ -2721,7 +2713,7 @@ class GameScene: SKScene {
         shop.returnDestination = pendingShopSnapshot != nil ? .game : .menu
         shop.scaleMode = .aspectFill
         pendingShopSnapshot = nil
-        view?.presentScene(shop, transition: SKTransition.fade(withDuration: 0.3))
+        view?.presentScene(shop, transition: SceneTransition.fade(0.3))
     }
 
     private func goBackToMenu() {
@@ -2744,7 +2736,7 @@ class GameScene: SKScene {
             default:      destination = MenuScene(size: self.size)
             }
             destination.scaleMode = .aspectFill
-            self.view?.presentScene(destination, transition: SKTransition.fade(withDuration: 0.3))
+            self.view?.presentScene(destination, transition: SceneTransition.fade(0.3))
         }
     }
 }

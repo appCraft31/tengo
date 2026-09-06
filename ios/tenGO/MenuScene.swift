@@ -29,7 +29,6 @@ class MenuScene: SKScene {
         // Le bouton « regarder une pub » vient d'apparaître : c'est ici que la
         // récompensée a une chance d'être vue, donc ici qu'on la précharge.
         RewardedAdManager.shared.preloadIfNeeded()
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
         maybeShowShopPurchaseGuide()
     }
 
@@ -48,7 +47,8 @@ class MenuScene: SKScene {
               // Seuil = prix UNITAIRE (30) et non plus celui du lot (120) :
               // 3 à 6 parties au lieu de 12 à 24.
               CoinManager.shared.balance >= Booster.hint.price,
-              let target = childNode(withName: "boutique") else { return }
+              // La boutique est devenue un onglet : le guide pointe l'onglet.
+              let target = childNode(withName: "//tab_shop") else { return }
 
         // ⚠️ Le flag n'est PAS posé ici : il l'est à la réussite de l'achat.
         // L'ancienne version le posait dès l'affichage — guide ignoré une fois,
@@ -92,167 +92,283 @@ class MenuScene: SKScene {
 
     // MARK: - Setup UI
 
+    /// Largeur des cartes de l'accueil, calée sur la largeur réellement visible.
+    private var cardWidth: CGFloat = 340
+
     private func setupUI() {
-        let centerY = size.height / 2
+        guard let v = view else { return }
+        let theme = ThemeManager.shared.active
 
         // Géométrie réellement visible (aspectFill rogne la largeur).
-        var topRowY = centerY * 0.78
-        var edgeX = size.width * 0.30
-        if let v = view {
-            let scale = max(v.bounds.width / size.width, v.bounds.height / size.height)
-            // Marge haute minimale garantie : safeAreaInsets peut être nul au lancement
-            // (encoche/dynamic island) → on plancher à ~47pt pour ne pas remonter dans l'encoche.
-            let topInset = max(v.safeAreaInsets.top, 47) / scale
-            topRowY = (v.bounds.height / scale) / 2 - topInset - 26
-            edgeX = (v.bounds.width / scale) / 2 - 58
-        }
+        let scale = max(v.bounds.width / size.width, v.bounds.height / size.height)
+        let usableW = v.bounds.width / scale
+        let halfH = v.bounds.height / scale / 2
+        // Marge haute minimale garantie : safeAreaInsets peut être nul au lancement
+        // (encoche/dynamic island) → on plancher à ~47pt pour ne pas remonter dans l'encoche.
+        let topInset = max(v.safeAreaInsets.top, 47) / scale
+        let bottomInset = max(v.safeAreaInsets.bottom, 20) / scale
+        let topRowY = halfH - topInset - 26
+        let edgeX = usableW / 2 - 58
+        cardWidth = min(usableW - 48, 600)
 
-        // Logo + slogan — bloc descendu pour centrer l'ensemble logo+boutons.
-        addLogo(atY: centerY * 0.22)
+        // Barre du haut : niveau à gauche, pièces et réglages à droite. Le
+        // trophée a quitté ce coin — le classement vit dans l'onglet Progression.
+        addIconButton(systemName: "gearshape.fill", name: "parametres", at: CGPoint(x: edgeX, y: topRowY))
+        addCoinChip(rightEdgeX: edgeX - 36, atY: topRowY)
+        addLevelChip(leftEdgeX: -edgeX + 36, atY: topRowY)
+
+        addLogo(atY: topRowY - 145)
 
         let tagline = SKLabelNode(text: String(localized: "menu.tagline"))
         tagline.fontName = "AvenirNext-Light"
         tagline.fontSize = 22
-        tagline.fontColor = ThemeManager.shared.active.logo.withAlphaComponent(0.6)
+        tagline.fontColor = theme.logo.withAlphaComponent(0.6)
         tagline.verticalAlignmentMode = .center
-        tagline.position = CGPoint(x: 0, y: centerY * 0.22 - 56)
+        tagline.position = CGPoint(x: 0, y: topRowY - 203)
         addChild(tagline)
 
-        // Barre du haut : trophée (gauche) et engrenage (droite) dans les coins ;
-        // le solde de pièces est centré juste en dessous (évite la dynamic island).
-        addIconButton(systemName: "trophy.fill", name: "classement", at: CGPoint(x: -edgeX, y: topRowY))
-        addIconButton(systemName: "gearshape.fill", name: "parametres", at: CGPoint(x: edgeX, y: topRowY))
-        // Solde de pièces à gauche de l'engrenage (bord droit ancré).
-        addCoinChip(rightEdgeX: edgeX - 36, atY: topRowY)
-        // Niveau à droite du trophée (bord gauche ancré) — miroir du chip pièces.
-        addLevelChip(leftEdgeX: -edgeX + 36, atY: topRowY)
+        // Barre d'onglets : les destinations secondaires (succès, missions,
+        // classement, boutique, duel) y sont rangées, l'accueil ne porte plus
+        // que ce qui se joue tout de suite.
+        let tabBar = TabBar.make(width: usableW, selected: .play)
+        tabBar.position = CGPoint(x: 0, y: -halfH + bottomInset + TabBar.height / 2)
+        addChild(tabBar)
 
-        // Pile de boutons centrée : tous de même gabarit, la hiérarchie passe
-        // par la couleur et la graisse du texte, pas par la taille.
+        // Les blocs d'action occupent la bande entre le slogan et les onglets.
+        // Hauteurs fixes, espacement calculé : « Reprendre » peut manquer sans
+        // laisser un trou.
+        let hasSave = GameState.exists
+        let heroH: CGFloat = 140, resumeH: CGFloat = 80, dailyH: CGFloat = 250, tilesH: CGFloat = 190
+        var blocks: [CGFloat] = [heroH]
+        if hasSave { blocks.append(resumeH) }
+        blocks.append(contentsOf: [dailyH, tilesH])
+
+        let bandTop = topRowY - 245
+        let bandBottom = -halfH + bottomInset + TabBar.height + 18
+        let available = bandTop - bandBottom
+        let blocksH = blocks.reduce(0, +)
+        let gap = min(80, max(24, (available - blocksH) / CGFloat(blocks.count - 1)))
+        var cursor = bandTop - max(0, (available - (blocksH + gap * CGFloat(blocks.count - 1))) / 2)
+        func place(_ height: CGFloat) -> CGFloat {
+            let center = cursor - height / 2
+            cursor -= height + gap
+            return center
+        }
+
+        addHeroButton(atY: place(heroH), height: heroH, accent: theme.color(forValue: 4))
+        if hasSave { addResumeButton(atY: place(resumeH), height: resumeH) }
+        addDailyCard(atY: place(dailyH), height: dailyH)
+        addModeTiles(atY: place(tilesH), height: tilesH)
+
+        // Bouton « pub récompensée », sous le solde qu'il alimente. L'achat
+        // « sans pub » vit dans la Boutique (section Pièces).
+        addWatchAdButton(at: CGPoint(x: edgeX - 52, y: topRowY - 82))
+    }
+
+    // MARK: - Blocs de l'accueil
+
+    /// Action primaire : une pilule haute, icône + libellé, impossible à rater.
+    private func addHeroButton(atY y: CGFloat, height: CGFloat, accent: UIColor) {
+        let node = SKNode()
+        node.name = "newGame"
+        node.position = CGPoint(x: 0, y: y)
+        addChild(node)
+
+        let shadow = SKShapeNode(rectOf: CGSize(width: cardWidth, height: height), cornerRadius: height / 2)
+        shadow.fillColor = UIColor(white: 0, alpha: 0.09)
+        shadow.strokeColor = .clear
+        shadow.position = CGPoint(x: 0, y: -5)
+        shadow.zPosition = -1
+        node.addChild(shadow)
+
+        let bg = SKShapeNode(rectOf: CGSize(width: cardWidth, height: height), cornerRadius: height / 2)
+        bg.fillColor = accent
+        bg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+        bg.lineWidth = 1
+        node.addChild(bg)
+
+        let ink = accent.readableInk()
+        let label = SKLabelNode(text: String(localized: "menu.play"))
+        label.fontName = "AvenirNext-Bold"
+        label.fontSize = 34
+        label.fontColor = ink
+        label.verticalAlignmentMode = .center
+
+        // Icône et libellé centrés comme un seul bloc.
+        let iconSize: CGFloat = 44, inner: CGFloat = 18
+        let contentW = iconSize + inner + label.frame.width
+        let icon = VectorIcon.play.node(size: iconSize, color: ink)
+        icon.position = CGPoint(x: -contentW / 2 + iconSize / 2, y: 0)
+        label.horizontalAlignmentMode = .left
+        label.position = CGPoint(x: -contentW / 2 + iconSize + inner, y: 0)
+        node.addChild(icon)
+        node.addChild(label)
+    }
+
+    /// Reprise de partie : présente seulement quand elle a un sens, et
+    /// volontairement discrète pour ne pas concurrencer « Jouer ».
+    private func addResumeButton(atY y: CGFloat, height: CGFloat) {
         let theme = ThemeManager.shared.active
-        let buttonWidth: CGFloat = 290
-        let buttonHeight: CGFloat = 64
-        let gap: CGFloat = 22
-        var topCursor: CGFloat = centerY * 0.06
-        func stack() -> CGFloat {
-            let c = topCursor - buttonHeight / 2
-            topCursor -= (buttonHeight + gap)
-            return c
-        }
+        let node = SKNode()
+        node.name = "continuer"
+        node.position = CGPoint(x: 0, y: y)
+        addChild(node)
 
-        // Boutons teintés avec la palette de bulles du thème actif :
-        // vert (4) Jouer, bleu (5) Continuer, violet (6) Défi, jaune (3) Boutique.
-        // Jouer — action primaire (accentuée), même typo que les autres boutons.
-        addMenuButton(text: String(localized: "menu.new_game"), name: "newGame",
-                      width: buttonWidth, height: buttonHeight, at: CGPoint(x: 0, y: stack()),
-                      accent: theme.color(forValue: 4), fontSize: 20)
+        let bg = SKShapeNode(rectOf: CGSize(width: cardWidth, height: height), cornerRadius: height / 2)
+        bg.fillColor = theme.logo.withAlphaComponent(0.07)
+        bg.strokeColor = theme.logo.withAlphaComponent(0.26)
+        bg.lineWidth = 1
+        node.addChild(bg)
 
-        // Continuer — sous Jouer si une partie est en cours
-        if GameState.exists {
-            addMenuButton(text: String(localized: "menu.continue"), name: "continuer",
-                          width: buttonWidth, height: buttonHeight,
-                          at: CGPoint(x: 0, y: stack()),
-                          accent: theme.color(forValue: 5), fontSize: 20)
-        }
+        let label = SKLabelNode(text: String(localized: "menu.continue"))
+        label.fontName = "AvenirNext-Medium"
+        label.fontSize = 22
+        label.fontColor = theme.logo
+        label.verticalAlignmentMode = .center
+        node.addChild(label)
+    }
 
-        // Défi du jour — secondaire
-        let dailyDone = DailyChallenge.isCompletedToday()
-        let dailyAccent = dailyDone
-            ? UIColor(red: 0.90, green: 0.90, blue: 0.89, alpha: 1)
-            : theme.color(forValue: 6)
-        let dailyButton = addMenuButton(
-            text: String(localized: "menu.daily", defaultValue: "Défi du jour"),
-            name: "dailyChallenge",
-            width: buttonWidth, height: buttonHeight, at: CGPoint(x: 0, y: stack()),
-            accent: dailyAccent,
-            fontSize: 21)
-        if dailyDone {
-            dailyButton.alpha = 0.5
-            let check = SKLabelNode(text: "✓")
-            check.fontName = "AvenirNext-Bold"
-            check.fontSize = 22
-            check.fontColor = UIColor(red: 0.45, green: 0.55, blue: 0.48, alpha: 1)
-            check.verticalAlignmentMode = .center
-            check.position = CGPoint(x: buttonWidth / 2 - 30, y: 0)
-            dailyButton.addChild(check)
-        }
+    /// Carte du Défi du jour : elle porte aussi la série, qui est la vraie
+    /// raison de revenir chaque jour.
+    private func addDailyCard(atY y: CGFloat, height: CGFloat) {
+        let theme = ThemeManager.shared.active
+        let done = DailyChallenge.isCompletedToday()
+        let accent = done ? UIColor(red: 0.90, green: 0.90, blue: 0.89, alpha: 1) : theme.color(forValue: 6)
+        let ink = accent.readableInk()
+        let half = height / 2
+        let leftX = -cardWidth / 2 + 30
 
-        // Série en cours — affichage proéminent (flamme + prochaine récompense),
-        // sur le bouton qui mène justement au jeu du jour.
+        let card = SKNode()
+        card.name = "dailyChallenge"
+        card.position = CGPoint(x: 0, y: y)
+        card.alpha = done ? 0.62 : 1
+        addChild(card)
+
+        let bg = SKShapeNode(rectOf: CGSize(width: cardWidth, height: height), cornerRadius: 30)
+        bg.fillColor = accent
+        bg.strokeColor = UIColor(white: 0.68, alpha: 0.28)
+        bg.lineWidth = 1
+        card.addChild(bg)
+
+        let title = SKLabelNode(text: String(localized: "menu.daily"))
+        title.fontName = "AvenirNext-Bold"
+        title.fontSize = 27
+        title.fontColor = ink
+        title.horizontalAlignmentMode = .left
+        title.verticalAlignmentMode = .center
+        title.position = CGPoint(x: leftX, y: half - 41)
+        card.addChild(title)
+
+        // Série : flamme + jours, puis les boucliers restants s'il y en a.
         let streak = StreakManager.shared.current
-        if streak > 0 {
-            let textColor = contrastingText(on: dailyAccent)
-            let shields = StreakManager.shared.shieldCount
-            let flameText = shields > 0 ? "🔥 \(streak) · 🛡️\(shields)" : "🔥 \(streak)"
-            let flame = SKLabelNode(text: flameText)
-            flame.fontName = "AvenirNext-Bold"
-            flame.fontSize = 14
-            flame.fontColor = textColor
-            flame.horizontalAlignmentMode = .left
-            flame.verticalAlignmentMode = .center
-            flame.position = CGPoint(x: -buttonWidth / 2 + 20, y: buttonHeight / 2 - 14)
-            dailyButton.addChild(flame)
+        let flame = VectorIcon.flame.node(size: 36, color: ink)
+        flame.position = CGPoint(x: leftX + 18, y: 22)
+        card.addChild(flame)
 
-            if let nextDay = StreakManager.shared.nextMilestone {
-                let next = SKLabelNode(text: String(format: String(localized: "streak.next_reward"), nextDay))
-                next.fontName = "AvenirNext-Medium"
-                next.fontSize = 10
-                next.fontColor = textColor.withAlphaComponent(0.75)
-                next.horizontalAlignmentMode = .left
-                next.verticalAlignmentMode = .center
-                next.position = CGPoint(x: -buttonWidth / 2 + 20, y: -buttonHeight / 2 + 13)
-                dailyButton.addChild(next)
-            }
+        let days = SKLabelNode(text: "\(streak)")
+        days.fontName = "AvenirNext-Heavy"
+        days.fontSize = 30
+        days.fontColor = ink
+        days.horizontalAlignmentMode = .left
+        days.verticalAlignmentMode = .center
+        days.position = CGPoint(x: leftX + 44, y: 22)
+        card.addChild(days)
+
+        let shields = StreakManager.shared.shieldCount
+        if shields > 0 {
+            let x = leftX + 54 + days.frame.width + 26
+            let shield = VectorIcon.shield.node(size: 30, color: ink.withAlphaComponent(0.85))
+            shield.position = CGPoint(x: x, y: 22)
+            card.addChild(shield)
+
+            let count = SKLabelNode(text: "\(shields)")
+            count.fontName = "AvenirNext-DemiBold"
+            count.fontSize = 20
+            count.fontColor = ink.withAlphaComponent(0.85)
+            count.horizontalAlignmentMode = .left
+            count.verticalAlignmentMode = .center
+            count.position = CGPoint(x: x + 21, y: 22)
+            card.addChild(count)
         }
 
-        // Rush — variante compétitive (60 secondes), à côté du Zen sans pression.
-        addMenuButton(text: String(localized: "menu.rush", defaultValue: "Rush ⚡"), name: "rush",
-                      width: buttonWidth, height: buttonHeight,
-                      at: CGPoint(x: 0, y: stack()),
-                      accent: theme.color(forValue: 2), fontSize: 20)
-
-        // Boutique — tertiaire
-        addMenuButton(text: String(localized: "menu.shop", defaultValue: "Boutique"), name: "boutique",
-                      width: buttonWidth, height: buttonHeight,
-                      at: CGPoint(x: 0, y: stack()),
-                      accent: theme.color(forValue: 3), fontSize: 20)
-
-        // Duel — compétition asynchrone entre deux joueurs.
-        addMenuButton(text: String(localized: "menu.duel"), name: "duel",
-                      width: buttonWidth, height: buttonHeight,
-                      at: CGPoint(x: 0, y: stack()),
-                      accent: theme.color(forValue: 1), fontSize: 20)
-
-        // Puzzles — contenu permanent, à côté des modes générés.
-        addMenuButton(text: String(localized: "menu.puzzles"), name: "puzzles",
-                      width: buttonWidth, height: buttonHeight,
-                      at: CGPoint(x: 0, y: stack()),
-                      accent: theme.color(forValue: 9), fontSize: 20)
-
-        // Succès — progression cumulée, jamais réclamée manuellement.
-        addMenuButton(text: String(localized: "menu.achievements"), name: "achievements",
-                      width: buttonWidth, height: buttonHeight,
-                      at: CGPoint(x: 0, y: stack()),
-                      accent: theme.color(forValue: 8), fontSize: 20)
-
-        // Missions — pastille rouge si une récompense attend d'être réclamée.
-        let missionsBtn = addMenuButton(text: String(localized: "menu.missions"), name: "missions",
-                      width: buttonWidth, height: buttonHeight,
-                      at: CGPoint(x: 0, y: stack()),
-                      accent: theme.color(forValue: 7), fontSize: 20)
-        if MissionManager.shared.hasUnclaimedReward {
-            let badge = SKShapeNode(circleOfRadius: 7)
-            badge.fillColor = UIColor(red: 0.92, green: 0.32, blue: 0.30, alpha: 1)
-            badge.strokeColor = UIColor(white: 1, alpha: 0.9)
-            badge.lineWidth = 1.5
-            badge.position = CGPoint(x: buttonWidth / 2 - 26, y: buttonHeight / 2 - 10)
-            badge.zPosition = 1
-            missionsBtn.addChild(badge)
+        if let nextDay = StreakManager.shared.nextMilestone {
+            let next = SKLabelNode(text: String(format: String(localized: "streak.next_reward"), nextDay))
+            next.fontName = "AvenirNext-Medium"
+            next.fontSize = 15
+            next.fontColor = ink.withAlphaComponent(0.8)
+            next.horizontalAlignmentMode = .left
+            next.verticalAlignmentMode = .center
+            next.position = CGPoint(x: leftX, y: -30)
+            card.addChild(next)
         }
 
-        // Bouton « pub récompensée » (gauche, 3/4 de la hauteur). L'achat
-        // « sans pub » vit désormais dans la Boutique (section Pièces).
-        addWatchAdButton()
+        // Bandeau d'état en bas de carte : l'affordance est explicite plutôt
+        // que devinée à la couleur.
+        let pillH: CGFloat = 46
+        let pill = SKShapeNode(rectOf: CGSize(width: cardWidth - 56, height: pillH), cornerRadius: pillH / 2)
+        pill.fillColor = ink.withAlphaComponent(done ? 0.10 : 0.16)
+        pill.strokeColor = .clear
+        pill.position = CGPoint(x: 0, y: -half + 40)
+        card.addChild(pill)
+
+        let cta = SKLabelNode(text: String(localized: done ? "menu.daily_done" : "menu.play"))
+        cta.fontName = "AvenirNext-DemiBold"
+        cta.fontSize = 18
+        cta.fontColor = ink
+        cta.verticalAlignmentMode = .center
+        cta.position = CGPoint(x: 0, y: -half + 40)
+        card.addChild(cta)
+    }
+
+    /// Les trois autres façons de jouer, sur une seule ligne : elles se
+    /// comparent d'un regard au lieu de s'empiler.
+    private func addModeTiles(atY y: CGFloat, height: CGFloat) {
+        let theme = ThemeManager.shared.active
+        let levels = PuzzleWorld.levels(inWorld: 1)
+        let solved = levels.filter { PuzzleProgress.shared.stars(world: $0.world, index: $0.index) > 0 }.count
+        let total = levels.count
+
+        let tiles: [(name: String, icon: VectorIcon, title: String, subtitle: String, accent: UIColor)] = [
+            ("rush", .rush, String(localized: "menu.rush"), String(localized: "menu.rush_sub"), theme.color(forValue: 2)),
+            ("duel", .duel, String(localized: "menu.duel"), String(localized: "menu.duel_sub"), theme.color(forValue: 1)),
+            ("puzzles", .puzzle, String(localized: "menu.puzzles"), "\(solved)/\(total)", theme.color(forValue: 9)),
+        ]
+
+        let inner: CGFloat = 14
+        let tileW = (cardWidth - inner * CGFloat(tiles.count - 1)) / CGFloat(tiles.count)
+        for (index, tile) in tiles.enumerated() {
+            let node = SKNode()
+            node.name = tile.name
+            node.position = CGPoint(x: -cardWidth / 2 + tileW / 2 + CGFloat(index) * (tileW + inner), y: y)
+            addChild(node)
+
+            let bg = SKShapeNode(rectOf: CGSize(width: tileW, height: height), cornerRadius: 26)
+            bg.fillColor = tile.accent
+            bg.strokeColor = UIColor(white: 0.68, alpha: 0.28)
+            bg.lineWidth = 1
+            node.addChild(bg)
+
+            let ink = tile.accent.readableInk()
+            let icon = tile.icon.node(size: 64, color: ink)
+            icon.position = CGPoint(x: 0, y: 30)
+            node.addChild(icon)
+
+            let title = SKLabelNode(text: tile.title)
+            title.fontName = "AvenirNext-DemiBold"
+            title.fontSize = 19
+            title.fontColor = ink
+            title.verticalAlignmentMode = .center
+            title.position = CGPoint(x: 0, y: -28)
+            node.addChild(title)
+
+            let subtitle = SKLabelNode(text: tile.subtitle)
+            subtitle.fontName = "AvenirNext-Medium"
+            subtitle.fontSize = 13
+            subtitle.fontColor = ink.withAlphaComponent(0.75)
+            subtitle.verticalAlignmentMode = .center
+            subtitle.position = CGPoint(x: 0, y: -58)
+            node.addChild(subtitle)
+        }
     }
 
     /// Bouton-icône rond (SF Symbol) pour les coins (classement, paramètres).
@@ -282,12 +398,6 @@ class MenuScene: SKScene {
         addChild(node)
     }
 
-    /// Couleur de texte lisible sur un fond (clair → foncé, sombre → blanc).
-    private func contrastingText(on color: UIColor) -> UIColor {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        color.getRed(&r, green: &g, blue: &b, alpha: &a)
-        return (0.299 * r + 0.587 * g + 0.114 * b) > 0.6 ? UIColor(white: 0.2, alpha: 1) : .white
-    }
 
     /// Solde de pièces dépensables (monnaie de la boutique).
     /// Pastille dorée + pièce vectorielle.
@@ -361,19 +471,12 @@ class MenuScene: SKScene {
         addChild(container)
     }
 
-    /// Bouton rond « regarder une pub → +10 pièces », à gauche, aux 3/4 de la
-    /// hauteur en partant du bas.
-    private func addWatchAdButton() {
-        guard let v = view else { return }
-        let scale = max(v.bounds.width / size.width, v.bounds.height / size.height)
-        let visibleH = v.bounds.height / scale
-        let visibleW = v.bounds.width / scale
-        let y = -visibleH / 2 + visibleH * 0.75
-        let x = -visibleW / 2 + 52
-
+    /// Bouton rond « regarder une pub → +10 pièces », placé sous le solde
+    /// qu'il alimente : le lien entre les deux se lit sans explication.
+    private func addWatchAdButton(at position: CGPoint) {
         let node = SKNode()
         node.name = "watchAd"
-        node.position = CGPoint(x: x, y: y)
+        node.position = position
         node.zPosition = 6
 
         let r: CGFloat = 38
@@ -498,7 +601,7 @@ class MenuScene: SKScene {
 
         // Accentué → couleur du thème ; secondaire → pastille theme-aware (meilleur contraste).
         let fillColor = accent ?? theme.logo.withAlphaComponent(0.08)
-        let labelColor = accent != nil ? contrastingText(on: accent!) : theme.logo
+        let labelColor = accent != nil ? accent!.readableInk() : theme.logo
         let strokeColor = accent != nil ? UIColor(white: 0.68, alpha: 0.30) : theme.logo.withAlphaComponent(0.28)
 
         let bg = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: height / 2)
@@ -531,7 +634,7 @@ class MenuScene: SKScene {
             shopGuide = nil
             if result == .target {
                 AnalyticsService.shopGuide(step: "opened")
-                if let button = childNode(withName: "boutique") { animateTap(button) }
+                if let tab = childNode(withName: "//tab_shop") { animateTap(tab) }
                 run(SKAction.wait(forDuration: 0.12)) {
                     self.navigateToBoutique(guided: true)
                 }
@@ -582,30 +685,6 @@ class MenuScene: SKScene {
                     self.navigateToGame(savedState: GameState.load())
                 }
                 return
-            case "boutique":
-                animateTap(node.parent ?? node)
-                run(SKAction.wait(forDuration: 0.12)) {
-                    self.navigateToBoutique()
-                }
-                return
-            case "classement":
-                animateTap(node.parent ?? node)
-                run(SKAction.wait(forDuration: 0.12)) {
-                    self.navigateToLeaderboard()
-                }
-                return
-            case "missions":
-                animateTap(node.parent ?? node)
-                run(SKAction.wait(forDuration: 0.12)) {
-                    self.navigateToMissions()
-                }
-                return
-            case "achievements":
-                animateTap(node.parent ?? node)
-                run(SKAction.wait(forDuration: 0.12)) {
-                    self.navigateToAchievements()
-                }
-                return
             case "puzzles":
                 animateTap(node.parent ?? node)
                 run(SKAction.wait(forDuration: 0.12)) {
@@ -617,7 +696,7 @@ class MenuScene: SKScene {
                 run(SKAction.wait(forDuration: 0.12)) {
                     let scene = DuelScene(size: self.size)
                     scene.scaleMode = .aspectFill
-                    self.view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+                    self.view?.presentScene(scene, transition: SceneTransition.fade(0.28))
                 }
                 return
             case "rush":
@@ -638,6 +717,11 @@ class MenuScene: SKScene {
                 return
             default: break
             }
+        }
+
+        // Onglets en dernier : un bloc d'action posé au-dessus garde la main.
+        if let tab = TabBar.tab(at: point, in: self), tab != .play {
+            TabBar.present(tab, from: self)
         }
     }
 
@@ -707,39 +791,27 @@ class MenuScene: SKScene {
     private func navigateToGame(savedState: GameState?) {
         let scene = GameScene(size: size, savedState: savedState)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+        view?.presentScene(scene, transition: SceneTransition.fade(0.35))
     }
 
     private func navigateToDailyChallenge() {
         let today = DailyChallenge.make()
         let scene = GameScene(size: size, daily: today)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+        view?.presentScene(scene, transition: SceneTransition.fade(0.35))
     }
 
     private func navigateToBoutique(guided: Bool = false) {
         let scene = BoutiqueScene(size: size)
         scene.guidedPurchase = guided
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
-    }
-
-    private func navigateToLeaderboard() {
-        let scene = LeaderboardScene(size: size)
-        scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
-    }
-
-    private func navigateToMissions() {
-        let scene = MissionsScene(size: size)
-        scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+        view?.presentScene(scene, transition: SceneTransition.fade(0.3))
     }
 
     private func navigateToRush() {
         let scene = GameScene(size: size, startRush: true)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+        view?.presentScene(scene, transition: SceneTransition.fade(0.35))
     }
 
     private func navigateToPuzzles() {
@@ -747,24 +819,18 @@ class MenuScene: SKScene {
         // plutôt qu'un écran de sélection de monde à une seule entrée.
         let scene = PuzzleLevelsScene(size: size, world: 1)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
-    }
-
-    private func navigateToAchievements() {
-        let scene = AchievementsScene(size: size)
-        scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+        view?.presentScene(scene, transition: SceneTransition.fade(0.28))
     }
 
     private func navigateToProfile() {
         let scene = ProfileScene(size: size)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+        view?.presentScene(scene, transition: SceneTransition.fade(0.28))
     }
 
     private func navigateToTutorial() {
         let scene = TutorialScene(size: size)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.28))
+        view?.presentScene(scene, transition: SceneTransition.fade(0.28))
     }
 }

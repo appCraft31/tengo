@@ -16,7 +16,6 @@ class ProfileScene: SKScene {
         backgroundColor = ThemeManager.shared.active.background
         addChild(ThemeBackground.make(for: ThemeManager.shared.active, size: size))
         setupUI()
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     // MARK: - UI
@@ -47,6 +46,17 @@ class ProfileScene: SKScene {
         cursorY = addHeaderCard(atY: cursorY)
         cursorY -= 26
 
+        // Ce qui se fait vient avant ce qui se lit : les trois destinations que
+        // l'accueil ne porte plus ouvrent cet écran, les chiffres suivent.
+        addNavRow(label: String(localized: "menu.achievements"), name: "achievements", atY: cursorY)
+        cursorY -= 64
+        addNavRow(label: String(localized: "menu.missions"), name: "missions", atY: cursorY,
+                  badged: MissionManager.shared.hasUnclaimedReward)
+        cursorY -= 64
+        addNavRow(label: String(localized: "menu.leaderboard"), name: "classement", atY: cursorY)
+        cursorY -= 64
+
+        cursorY -= 18
         cursorY = addSectionLabel(String(localized: "profile.section_stats"), atY: cursorY)
         let stats: [(String, String)] = [
             (String(localized: "profile.best_score"), "\(GameState.highScores().first ?? 0)"),
@@ -57,7 +67,7 @@ class ProfileScene: SKScene {
         ]
         for (label, value) in stats {
             addStatRow(label: label, value: value, atY: cursorY)
-            cursorY -= 64
+            cursorY -= 62
         }
 
         cursorY -= 18
@@ -69,7 +79,7 @@ class ProfileScene: SKScene {
         ]
         for (label, value) in progress {
             addStatRow(label: label, value: value, atY: cursorY)
-            cursorY -= 64
+            cursorY -= 62
         }
 
         cursorY -= 18
@@ -77,7 +87,10 @@ class ProfileScene: SKScene {
         let themeValue = "\(theme.emoji) " + String(localized: String.LocalizationValue(theme.nameKey))
         addStatRow(label: String(localized: "profile.active_theme"), value: themeValue, atY: cursorY)
 
-        addBackButton(atY: bottomY + 90)
+        // Onglets en pied d'écran : cet écran EST l'onglet Progression.
+        let tabBar = TabBar.make(width: usableWidth, selected: .progress)
+        tabBar.position = CGPoint(x: 0, y: bottomY + TabBar.height / 2)
+        addChild(tabBar)
     }
 
     /// Niveau + titre + barre de progression XP. Retourne le y sous la carte.
@@ -179,25 +192,50 @@ class ProfileScene: SKScene {
         row.addChild(valueNode)
     }
 
-    private func addBackButton(atY y: CGFloat) {
-        let back = SKNode()
-        back.name = "back"
-        back.position = CGPoint(x: 0, y: y)
-        addChild(back)
+    /// Rangée cliquable vers un autre écran. Même gabarit que `addStatRow`
+    /// pour que la liste reste une liste ; le chevron dit ce qui est cliquable.
+    private func addNavRow(label: String, name: String, atY y: CGFloat, badged: Bool = false) {
+        let width = cardWidth
+        let height: CGFloat = 54
 
-        let circle = SKShapeNode(circleOfRadius: 36)
-        circle.fillColor = UIColor(red: 0.94, green: 0.91, blue: 0.88, alpha: 1)
-        circle.strokeColor = UIColor(white: 0.68, alpha: 0.45)
-        circle.lineWidth = 1.5
-        back.addChild(circle)
+        let row = SKNode()
+        row.name = name
+        row.position = CGPoint(x: 0, y: y)
+        addChild(row)
 
-        let icon = SKLabelNode(text: "‹")
-        icon.fontName = "AvenirNext-Medium"
-        icon.fontSize = 32
-        icon.fontColor = UIColor(white: 0.45, alpha: 1)
-        icon.verticalAlignmentMode = .center
-        icon.horizontalAlignmentMode = .center
-        back.addChild(icon)
+        let bg = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: 16)
+        bg.fillColor = ThemeManager.shared.active.accent.withAlphaComponent(0.16)
+        bg.strokeColor = ThemeManager.shared.active.accent.withAlphaComponent(0.35)
+        bg.lineWidth = 1
+        bg.name = name
+        row.addChild(bg)
+
+        let labelNode = SKLabelNode(text: label)
+        labelNode.fontName = "AvenirNext-DemiBold"
+        labelNode.fontSize = 17
+        labelNode.fontColor = UIColor(white: 0.30, alpha: 1)
+        labelNode.horizontalAlignmentMode = .left
+        labelNode.verticalAlignmentMode = .center
+        labelNode.position = CGPoint(x: -width / 2 + 22, y: 0)
+        row.addChild(labelNode)
+
+        let chevron = SKLabelNode(text: "›")
+        chevron.fontName = "AvenirNext-Medium"
+        chevron.fontSize = 26
+        chevron.fontColor = UIColor(white: 0.45, alpha: 1)
+        chevron.horizontalAlignmentMode = .right
+        chevron.verticalAlignmentMode = .center
+        chevron.position = CGPoint(x: width / 2 - 22, y: 0)
+        row.addChild(chevron)
+
+        if badged {
+            let badge = SKShapeNode(circleOfRadius: 7)
+            badge.fillColor = UIColor(red: 0.92, green: 0.32, blue: 0.30, alpha: 1)
+            badge.strokeColor = UIColor(white: 1, alpha: 0.9)
+            badge.lineWidth = 1.5
+            badge.position = CGPoint(x: -width / 2 + 22 + labelNode.frame.width + 16, y: 6)
+            row.addChild(badge)
+        }
     }
 
     // MARK: - Touch
@@ -205,13 +243,24 @@ class ProfileScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
+
         for node in nodes(at: point) {
-            if node.name == "back" || node.parent?.name == "back" {
-                let menu = MenuScene(size: size)
-                menu.scaleMode = .aspectFill
-                view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.28))
+            let destination: SKScene?
+            switch node.name ?? node.parent?.name {
+            case "achievements": destination = AchievementsScene(size: size)
+            case "missions":     destination = MissionsScene(size: size)
+            case "classement":   destination = LeaderboardScene(size: size)
+            default:             destination = nil
+            }
+            if let destination {
+                destination.scaleMode = .aspectFill
+                view?.presentScene(destination, transition: SceneTransition.fade(0.28))
                 return
             }
+        }
+
+        if let tab = TabBar.tab(at: point, in: self), tab != .progress {
+            TabBar.present(tab, from: self)
         }
     }
 }

@@ -15,7 +15,6 @@ class MissionsScene: SKScene {
         backgroundColor = ThemeManager.shared.active.background
         addChild(ThemeBackground.make(for: ThemeManager.shared.active, size: size))
         setupUI()
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     // MARK: - UI
@@ -227,7 +226,7 @@ class MissionsScene: SKScene {
             if name == "back" {
                 let menu = MenuScene(size: size)
                 menu.scaleMode = .aspectFill
-                view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.28))
+                view?.presentScene(menu, transition: SceneTransition.fade(0.28))
                 return
             }
             if name.hasPrefix("claim_") {
@@ -235,7 +234,7 @@ class MissionsScene: SKScene {
                 if MissionManager.shared.claim(id) > 0 {
                     let refreshed = MissionsScene(size: size)
                     refreshed.scaleMode = .aspectFill
-                    view?.presentScene(refreshed, transition: SKTransition.crossFade(withDuration: 0.2))
+                    view?.presentScene(refreshed, transition: SceneTransition.fade(0.2))
                 }
                 return
             }

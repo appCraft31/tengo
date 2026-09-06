@@ -6,7 +6,6 @@
 import Foundation
 
 extension Notification.Name {
-    static let tenGOSceneChanged = Notification.Name("tenGOSceneChanged")
     static let tenGOShowGameCenter = Notification.Name("tenGOShowGameCenter")
     static let tenGOOpenDaily = Notification.Name("tenGOOpenDaily")
     /// Un lien tengo://duel/CODE vient d'être ouvert.

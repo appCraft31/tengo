@@ -34,7 +34,6 @@ class TutorialScene: SKScene {
         setupBackground()
         setupChrome()
         showStep(0, animated: false)
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     // MARK: - Fond animé
@@ -519,13 +518,13 @@ class TutorialScene: SKScene {
     private func navigateToMenu() {
         let menu = MenuScene(size: size)
         menu.scaleMode = .aspectFill
-        view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.28))
+        view?.presentScene(menu, transition: SceneTransition.fade(0.28))
     }
 
     private func navigateToNewGame() {
         GameState.clear()
         let scene = GameScene(size: size, savedState: nil)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.35))
+        view?.presentScene(scene, transition: SceneTransition.fade(0.35))
     }
 }

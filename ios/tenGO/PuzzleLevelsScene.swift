@@ -28,7 +28,6 @@ class PuzzleLevelsScene: SKScene {
         backgroundColor = ThemeManager.shared.active.background
         addChild(ThemeBackground.make(for: ThemeManager.shared.active, size: size))
         setupUI()
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": false])
     }
 
     // MARK: - UI
@@ -160,7 +159,7 @@ class PuzzleLevelsScene: SKScene {
             if name == "back" {
                 let menu = MenuScene(size: size)
                 menu.scaleMode = .aspectFill
-                view?.presentScene(menu, transition: SKTransition.fade(withDuration: 0.28))
+                view?.presentScene(menu, transition: SceneTransition.fade(0.28))
                 return
             }
             if name.hasPrefix("level_") {
@@ -169,7 +168,7 @@ class PuzzleLevelsScene: SKScene {
                       let level = PuzzleWorld.level(world: w, index: index) else { return }
                 let scene = GameScene(size: size, puzzle: level)
                 scene.scaleMode = .aspectFill
-                view?.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
+                view?.presentScene(scene, transition: SceneTransition.fade(0.3))
                 return
             }
         }

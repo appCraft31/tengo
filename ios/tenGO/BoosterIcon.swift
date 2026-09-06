@@ -14,17 +14,7 @@ enum BoosterIcon {
 
     /// Nœud SpriteKit de l'icône d'un booster, dimensionné et teinté.
     static func make(_ booster: Booster, size: CGFloat, color: UIColor) -> SKNode {
-        guard let base = UIImage(named: booster.assetName)?.withRenderingMode(.alwaysTemplate) else {
-            return SKNode()
-        }
-        let dimension = CGSize(width: size, height: size)
-        let renderer = UIGraphicsImageRenderer(size: dimension)
-        let tinted = renderer.image { _ in
-            base.withTintColor(color, renderingMode: .alwaysOriginal)
-                .draw(in: CGRect(origin: .zero, size: dimension))
-        }
-        let sprite = SKSpriteNode(texture: SKTexture(image: tinted))
-        sprite.size = dimension
-        return sprite
+        // Même fabrique que le reste des icônes du jeu (cf. VectorIcon).
+        VectorIconRenderer.make(assetName: booster.assetName, size: size, color: color)
     }
 }

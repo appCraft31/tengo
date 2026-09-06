@@ -11,17 +11,11 @@ import GoogleMobileAds
 
 class GameViewController: UIViewController {
 
-    private var bannerView: BannerView?
     private var consentGathered = false
 
     /// Vue de jeu (sous-vue d'une racine UIView simple, pas une SKView imbriquée :
-    /// évite les soucis de livraison tactile). Se réduit au-dessus de la bannière.
+    /// évite les soucis de livraison tactile). Occupe tout l'écran.
     private var gameView: SKView!
-    /// Contrainte basse de `gameView` : bas de l'écran sans bannière, puis haut de
-    /// la bannière une fois celle-ci posée — toutes les scènes restent au-dessus.
-    private var gameViewBottom: NSLayoutConstraint!
-    /// Ancrage de la vue de jeu au-dessus de la bannière (nil sans bannière).
-    private var gameViewBottomToBanner: NSLayoutConstraint?
 
     /// Hiérarchie programmatique : racine UIView simple + SKView plein écran.
     override func loadView() {
@@ -33,12 +27,11 @@ class GameViewController: UIViewController {
         let skView = SKView(frame: UIScreen.main.bounds)
         skView.translatesAutoresizingMaskIntoConstraints = false
         root.addSubview(skView)
-        gameViewBottom = skView.bottomAnchor.constraint(equalTo: root.bottomAnchor)
         NSLayoutConstraint.activate([
             skView.topAnchor.constraint(equalTo: root.topAnchor),
             skView.leadingAnchor.constraint(equalTo: root.leadingAnchor),
             skView.trailingAnchor.constraint(equalTo: root.trailingAnchor),
-            gameViewBottom
+            skView.bottomAnchor.constraint(equalTo: root.bottomAnchor)
         ])
         self.view = root
         self.gameView = skView
@@ -93,13 +86,6 @@ class GameViewController: UIViewController {
 
         NotificationCenter.default.addObserver(
             self,
-            selector: #selector(sceneDidChange(_:)),
-            name: .tenGOSceneChanged,
-            object: nil
-        )
-
-        NotificationCenter.default.addObserver(
-            self,
             selector: #selector(showGameCenter(_:)),
             name: .tenGOShowGameCenter,
             object: nil
@@ -114,12 +100,6 @@ class GameViewController: UIViewController {
             self,
             selector: #selector(openDuelFromLink),
             name: .tenGOOpenDuel,
-            object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(adFreeDidChange),
-            name: .tenGOAdFreeChanged,
             object: nil
         )
 
@@ -137,7 +117,7 @@ class GameViewController: UIViewController {
         guard env["SCREENSHOT_DAILY"] != "1", env["DEMO_MODE"] != "1", env["BRAND_MODE"] != "1", env["SHOP_MODE"] != "1" else { return }
 
         // QA (GAME_NORMAL) : démarre les pubs sans le flux de consentement, pour
-        // tester le layout de la bannière au simulateur sans boîtes système bloquantes.
+        // tester au simulateur sans boîtes système bloquantes.
         if env["GAME_NORMAL"] == "1" {
             guard !consentGathered else { return }
             consentGathered = true
@@ -145,7 +125,6 @@ class GameViewController: UIViewController {
             MobileAds.shared.requestConfiguration.publisherPrivacyPersonalizationState = .disabled
             MobileAds.shared.start { _ in
                 DispatchQueue.main.async {
-                    self.setupBanner()
                     RewardedAdManager.shared.isAdsSessionStarted = true
                     RewardedAdManager.shared.preloadIfNeeded()
                 }
@@ -161,12 +140,11 @@ class GameViewController: UIViewController {
         // Délai court pour laisser le windowScene se stabiliser (critique sur iPad) :
         // requestTrackingAuthorization est ignoré si la fenêtre n'est pas encore active.
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            guard let self else { return }
-            ConsentManager.shared.gatherConsent { [weak self] outcome in
+            guard self != nil else { return }
+            ConsentManager.shared.gatherConsent { outcome in
                 print("[AdMob] Démarrage pubs — mode \(outcome == .personalizedAds ? "personnalisé" : "non personnalisé")")
                 MobileAds.shared.start { _ in
                     DispatchQueue.main.async {
-                        self?.setupBanner()
                         // Le menu est déjà affiché à ce stade : c'est ici que
                         // le premier préchargement de la récompensée se joue.
                         RewardedAdManager.shared.isAdsSessionStarted = true
@@ -175,53 +153,6 @@ class GameViewController: UIViewController {
                 }
             }
         }
-    }
-
-    // MARK: - Bannière AdMob
-
-    private func setupBanner() {
-        // Mod « sans pub » : aucune bannière, et surtout on laisse gameViewBottom
-        // actif pour que la vue de jeu occupe toute la hauteur.
-        guard !AdFreeManager.shared.isPurchased else { return }
-
-        // Bannière adaptative ancrée, calée sur toute la largeur de l'écran.
-        let width = view.frame.inset(by: view.safeAreaInsets).width
-        let adSize = currentOrientationAnchoredAdaptiveBanner(width: width)
-        let banner = BannerView(adSize: adSize)
-        #if DEBUG
-        banner.adUnitID = "ca-app-pub-3940256099942544/2934735716"
-        #else
-        banner.adUnitID = "ca-app-pub-4352408747876735/9831578000"
-        #endif
-        banner.rootViewController = self
-        banner.delegate = self
-        let bannerUnitID = banner.adUnitID ?? "banner"
-        banner.paidEventHandler = { adValue in
-            AnalyticsService.adImpression(adValue: adValue, format: "banner", unitName: bannerUnitID)
-        }
-        banner.translatesAutoresizingMaskIntoConstraints = false
-        banner.backgroundColor = .systemBackground
-        view.addSubview(banner)
-
-        NSLayoutConstraint.activate([
-            banner.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            banner.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            banner.bottomAnchor.constraint(equalTo: view.safeAreaLayoutGuide.bottomAnchor)
-        ])
-
-        // La vue de jeu se borne au-dessus de la bannière : toutes les scènes
-        // (menu, tutoriel, jeu, boutique) restent intégralement au-dessus de la pub.
-        // La contrainte est retenue : il faut pouvoir la désactiver si l'utilisateur
-        // achète le mod sans pub en cours de session (sinon conflit avec gameViewBottom).
-        gameViewBottom.isActive = false
-        let toBanner = gameView.bottomAnchor.constraint(equalTo: banner.topAnchor)
-        toBanner.isActive = true
-        gameViewBottomToBanner = toBanner
-        view.layoutIfNeeded()
-        (gameView.scene as? GameScene)?.relayoutForViewChange()
-
-        banner.load(.consentAware())
-        bannerView = banner
     }
 
     @objc private func showGameCenter(_ notification: Notification) {
@@ -240,7 +171,7 @@ class GameViewController: UIViewController {
         scene.incomingCode = DeepLink.consumePendingDuelCode()
         scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scene.scaleMode = .aspectFill
-        skView.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
+        skView.presentScene(scene, transition: SceneTransition.fade(0.3))
     }
 
     /// Ouvre directement le Défi du jour (depuis un lien externe / événement intégré).
@@ -250,28 +181,7 @@ class GameViewController: UIViewController {
         let scene = GameScene(size: CGSize(width: 750, height: 1334), daily: DailyChallenge.make())
         scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scene.scaleMode = .aspectFill
-        skView.presentScene(scene, transition: SKTransition.fade(withDuration: 0.3))
-    }
-
-    /// Mod « sans pub » acheté ou restauré : retire la bannière à chaud et rend
-    /// sa hauteur à la vue de jeu, sans redémarrer l'app.
-    @objc private func adFreeDidChange() {
-        guard AdFreeManager.shared.isPurchased, let banner = bannerView else { return }
-        bannerView = nil
-        // Libérer l'ancrage à la bannière AVANT de réactiver la contrainte pleine
-        // hauteur, sinon les deux coexistent et le layout part en conflit.
-        gameViewBottomToBanner?.isActive = false
-        gameViewBottomToBanner = nil
-        banner.removeFromSuperview()
-        gameViewBottom.isActive = true
-        view.layoutIfNeeded()
-        (gameView.scene as? GameScene)?.relayoutForViewChange()
-    }
-
-    @objc private func sceneDidChange(_ notification: Notification) {
-        // La bannière reste visible en permanence : la vue de jeu est bornée
-        // au-dessus d'elle, donc aucun élément de jeu n'est masqué.
-        bannerView?.alpha = 1
+        skView.presentScene(scene, transition: SceneTransition.fade(0.3))
     }
 
     // MARK: - Orientations
@@ -327,16 +237,4 @@ class GameViewController: UIViewController {
               + Booster.allCases.map { "\($0.rawValue)=\(BoosterManager.shared.count($0))" }.joined(separator: " "))
     }
     #endif
-}
-
-// MARK: - BannerViewDelegate
-
-extension GameViewController: BannerViewDelegate {
-    func bannerViewDidReceiveAd(_ bannerView: BannerView) {
-        print("[AdMob] Bannière chargée avec succès")
-    }
-
-    func bannerView(_ bannerView: BannerView, didFailToReceiveAdWithError error: Error) {
-        print("[AdMob] Échec chargement bannière : \(error.localizedDescription)")
-    }
 }

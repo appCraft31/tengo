@@ -32,6 +32,8 @@ class BoutiqueScene: SKScene {
     private var cardW: CGFloat = 280
     /// Marge haute réellement sûre (encoche / Dynamic Island), en points scène.
     private var safeTop: CGFloat = 47
+    /// Marge basse réellement sûre (indicateur d'accueil), en points scène.
+    private var safeBottom: CGFloat = 20
 
     // MARK: - Défilement (page unique)
 
@@ -61,11 +63,11 @@ class BoutiqueScene: SKScene {
         cardW = usableWidth / 2 - 16
         // safeAreaInsets peut être nul au lancement : plancher à ~47 pt (encoche).
         safeTop = max(view.safeAreaInsets.top, 47) / scale
+        safeBottom = max(view.safeAreaInsets.bottom, 20) / scale
         rebuild()
         // Capture de review App Store des achats in-app : « Sans pub » est déjà
         // en haut de page ; SHOP_COINS=1 défile en plus jusqu'aux packs.
         if ProcessInfo.processInfo.environment["SHOP_COINS"] == "1" { scrollTo(section: "coins") }
-        NotificationCenter.default.post(name: .tenGOSceneChanged, object: nil, userInfo: ["isMenu": true])
     }
 
     /// Défile pour amener le haut d'une section en haut de la zone visible.
@@ -97,11 +99,26 @@ class BoutiqueScene: SKScene {
         addChild(title)
 
         addBalanceChip(atY: topY - 56, theme: theme)
-        addBackButton(atY: bottomY + 64, theme: theme)
 
-        // Zone défilante entre le solde et le bouton retour (masquée au viewport).
+        // Ouverte depuis l'accueil, la boutique EST l'onglet Boutique. Ouverte
+        // depuis une partie, elle garde son bouton de retour : les onglets
+        // ramèneraient au menu et abandonneraient la partie en cours.
+        let bottomChromeH: CGFloat
+        switch returnDestination {
+        case .menu:
+            let tabBar = TabBar.make(width: usableWidth, selected: .shop)
+            tabBar.position = CGPoint(x: 0, y: bottomY + safeBottom + TabBar.height / 2)
+            tabBar.zPosition = 10
+            addChild(tabBar)
+            bottomChromeH = safeBottom + TabBar.height
+        case .game:
+            addBackButton(atY: bottomY + 64, theme: theme)
+            bottomChromeH = 88   // conserve exactement l'ancien viewport
+        }
+
+        // Zone défilante entre le solde et le pied d'écran (masquée au viewport).
         viewportTop = topY - 100
-        viewportBottom = bottomY + 104
+        viewportBottom = bottomY + bottomChromeH + 16
         let crop = SKCropNode()
         let mask = SKSpriteNode(color: .white,
                                 size: CGSize(width: usableWidth, height: viewportTop - viewportBottom))
@@ -277,7 +294,7 @@ class BoutiqueScene: SKScene {
         card.name = "noAds"
         card.position = CGPoint(x: 0, y: cursor - h / 2)
 
-        let ink = contrastingText(on: theme.accent)
+        let ink = theme.accent.readableInk()
 
         // Halo pulsant derrière la carte (seulement tant que non acheté).
         if !purchased {
@@ -482,7 +499,7 @@ class BoutiqueScene: SKScene {
         pill.position = position
         card.addChild(pill)
 
-        let ink = affordable ? contrastingText(on: theme.accent) : UIColor(white: 0.45, alpha: 1)
+        let ink = affordable ? theme.accent.readableInk() : UIColor(white: 0.45, alpha: 1)
 
         let qty = SKLabelNode(text: "×\(quantity)")
         qty.name = name
@@ -514,7 +531,7 @@ class BoutiqueScene: SKScene {
     private static let noAdsBonusCoins = 500
 
     /// Achat du mod « sans pub » depuis la Boutique. Succès → +500 pièces,
-    /// rebuild (badge « Actif ») ; les pubs sont coupées via .tenGOAdFreeChanged.
+    /// rebuild (badge « Actif ») ; les interstitiels consultent `isPurchased`.
     private func handleNoAds() {
         guard !AdFreeManager.shared.isPurchased else { return }
         guard let product = StoreManager.shared.adFreeProduct else {
@@ -593,7 +610,7 @@ class BoutiqueScene: SKScene {
             let label = SKLabelNode(text: product.displayPrice)
             label.fontName = "AvenirNext-Bold"
             label.fontSize = 16
-            label.fontColor = contrastingText(on: theme.accent)
+            label.fontColor = theme.accent.readableInk()
             label.verticalAlignmentMode = .center
             label.position = CGPoint(x: 0, y: -48)
             card.addChild(label)
@@ -618,7 +635,7 @@ class BoutiqueScene: SKScene {
         let label = SKLabelNode(text: priceText)
         label.fontName = "AvenirNext-Bold"
         label.fontSize = 16
-        label.fontColor = contrastingText(on: theme.accent)
+        label.fontColor = theme.accent.readableInk()
         label.verticalAlignmentMode = .center
         label.position = CGPoint(x: 0, y: -48)
         card.addChild(label)
@@ -720,7 +737,7 @@ class BoutiqueScene: SKScene {
             let label = SKLabelNode(text: String(localized: "shop.active", defaultValue: "Actif"))
             label.fontName = "AvenirNext-Bold"
             label.fontSize = 15
-            label.fontColor = contrastingText(on: theme.accent)
+            label.fontColor = theme.accent.readableInk()
             label.verticalAlignmentMode = .center
             label.position = CGPoint(x: 0, y: y)
             card.addChild(label)
@@ -794,6 +811,7 @@ class BoutiqueScene: SKScene {
         let node = SKNode()
         node.name = "shopBack"
         node.position = CGPoint(x: 0, y: y)
+        node.zPosition = 10
         let bg = SKShapeNode(rectOf: CGSize(width: 210, height: 56), cornerRadius: 28)
         bg.fillColor = UIColor(white: 0.96, alpha: 0.95)
         bg.strokeColor = UIColor(white: 0.68, alpha: 0.35)
@@ -818,14 +836,6 @@ class BoutiqueScene: SKScene {
         return TrailRenderer.make(path: path, style: style, accent: ThemeManager.shared.active.accent)
     }
 
-    // MARK: - Couleur de texte contrastée
-
-    private func contrastingText(on color: UIColor) -> UIColor {
-        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
-        color.getRed(&r, green: &g, blue: &b, alpha: &a)
-        let luminance = 0.299 * r + 0.587 * g + 0.114 * b
-        return luminance > 0.6 ? UIColor(white: 0.18, alpha: 1) : .white
-    }
 
     // MARK: - Noms localisés
 
@@ -899,8 +909,18 @@ class BoutiqueScene: SKScene {
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
         defer { dragStartY = nil }
         guard let touch = touches.first else { return }
-        if isDragging { isDragging = false; return }
         let point = touch.location(in: self)
+
+        // Un geste entamé ET relâché sur la barre d'onglets navigue, même si
+        // le doigt a glissé : le contenu défilant s'arrête au-dessus d'elle,
+        // donc ce geste-là n'est jamais un défilement.
+        if returnDestination == .menu, let startY = dragStartY, startY < viewportBottom,
+           let tab = TabBar.tab(at: point, in: self) {
+            isDragging = false
+            if tab != .shop { TabBar.present(tab, from: self) }
+            return
+        }
+        if isDragging { isDragging = false; return }
 
         // Guide d'achat. Deux sorties seulement : acheter, ou « Plus tard ».
         // Tout autre tap laisse le guide en place (la cible pulse).
@@ -928,6 +948,7 @@ class BoutiqueScene: SKScene {
 
         for node in nodes(at: point) {
             guard let name = node.name ?? node.parent?.name ?? node.parent?.parent?.name else { continue }
+
             if name == "shopBack" { goBackToMenu(); return }
             if name == "noAds" { handleNoAds(); return }
             if name.hasPrefix("item:theme:") {
@@ -1100,6 +1121,6 @@ class BoutiqueScene: SKScene {
                                     resuming: true)
         }
         destination.scaleMode = .aspectFill
-        view?.presentScene(destination, transition: SKTransition.fade(withDuration: 0.3))
+        view?.presentScene(destination, transition: SceneTransition.fade(0.3))
     }
 }
