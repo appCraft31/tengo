@@ -119,6 +119,34 @@ Corrige les IAP mal configurés (localisations + prix + review note) depuis coin
 
 Lecture seule par défaut. Pour appliquer : bundle exec fastlane iap_fix apply:true
 
+### ios event_doctor
+
+```sh
+[bundle exec] fastlane ios event_doctor
+```
+
+Pré-vol LECTURE SEULE des événements intégrés (auth, état, visuels)
+
+### ios in_app_event
+
+```sh
+[bundle exec] fastlane ios in_app_event
+```
+
+Crée/MAJ l'événement intégré « mise à jour majeure » de la 3.0
+
+Usage : fastlane in_app_event [start:2026-09-15] [end:2026-09-29]
+
+### ios event_asset_probe
+
+```sh
+[bundle exec] fastlane ios event_asset_probe
+```
+
+Teste un format de visuel sur une seule locale (avant l'envoi complet)
+
+Usage : fastlane event_asset_probe path:/chemin.png [kind:EVENT_DETAILS_PAGE] [locale:fr-FR]
+
 ----
 
 This README.md is auto-generated and will be re-generated every time [_fastlane_](https://fastlane.tools) is run.

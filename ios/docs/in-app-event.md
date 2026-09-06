@@ -1,51 +1,114 @@
-# Événement intégré App Store — tenGO
+# Événement intégré App Store — tenGO 3.0
 
-Type recommandé : **Défi (Challenge)** — centré sur le Défi du jour.
+Badge : **Mise à jour majeure** (`MAJOR_UPDATE`), pour la sortie de la 3.0.
+Nom de référence interne : `tenGO 3.0 — mise a jour majeure` (sans accent : l'API
+les accepte, la recherche d'App Store Connect non).
 
-Deux visuels requis (1920×1080), pour la **langue principale** (fr-FR) :
-- **Fiche de l'événement** (découverte) : `~/Desktop/tenGO_event_card.png`
-- **Page de détails** (image/vidéo) : `~/Desktop/tenGO_event_detail.png`
+> Un précédent événement existe sur la fiche : « defis du jour »
+> (badge CHALLENGE), **archivé**, avec pour lien profond `tengo://daily` — un
+> schéma personnalisé, qu'App Store Connect accepte à la saisie mais qui n'ouvre
+> jamais l'app. C'est exactement le piège que la 3.0 corrige.
 
-Lien profond : voir plus bas.
+## Le lien profond
 
-> Limites Apple : Nom ≤ 30 caractères · Brève description ≤ 50 · Description longue ≤ 120.
-> Pas d'emoji (refusés, comme pour les notes de version).
+`https://appcraft31.app/tengo/event` — un **universal link**, obligatoire : le
+schéma `tengo://` ne fonctionne pas pour un événement intégré.
 
-## Contenu par langue
+Trois pièces, toutes en place :
 
-| Locale | Nom (≤30) | Brève (≤50) | Longue (≤120) |
-|--------|-----------|-------------|----------------|
-| fr-FR | Défi du jour & nouveautés | Un casse-tête inédit chaque jour, et plus ! | Nouveau : Défi du jour avec twists, thèmes aux fonds animés, boutique de pièces et menu repensé. |
-| en-US | Daily Challenge & more | A fresh brain-teaser every day, and more! | New: Daily Challenge with twists, animated themed backgrounds, a coin shop and a redesigned menu. |
-| es-ES | Reto diario y novedades | Un nuevo rompecabezas cada día, ¡y más! | Nuevo: Reto diario con giros, fondos temáticos animados, tienda de monedas y menú renovado. |
-| de-DE | Tägliche Challenge & mehr | Jeden Tag ein neues Rätsel, und mehr! | Neu: Tägliche Challenge mit Twists, animierte Themen-Hintergründe, Münz-Shop und neues Menü. |
-| it | Sfida del giorno e novità | Un nuovo rompicapo ogni giorno, e altro! | Novità: Sfida del giorno con twist, sfondi animati a tema, negozio di monete e menu rinnovato. |
-| pt-BR | Desafio do dia e novidades | Um novo quebra-cabeça todo dia, e mais! | Novo: Desafio do dia com reviravoltas, fundos animados, loja de moedas e menu renovado. |
-| nl-NL | Dagelijkse uitdaging & meer | Elke dag een nieuwe puzzel, en meer! | Nieuw: dagelijkse uitdaging met twists, thema-achtergronden, muntenwinkel en nieuw menu. |
-| ja | 今日のチャレンジと新機能 | 毎日新しいパズル、ほかにも！ | 新機能：仕掛け付きの今日のチャレンジ、動くテーマ背景、コインショップ、刷新メニュー。 |
-| ko | 오늘의 도전과 새 기능 | 매일 새로운 퍼즐, 그리고 더! | 신규: 변형이 있는 오늘의 도전, 움직이는 테마 배경, 코인 상점, 새 메뉴. |
-| zh-Hans | 每日挑战与新功能 | 每天一道新谜题，还有更多！ | 全新：带机关的每日挑战、动态主题背景、金币商店和全新菜单。 |
+1. **Route** — `tenGO/DeepLink.swift` reconnaît `event` (et `progress`) et
+   ouvre la **Progression** (`GameViewController.openProgress()`), la vitrine
+   des nouveautés : niveaux, missions, série, succès. La scène porte la barre
+   d'onglets, le joueur repart d'une tape vers Jouer, Social ou Boutique.
+   Le chemin `/tengo` est retiré avant routage : `https://appcraft31.app/tengo/daily`
+   et `tengo://daily` empruntent la même branche.
+2. **Entitlement** — `tenGO/tenGO.entitlements` déclare
+   `applinks:appcraft31.app` et `applinks:appcraft31.vercel.app`.
+   ⚠️ Un entitlement est scellé à la signature : le lien n'ouvrira l'app que
+   pour les joueurs passés sur **la build qui le porte**. Les autres verront la
+   page web — d'où son soin.
+3. **Association du domaine** — `public/.well-known/apple-app-site-association`
+   du site `appcraft31.app` (repo `Appcraft_Website`), entrée
+   `JDKABK93UH.AppCraft31.tenGO` → `/tengo/*`, plus la page de repli
+   `public/tengo/event/index.html`.
 
-## Étapes dans App Store Connect
-1. Mes apps → tenGO → **Événements intégrés** → ＋
-2. Badge : **Défi (Challenge)**. Nom de référence (interne) : « Défi du jour ».
-3. Renseigner Nom / Brève / Longue par langue (tableau ci-dessus).
-4. **Visuels** (langue principale) : importer `tenGO_event_card.png` dans **Fiche de l'événement**, et `tenGO_event_detail.png` dans le média de la **page de détails** (jusqu'à 3 images ou 1 vidéo).
-5. **Dates** : début / fin + fuseau + date de publication.
-6. **Lien profond** (voir ci-dessous).
-7. Soumettre l'événement pour revue (séparée de l'app, ~24-48 h).
+L'AASA ne couvrant que `/tengo/*`, aucun lien racine (`/daily`, `/event`) ne
+sera jamais remis à l'app : toujours préfixer par `/tengo`.
 
-## Lien profond
-Le code route déjà les liens vers le Défi du jour (`DeepLink.swift`) :
-- **Schéma personnalisé** : `tengo://daily` — fonctionne (test : `xcrun simctl openurl <udid> "tengo://daily"`).
-- **Universal link** : `https://<ton-domaine>/daily` — géré côté code (`continue userActivity`).
+## Ce qui se lance en ligne de commande
 
-⚠️ **Les événements intégrés exigent un universal link (https), pas un schéma personnalisé.** Pour l'activer il faut :
-1. Un **domaine** que tu contrôles (ex. `tengo.app`).
-2. Le fichier **AASA** `https://<domaine>/.well-known/apple-app-site-association` :
-   ```json
-   { "applinks": { "details": [ { "appIDs": ["JDKABK93UH.AppCraft31.tenGO"], "components": [ { "/": "/daily*" } ] } ] } }
-   ```
-3. L'**entitlement Associated Domains** : `applinks:<domaine>` (à ajouter dans tenGO.entitlements + profil de provisioning).
+Depuis `ios/` (`bundle exec` est cassé — appeler `fastlane` directement) :
 
-Une fois ces 3 points en place, le lien `https://<domaine>/daily` ouvrira directement le Défi du jour, et pourra être utilisé comme lien profond de l'événement.
+```bash
+fastlane event_doctor      # pré-vol lecture seule : auth, visuels, textes, état
+fastlane in_app_event      # crée/met à jour l'événement (start:/end: en option)
+fastlane event_asset_probe path:… [kind:…] [locale:…]   # teste un format
+```
+
+`deliver` et Spaceship ne connaissent pas les événements : les lanes tapent
+directement l'API REST, avec les helpers écrits pour les IAP (`asc_jwt`,
+`asc_req`, `asc_get_all`, `asc_upload`).
+
+`in_app_event` ne **soumet** pas : l'événement se soumet depuis App Store
+Connect, et passe une revue **séparée** de celle de l'app (24-48 h).
+
+## Textes — `fastlane/event_copy.json`
+
+15 locales App Store pour 10 langues d'interface (en-GB/AU/CA recopient en-US,
+es-MX = es-ES, pt-PT = pt-BR — même mapping que `deploy_screens.py`).
+
+Limites Apple, vérifiées par la lane avant tout envoi : nom ≤ 30 caractères,
+description courte ≤ 50, longue ≤ 120. **Pas d'emoji** (refusés, comme dans les
+notes de version).
+
+Le texte reprend le vocabulaire des notes de version 3.0
+(`fastlane/metadata/<locale>/release_notes.txt`) : Duel, Rush 60 secondes,
+vingt puzzles, cent niveaux. Ne rien y promettre que l'app ne tienne — la fiche
+a déjà été corrigée deux fois là-dessus.
+
+## Visuels — `marketing/event/`
+
+| Rôle | Dimensions | Fichier |
+|---|---|---|
+| `EVENT_CARD` (vignette de découverte) | 1920 × 1080 | `event_card.png` |
+| `EVENT_DETAILS_PAGE` (grand visuel) | 1920 × 3413 | `event_detail.png` |
+
+Générés par `marketing/screens_generator/gen_event.py` (Chrome headless, mêmes
+captures que la fiche stores) :
+
+```bash
+cd marketing/screens_generator && python3 gen_event.py        # les deux
+python3 gen_event.py card                                      # un seul
+```
+
+**Sans aucun texte** : Apple superpose lui-même le nom et la description de
+l'événement. Les deux visuels sont volontairement différents — ils se suivent à
+l'écran.
+
+## Ordre à respecter
+
+1. Site déployé (AASA + page de repli) — **avant** l'installation de la build
+   qui porte l'entitlement : iOS récupère l'association à l'installation, pas
+   après coup.
+2. Build de la 3.0 avec l'entitlement → TestFlight → test du lien sur un
+   appareil réel → soumission de l'app.
+3. `fastlane in_app_event`, puis `fastlane event_doctor` pour vérifier que tous
+   les visuels sont `COMPLETE`, puis soumission de l'événement dans ASC.
+   L'`eventStart` doit tomber après la mise en vente de la 3.0.
+
+## Vérifications
+
+```bash
+curl -sS https://appcraft31.app/.well-known/apple-app-site-association | python3 -m json.tool
+curl -sSI https://appcraft31.app/tengo/event                     # 200 attendu
+curl -sS "https://app-site-association.cdn-apple.com/a/v1/appcraft31.app"   # cache Apple, ~24 h de retard
+xcrun simctl openurl booted "tengo://event"                      # routage seul
+```
+
+Le simulateur ne valide pas les universal links : sur appareil, envoyer le lien
+dans Notes ou Messages et le **taper** (une URL saisie dans Safari n'est jamais
+interceptée). Si Safari s'ouvre malgré tout, tirer la page vers le bas fait
+réapparaître la bannière « Ouvrir dans tenGO ».
+
+Un asset en échec laisse son emplacement occupé et le log d'upload annonce
+quand même « succès » : toujours conclure par `event_doctor`.

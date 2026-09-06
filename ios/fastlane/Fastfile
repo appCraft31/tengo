@@ -532,4 +532,221 @@ platform :ios do
     UI.success(apply ? "Correction appliquée. ⚠️ La capture d'écran de review IAP reste à ajouter dans ASC." : "Dry-run terminé. Relancer avec apply:true pour écrire.")
   end
 
+
+  # ---------------------------------------------------------------------------
+  # Événement intégré (In-App Event). Ni `deliver` ni Spaceship ne les
+  # connaissent : tout passe par l'API REST, avec les helpers écrits pour les
+  # IAP (`asc_jwt`, `asc_req`, `asc_get_all`, `asc_upload`).
+  # ---------------------------------------------------------------------------
+
+  # Nom interne, jamais affiché aux joueurs. Sans accent : l'API les accepte,
+  # mais la recherche dans App Store Connect, non.
+  EVENT_REFERENCE_NAME = "tenGO 3.0 — mise a jour majeure".freeze
+  # Lien profond, obligatoirement un universal link : le schéma `tengo://` est
+  # refusé par App Store Connect. Le chemin suit la convention du site
+  # (/holdfire/*, /pixelcraft/*, /randompix/*) et /tengo/event sert de page de
+  # repli à qui n'a pas l'app. Routé par DeepLink.swift vers la Progression.
+  EVENT_DEEP_LINK = "https://appcraft31.app/tengo/event".freeze
+  EVENT_COPY_PATH = File.expand_path("event_copy.json", __dir__).freeze
+  # Deux visuels distincts : la CARTE (vignette de découverte) et la PAGE DE
+  # DÉTAIL (le grand visuel). Ils se suivent à l'écran — un même fichier aux
+  # deux emplacements donnerait une impression de remplissage.
+  EVENT_ASSETS = {
+    "EVENT_CARD" => File.expand_path("../../marketing/event/event_card.png", __dir__),
+    "EVENT_DETAILS_PAGE" => File.expand_path("../../marketing/event/event_detail.png", __dir__),
+  }.freeze
+
+  def event_app_id(jwt)
+    _, apps = asc_req(:get, "/v1/apps?filter[bundleId]=AppCraft31.tenGO", jwt)
+    id = apps.dig("data", 0, "id")
+    UI.user_error!("App introuvable pour AppCraft31.tenGO") unless id
+    id
+  end
+
+  def event_find(jwt, app_id)
+    events = asc_get_all("/v1/apps/#{app_id}/appEvents?limit=200", jwt)
+    found = events.find { |e| e.dig("attributes", "referenceName") == EVENT_REFERENCE_NAME }
+    found && found["id"]
+  end
+
+  # L'API refuse le pseudo-code « WORLDWIDE » : il faut la liste explicite.
+  # `/v1/apps/{id}/availableTerritories` n'existe pas (404) → catalogue global.
+  def event_territories(jwt)
+    asc_get_all("/v1/territories?limit=200", jwt).map { |t| t["id"] }
+  end
+
+  # Une localisation par langue : nom (30), description courte (50), longue (120).
+  def event_localization(jwt, event_id, locale, copy)
+    locs = asc_get_all("/v1/appEvents/#{event_id}/localizations?limit=200", jwt)
+    existing = locs.find { |l| l.dig("attributes", "locale") == locale }
+    attrs = { name: copy["name"], shortDescription: copy["short"], longDescription: copy["long"] }
+    if existing
+      code, resp = asc_req(:patch, "/v1/appEventLocalizations/#{existing['id']}", jwt,
+                           { data: { type: "appEventLocalizations", id: existing["id"], attributes: attrs } })
+      UI.user_error!("[#{locale}] MAJ texte : #{code} #{resp.dig('errors', 0, 'detail')}") unless code.between?(200, 299)
+      existing["id"]
+    else
+      code, resp = asc_req(:post, "/v1/appEventLocalizations", jwt,
+                           { data: { type: "appEventLocalizations",
+                                     attributes: attrs.merge(locale: locale),
+                                     relationships: { appEvent: { data: { type: "appEvents", id: event_id } } } } })
+      UI.user_error!("[#{locale}] création texte : #{code} #{resp.dig('errors', 0, 'detail')}") unless code.between?(200, 299)
+      resp.dig("data", "id")
+    end
+  end
+
+  # Un emplacement reste occupé même par un asset en échec : on purge d'abord.
+  def event_upload_assets(jwt, loc_id)
+    asc_get_all("/v1/appEventLocalizations/#{loc_id}/appEventScreenshots?limit=50", jwt).each do |ss|
+      asc_req(:delete, "/v1/appEventScreenshots/#{ss['id']}", jwt)
+    end
+    EVENT_ASSETS.each { |kind, path| event_upload_one(jwt, loc_id, kind, path) }
+  end
+
+  def event_upload_one(jwt, loc_id, asset_type, path)
+    bytes = File.binread(path)
+    code, resp = asc_req(:post, "/v1/appEventScreenshots", jwt,
+                         { data: { type: "appEventScreenshots",
+                                   attributes: { fileName: File.basename(path), fileSize: bytes.bytesize,
+                                                 appEventAssetType: asset_type },
+                                   relationships: { appEventLocalization: { data: { type: "appEventLocalizations", id: loc_id } } } } })
+    UI.user_error!("Réservation #{asset_type} : #{code} #{resp.dig('errors', 0, 'detail')}") unless code.between?(200, 299)
+    ss_id = resp.dig("data", "id")
+    (resp.dig("data", "attributes", "uploadOperations") || []).each do |op|
+      status = asc_upload(op, bytes)
+      UI.user_error!("Upload #{asset_type} KO (#{status})") unless status.between?(200, 299)
+    end
+    # Contrairement aux appScreenshots, appEventScreenshots n'accepte PAS
+    # `sourceFileChecksum` : seul `uploaded` valide l'envoi.
+    code, resp = asc_req(:patch, "/v1/appEventScreenshots/#{ss_id}", jwt,
+                         { data: { type: "appEventScreenshots", id: ss_id, attributes: { uploaded: true } } })
+    UI.user_error!("Validation #{asset_type} : #{code} #{resp.dig('errors', 0, 'detail')}") unless code.between?(200, 299)
+  end
+
+  desc "Pré-vol LECTURE SEULE des événements intégrés (auth, état, visuels)"
+  lane :event_doctor do
+    jwt = asc_jwt
+    app_id = event_app_id(jwt)
+    UI.success("✅ Auth OK — App ID: #{app_id}")
+
+    EVENT_ASSETS.each do |kind, path|
+      UI.message("#{kind} : #{File.exist?(path) ? "#{path} (#{File.size(path) / 1024} Ko)" : "ABSENT → #{path}"}")
+    end
+    if File.exist?(EVENT_COPY_PATH)
+      copy = JSON.parse(File.read(EVENT_COPY_PATH))
+      over = copy.reject { |_, t| t["name"].length <= 30 && t["short"].length <= 50 && t["long"].length <= 120 }
+      UI.message("Textes : #{copy.size} locale(s)#{over.empty? ? '' : " — HORS LIMITES : #{over.keys.join(', ')}"}")
+    else
+      UI.important("event_copy.json absent (#{EVENT_COPY_PATH})")
+    end
+
+    events = asc_get_all("/v1/apps/#{app_id}/appEvents?limit=50", jwt)
+    UI.message("Aucun événement intégré existant.") if events.empty?
+    events.each do |e|
+      a = e["attributes"] || {}
+      UI.message("• #{a['referenceName']} — badge=#{a['badge']} état=#{a['eventState']} lien=#{a['deepLink'] || '(vide)'} (id #{e['id']})")
+      asc_get_all("/v1/appEvents/#{e['id']}/localizations?limit=200", jwt).each do |l|
+        shots = asc_get_all("/v1/appEventLocalizations/#{l['id']}/appEventScreenshots?limit=20", jwt)
+        kinds = shots.map do |x|
+          at = x["attributes"] || {}
+          errs = (at.dig("assetDeliveryState", "errors") || []).map { |er| er["description"] || er["code"] }
+          "#{at['appEventAssetType']}(#{at.dig('assetDeliveryState', 'state')}#{errs.empty? ? '' : ' — ' + errs.join('; ')})"
+        end
+        UI.message("   #{l.dig('attributes', 'locale')} → #{kinds.empty? ? 'aucun visuel' : kinds.join(', ')}")
+      end
+    end
+    UI.success("#{events.length} événement(s).")
+  end
+
+  desc "Crée/MAJ l'événement intégré « mise à jour majeure » de la 3.0"
+  desc "Usage : fastlane in_app_event [start:2026-09-15] [end:2026-09-29]"
+  lane :in_app_event do |options|
+    require "date"
+    jwt = asc_jwt
+    app_id = event_app_id(jwt)
+    copy = JSON.parse(File.read(EVENT_COPY_PATH))
+    EVENT_ASSETS.each { |kind, path| UI.user_error!("Visuel #{kind} absent : #{path}") unless File.exist?(path) }
+    copy.each do |locale, t|
+      UI.user_error!("[#{locale}] nom > 30 caractères")   if t["name"].length > 30
+      UI.user_error!("[#{locale}] brève > 50 caractères") if t["short"].length > 50
+      UI.user_error!("[#{locale}] longue > 120 caractères") if t["long"].length > 120
+    end
+
+    # Fenêtre par défaut : J+7 → J+21, publication J+1 — le temps que la 3.0.0
+    # ET l'événement (soumis séparément) passent la revue.
+    start_at = Date.parse(options[:start] || (Date.today + 7).to_s)
+    end_at   = Date.parse(options[:end] || (start_at + 14).to_s)
+    UI.user_error!("Fenêtre > 31 jours (limite Apple)") if (end_at - start_at).to_i > 31
+    iso = ->(d) { DateTime.parse("#{d}T09:00:00+02:00").strftime("%Y-%m-%dT%H:%M:%S%:z") }
+
+    territories = event_territories(jwt)
+    UI.message("#{territories.length} territoires.")
+
+    attrs = {
+      referenceName: EVENT_REFERENCE_NAME,
+      badge: "MAJOR_UPDATE",
+      deepLink: EVENT_DEEP_LINK,
+      primaryLocale: "fr-FR",
+      priority: "HIGH",
+      purpose: "APPROPRIATE_FOR_ALL_USERS",
+      purchaseRequirement: "NO_COST_ASSOCIATED",
+      territorySchedules: [{
+        territories: territories,
+        publishStart: iso.call(Date.today + 1),
+        eventStart: iso.call(start_at),
+        eventEnd: iso.call(end_at),
+      }],
+    }
+
+    event_id = event_find(jwt, app_id)
+    if event_id
+      UI.message("Événement existant (#{event_id}) → mise à jour.")
+      code, resp = asc_req(:patch, "/v1/appEvents/#{event_id}", jwt,
+                           { data: { type: "appEvents", id: event_id, attributes: attrs } })
+      UI.user_error!("MAJ événement : #{code} #{resp.dig('errors', 0, 'detail')}") unless code.between?(200, 299)
+    else
+      code, resp = asc_req(:post, "/v1/appEvents", jwt,
+                           { data: { type: "appEvents", attributes: attrs,
+                                     relationships: { app: { data: { type: "apps", id: app_id } } } } })
+      UI.user_error!("Création événement : #{code} #{resp.dig('errors', 0, 'detail')}") unless code.between?(200, 299)
+      event_id = resp.dig("data", "id")
+      UI.success("Événement créé : #{event_id}")
+    end
+
+    copy.each do |locale, texts|
+      loc_id = event_localization(jwt, event_id, locale, texts)
+      event_upload_assets(jwt, loc_id)
+      UI.success("[#{locale}] texte + carte + grand visuel")
+    end
+
+    UI.success("✅ « #{EVENT_REFERENCE_NAME} » prêt (#{start_at} → #{end_at}).")
+    UI.important("Vérifier avec `fastlane event_doctor` que TOUS les visuels sont COMPLETE,")
+    UI.important("puis SOUMETTRE l'événement depuis App Store Connect (revue séparée, 24-48 h).")
+  end
+
+  desc "Teste un format de visuel sur une seule locale (avant l'envoi complet)"
+  desc "Usage : fastlane event_asset_probe path:/chemin.png [kind:EVENT_DETAILS_PAGE] [locale:fr-FR]"
+  lane :event_asset_probe do |options|
+    jwt = asc_jwt
+    app_id = event_app_id(jwt)
+    event_id = event_find(jwt, app_id)
+    UI.user_error!("Événement « #{EVENT_REFERENCE_NAME} » introuvable — lancer d'abord in_app_event") unless event_id
+    kind = options[:kind] || "EVENT_DETAILS_PAGE"
+    locale = options[:locale] || "fr-FR"
+    loc = asc_get_all("/v1/appEvents/#{event_id}/localizations?limit=200", jwt)
+          .find { |l| l.dig("attributes", "locale") == locale }
+    UI.user_error!("Locale #{locale} absente de l'événement") unless loc
+    asc_get_all("/v1/appEventLocalizations/#{loc['id']}/appEventScreenshots?limit=20", jwt)
+      .select { |x| x.dig("attributes", "appEventAssetType") == kind }
+      .each { |x| asc_req(:delete, "/v1/appEventScreenshots/#{x['id']}", jwt) }
+    event_upload_one(jwt, loc["id"], kind, options[:path])
+    sleep(12)
+    asc_get_all("/v1/appEventLocalizations/#{loc['id']}/appEventScreenshots?limit=20", jwt).each do |x|
+      a = x["attributes"] || {}
+      next unless a["appEventAssetType"] == kind
+      errs = (a.dig("assetDeliveryState", "errors") || []).map { |e| e["code"] }
+      UI.message("#{File.basename(options[:path])} → #{a.dig('assetDeliveryState', 'state')} #{errs.join(', ')}")
+    end
+  end
+
 end

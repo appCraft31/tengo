@@ -117,6 +117,12 @@ class GameViewController: UIViewController {
             name: .tenGOOpenDuel,
             object: nil
         )
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(openProgressFromLink),
+            name: .tenGOOpenProgress,
+            object: nil
+        )
 
         // Source de vérité StoreKit du mod sans pub (le cache local a déjà été
         // lu ; ceci le corrige après réinstallation, changement d'appareil ou
@@ -163,7 +169,10 @@ class GameViewController: UIViewController {
     override func viewDidAppear(_ animated: Bool) {
         super.viewDidAppear(animated)
         // Lien entrant reçu avant que l'observateur ne soit prêt (lancement à froid).
+        // C'est le chemin normal depuis l'App Store : l'app n'est pas lancée.
         if DeepLink.pendingDaily { openDaily() }
+        if DeepLink.pendingProgress { openProgress() }
+        if DeepLink.pendingDuelCode != nil { openDuelFromLink() }
         let env = ProcessInfo.processInfo.environment
         // Modes de capture : ni pubs, ni feuille Game Center — elle se
         // superpose à l'écran et ruine la capture.
@@ -216,6 +225,21 @@ class GameViewController: UIViewController {
 
     @objc private func openDailyFromLink() {
         openDaily()
+    }
+
+    @objc private func openProgressFromLink() {
+        openProgress()
+    }
+
+    /// Ouvre la Progression (onglet Profil) — destination du lien profond de
+    /// l'événement intégré App Store. La scène porte la barre d'onglets, le
+    /// joueur repart donc vers Jouer, Social ou Boutique d'une seule tape.
+    private func openProgress() {
+        guard DeepLink.consumePendingProgress(), let skView = gameView else { return }
+        let scene = ProfileScene(size: CGSize(width: 750, height: 1334))
+        scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
+        scene.scaleMode = .aspectFill
+        skView.presentScene(scene, transition: SceneTransition.fade(0.3))
     }
 
     /// Ouvre l'écran Duel avec le code reçu par lien, prêt à être accepté.
