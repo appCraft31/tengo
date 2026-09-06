@@ -23,8 +23,16 @@ enum DuelShare {
     static func url(for code: String) -> String { "tengo://duel/\(code)" }
 
     /// Texte envoyé dans la messagerie choisie.
+    ///
+    /// Trois lignes, chacune pour un destinataire différent : le code pour
+    /// celui qui le recopiera à la main, le lien profond pour celui qui a
+    /// déjà le jeu, et la fiche App Store pour celui qui ne l'a pas encore —
+    /// sans elle, l'invitation est un cul-de-sac.
     static func message(for code: String) -> String {
-        String(format: String(localized: "duel.share_message"), code) + "\n" + url(for: code)
+        [String(format: String(localized: "duel.share_message"), code),
+         url(for: code),
+         String(localized: "duel.share_get_app") + " " + AppConfig.appStoreURL]
+            .joined(separator: "\n")
     }
 
     /// Présente la feuille de partage du système.

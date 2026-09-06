@@ -10,9 +10,9 @@ import Foundation
 
 enum AppConfig {
 
-    /// URL App Store de tenGO — à renseigner après publication
-    /// Format attendu : https://apps.apple.com/app/idXXXXXXXXXX
-    static let appStoreURL = "https://apps.apple.com/app/id0000000000"
+    /// URL App Store de tenGO. L'identifiant est celui de la fiche
+    /// (App Store Connect → Informations générales → Apple ID).
+    static let appStoreURL = "https://apps.apple.com/app/id6762470649"
 
     /// Deep link utilisé pour ouvrir la page review directement
     /// Format : https://apps.apple.com/app/idXXXXXXXXXX?action=write-review
