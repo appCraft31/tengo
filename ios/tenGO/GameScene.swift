@@ -747,6 +747,24 @@ class GameScene: SKScene {
                     run(SKAction.wait(forDuration: 0.08)) { [weak self] in self?.goBackToMenu() }
                     return
                 }
+                // Relances contextuelles : on enchaîne directement sur l'autre
+                // mode, sans repasser par l'accueil.
+                if name == "nextDailyBtn" || name == "nextRushBtn" {
+                    node.parent?.run(SKAction.sequence([
+                        SKAction.scale(to: 0.93, duration: 0.07),
+                        SKAction.scale(to: 1.0, duration: 0.1)
+                    ]))
+                    let toDaily = name == "nextDailyBtn"
+                    run(SKAction.wait(forDuration: 0.12)) { [weak self] in
+                        guard let self else { return }
+                        let next = toDaily
+                            ? GameScene(size: self.size, daily: DailyChallenge.make())
+                            : GameScene(size: self.size, startRush: true)
+                        next.scaleMode = .aspectFill
+                        self.view?.presentScene(next, transition: SceneTransition.fade(0.3))
+                    }
+                    return
+                }
             }
             return  // bloquer le reste du touch si panel visible
         }
@@ -2146,6 +2164,52 @@ class GameScene: SKScene {
         }
     }
 
+    // MARK: - Fin de partie : relance
+
+    /// Écart au record quand il est à portée, `nil` sinon. Le seuil est
+    /// relatif (5 %) : « à 12 points » ne veut pas dire la même chose sur un
+    /// record de 300 et sur un record de 30 000.
+    ///
+    /// Le plancher de 20 points évite l'inverse — sur un tout petit record, 5 %
+    /// vaudrait 1 point et l'encouragement ne se déclencherait jamais.
+    static func nearMissGap(score: Int, best: Int?) -> Int? {
+        guard let best, best > 0, score > 0 else { return nil }
+        let gap = best - score
+        guard gap > 0 else { return nil }
+        return gap <= max(20, best / 20) ? gap : nil
+    }
+
+    /// Message positif affiché sous le titre. Il commente ce qui vient de se
+    /// passer plutôt que de piocher au hasard ; à défaut d'événement notable,
+    /// il alterne selon le nombre de parties jouées, pour ne pas répéter la
+    /// même phrase deux fois de suite.
+    private func encouragementText(isNewRecord: Bool, nearMiss: Bool) -> String {
+        if isWinState { return String(localized: "game_over.encourage_perfect") }
+        if isNewRecord { return String(localized: "game_over.encourage_record") }
+        if nearMiss { return String(localized: "game_over.encourage_close") }
+        // Simple graine d'alternance : ce compteur cumulé change à chaque
+        // partie, c'est tout ce qu'on lui demande ici.
+        let seed = PlayerStatsManager.shared.totalChainsMade
+        return String(localized: seed.isMultiple(of: 2)
+                      ? "game_over.encourage_progress"
+                      : "game_over.encourage_again")
+    }
+
+    /// Autre façon de jouer à proposer tout de suite. Le Défi du jour passe en
+    /// premier : il est périssable, le Rush non.
+    private func contextualNextStep() -> (nodeName: String, title: String, color: UIColor)? {
+        guard mode == .normal || mode == .daily || mode == .rush else { return nil }
+        if !DailyChallenge.isCompletedToday() && mode != .daily {
+            return ("nextDailyBtn", String(localized: "menu.daily"),
+                    UIColor(red: 0.86, green: 0.82, blue: 0.97, alpha: 1))
+        }
+        if mode != .rush {
+            return ("nextRushBtn", String(localized: "menu.rush"),
+                    UIColor(red: 1.0, green: 0.89, blue: 0.78, alpha: 1))
+        }
+        return nil
+    }
+
     private func showGameOverPanel() {
         // Le panneau affiche le total : plus question d'attendre une bulle.
         syncDisplayedScore()
@@ -2157,7 +2221,9 @@ class GameScene: SKScene {
         boosterBar?.isHidden = true
 
         let panelW: CGFloat = 500
-        let panelH: CGFloat = 480
+        // 560 et non 480 : le GDD (§36-38) proscrit une fin de partie sèche,
+        // il faut la place d'une ligne d'encouragement sous le titre.
+        let panelH: CGFloat = 560
         let cornerR: CGFloat = 36
 
         // Overlay plein écran pour noyer la grille
@@ -2212,14 +2278,14 @@ class GameScene: SKScene {
         title.fontSize = 44
         title.fontColor = UIColor(white: 0.24, alpha: 1)
         title.verticalAlignmentMode = .center
-        title.position = CGPoint(x: 0, y: 178)
+        title.position = CGPoint(x: 0, y: 218)
         panel.addChild(title)
 
         // Séparateur haut
         let sep = SKShapeNode(rectOf: CGSize(width: 300, height: 1))
         sep.fillColor = UIColor(white: 0.78, alpha: 0.55)
         sep.strokeColor = .clear
-        sep.position = CGPoint(x: 0, y: 140)
+        sep.position = CGPoint(x: 0, y: 152)
         panel.addChild(sep)
 
         // Score animé (count-up)
@@ -2229,7 +2295,7 @@ class GameScene: SKScene {
         scoreDisplay.fontSize = 64
         scoreDisplay.fontColor = UIColor(white: 0.26, alpha: 1)
         scoreDisplay.verticalAlignmentMode = .center
-        scoreDisplay.position = CGPoint(x: 0, y: 80)
+        scoreDisplay.position = CGPoint(x: 0, y: 76)
         panel.addChild(scoreDisplay)
         animateScoreCountUp(label: scoreDisplay, target: score)
 
@@ -2238,7 +2304,7 @@ class GameScene: SKScene {
         let xpGainedThisGame = lastXPResult?.xpGained ?? 0
         if coinsEarnedThisGame > 0 || xpGainedThisGame > 0 {
             let rewardLine = SKNode()
-            rewardLine.position = CGPoint(x: 0, y: 118)
+            rewardLine.position = CGPoint(x: 0, y: 122)
 
             var pieces: [(node: SKNode, width: CGFloat)] = []
 
@@ -2286,7 +2352,7 @@ class GameScene: SKScene {
         // entre le titre et le séparateur (événement rare, pas de mise en page dédiée).
         if let xpResult = lastXPResult, xpResult.leveledUp {
             let burst = PopEffects.makeBurst(color: ThemeManager.shared.active.accent, tier: .small)
-            burst.position = CGPoint(x: 0, y: 150)
+            burst.position = CGPoint(x: 0, y: 180)
             burst.zPosition = 16
             panel.addChild(burst)
 
@@ -2294,10 +2360,10 @@ class GameScene: SKScene {
                 + String(format: String(localized: "game_over.new_level"), xpResult.newLevel, LevelManager.shared.currentTitle)
             let levelUpLabel = SKLabelNode(text: levelUpText)
             levelUpLabel.fontName = "AvenirNext-Bold"
-            levelUpLabel.fontSize = 14
+            levelUpLabel.fontSize = 16
             levelUpLabel.fontColor = UIColor(red: 0.31, green: 0.52, blue: 0.85, alpha: 1)
             levelUpLabel.verticalAlignmentMode = .center
-            levelUpLabel.position = CGPoint(x: 0, y: 150)
+            levelUpLabel.position = CGPoint(x: 0, y: 180)
             levelUpLabel.zPosition = 17
             panel.addChild(levelUpLabel)
         }
@@ -2335,25 +2401,67 @@ class GameScene: SKScene {
         // Record
         let scores = mode == .rush ? GameState.rushHighScores() : GameState.highScores()
         let isNewRecord = scores.first == score && score > 0
+        let nearMissGap = Self.nearMissGap(score: score, best: scores.first)
 
         if mode == .puzzle || mode == .duel {
             // rien : les étoiles ou l'issue du duel occupent déjà cette place
         } else if isNewRecord {
+            // Record battu : l'événement le plus fort de l'écran, il se voit.
+            let burst = PopEffects.makeBurst(color: UIColor(red: 0.96, green: 0.78, blue: 0.28, alpha: 1),
+                                             tier: .medium)
+            burst.position = CGPoint(x: 0, y: 24)
+            burst.zPosition = 16
+            panel.addChild(burst)
+
             let record = SKLabelNode(text: String(localized: "game_over.new_record"))
-            record.fontName = "AvenirNext-Bold"
-            record.fontSize = 20
-            record.fontColor = UIColor(red: 0.92, green: 0.65, blue: 0.20, alpha: 1)
+            record.fontName = "AvenirNext-Heavy"
+            record.fontSize = 27
+            record.fontColor = UIColor(red: 0.88, green: 0.60, blue: 0.14, alpha: 1)
             record.verticalAlignmentMode = .center
-            record.position = CGPoint(x: 0, y: 30)
+            record.position = CGPoint(x: 0, y: 24)
+            record.zPosition = 17
+            record.setScale(0.6)
+            record.alpha = 0
             panel.addChild(record)
+            record.run(SKAction.sequence([
+                SKAction.wait(forDuration: 0.45),
+                SKAction.group([SKAction.fadeIn(withDuration: 0.2),
+                                SKAction.scale(to: 1.0, duration: 0.28)])
+            ]))
+        } else if let gap = nearMissGap {
+            // À portée du record : on le dit, et le bouton de relance change de
+            // promesse juste en dessous.
+            let miss = SKLabelNode(text: String(format: String(localized: "game_over.near_miss"), gap))
+            miss.fontName = "AvenirNext-Bold"
+            miss.fontSize = 21
+            miss.fontColor = UIColor(red: 0.88, green: 0.45, blue: 0.24, alpha: 1)
+            miss.verticalAlignmentMode = .center
+            miss.position = CGPoint(x: 0, y: 24)
+            panel.addChild(miss)
         } else if let best = scores.first {
             let bestLabel = SKLabelNode(text: String(format: String(localized: "game_over.best_score"), best))
             bestLabel.fontName = "AvenirNext-UltraLight"
             bestLabel.fontSize = 19
             bestLabel.fontColor = UIColor(white: 0.38, alpha: 1)
             bestLabel.verticalAlignmentMode = .center
-            bestLabel.position = CGPoint(x: 0, y: 30)
+            bestLabel.position = CGPoint(x: 0, y: 24)
             panel.addChild(bestLabel)
+        }
+
+        // Ligne d'encouragement, sous le titre : une fin de partie ne se solde
+        // jamais par un constat sec. Un passage de niveau tient déjà ce rôle,
+        // il garde la place.
+        if lastXPResult?.leveledUp != true {
+            let encouragement = SKLabelNode(text: encouragementText(isNewRecord: isNewRecord,
+                                                                   nearMiss: nearMissGap != nil))
+            encouragement.fontName = "AvenirNext-Medium"
+            encouragement.fontSize = 18
+            encouragement.fontColor = UIColor(white: 0.44, alpha: 1)
+            encouragement.verticalAlignmentMode = .center
+            encouragement.numberOfLines = 2
+            encouragement.preferredMaxLayoutWidth = panelW - 70
+            encouragement.position = CGPoint(x: 0, y: 180)
+            panel.addChild(encouragement)
         }
 
         // Stats
@@ -2362,7 +2470,7 @@ class GameScene: SKScene {
         statsLine1.fontSize = 17
         statsLine1.fontColor = UIColor(white: 0.38, alpha: 1)
         statsLine1.verticalAlignmentMode = .center
-        statsLine1.position = CGPoint(x: 0, y: -12)
+        statsLine1.position = CGPoint(x: 0, y: -22)
         panel.addChild(statsLine1)
 
         let statsLine2 = SKLabelNode(text: String(format: String(localized: "game_over.combos_created"), combosCreated))
@@ -2370,14 +2478,14 @@ class GameScene: SKScene {
         statsLine2.fontSize = 17
         statsLine2.fontColor = UIColor(white: 0.38, alpha: 1)
         statsLine2.verticalAlignmentMode = .center
-        statsLine2.position = CGPoint(x: 0, y: -40)
+        statsLine2.position = CGPoint(x: 0, y: -50)
         panel.addChild(statsLine2)
 
         // Séparateur bas
         let sep2 = SKShapeNode(rectOf: CGSize(width: 300, height: 1))
         sep2.fillColor = UIColor(white: 0.78, alpha: 0.55)
         sep2.strokeColor = .clear
-        sep2.position = CGPoint(x: 0, y: -76)
+        sep2.position = CGPoint(x: 0, y: -86)
         panel.addChild(sep2)
 
         // Bouton Rejouer — masqué en mode Défi (une seule partie par jour) ;
@@ -2385,7 +2493,7 @@ class GameScene: SKScene {
         if mode == .normal || mode == .rush || mode == .puzzle {
             let replayBtn = SKNode()
             replayBtn.name = "replayBtn"
-            replayBtn.position = CGPoint(x: 0, y: -140)
+            replayBtn.position = CGPoint(x: 0, y: -152)
             panel.addChild(replayBtn)
 
             let replayBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
@@ -2394,7 +2502,9 @@ class GameScene: SKScene {
             replayBg.lineWidth = 1
             replayBtn.addChild(replayBg)
 
-            let replayLabel = SKLabelNode(text: String(localized: "game_over.replay"))
+            let replayLabel = SKLabelNode(text: String(localized: nearMissGap != nil
+                                                        ? "game_over.beat_record"
+                                                        : "game_over.replay"))
             replayLabel.fontName = "AvenirNext-Medium"
             replayLabel.fontSize = 24
             replayLabel.fontColor = UIColor(white: 0.26, alpha: 1)
@@ -2404,7 +2514,7 @@ class GameScene: SKScene {
             // Mode Défi : à la place du rejeu, accès au classement du jour.
             let lbBtn = SKNode()
             lbBtn.name = "dailyLeaderboardBtn"
-            lbBtn.position = CGPoint(x: 0, y: -140)
+            lbBtn.position = CGPoint(x: 0, y: -152)
             panel.addChild(lbBtn)
 
             let lbBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
@@ -2421,13 +2531,19 @@ class GameScene: SKScene {
             lbBtn.addChild(lbLabel)
         }
 
-        // Bouton Accueil.
+        // Ligne du bas : Accueil, et la relance contextuelle du jour quand il y
+        // en a une. Elles partagent la ligne — la sortie ne doit pas être
+        // reléguée sous un troisième bouton.
+        let nextUp = contextualNextStep()
+        let homeW: CGFloat = nextUp == nil ? 200 : 152
+        let homeX: CGFloat = nextUp == nil ? 0 : -84
+
         let homeBtn = SKNode()
         homeBtn.name = "homePanelBtn"
-        homeBtn.position = CGPoint(x: 0, y: -204)
+        homeBtn.position = CGPoint(x: homeX, y: -216)
         panel.addChild(homeBtn)
 
-        let homeBg = SKShapeNode(rectOf: CGSize(width: 200, height: 52), cornerRadius: 26)
+        let homeBg = SKShapeNode(rectOf: CGSize(width: homeW, height: 52), cornerRadius: 26)
         homeBg.fillColor = UIColor(red: 0.94, green: 0.91, blue: 0.88, alpha: 1)
         homeBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
         homeBg.lineWidth = 1
@@ -2439,6 +2555,26 @@ class GameScene: SKScene {
         homeLabel.fontColor = UIColor(white: 0.42, alpha: 1)
         homeLabel.verticalAlignmentMode = .center
         homeBtn.addChild(homeLabel)
+
+        if let nextUp {
+            let nextBtn = SKNode()
+            nextBtn.name = nextUp.nodeName
+            nextBtn.position = CGPoint(x: 84, y: -216)
+            panel.addChild(nextBtn)
+
+            let nextBg = SKShapeNode(rectOf: CGSize(width: 152, height: 52), cornerRadius: 26)
+            nextBg.fillColor = nextUp.color
+            nextBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+            nextBg.lineWidth = 1
+            nextBtn.addChild(nextBg)
+
+            let nextLabel = SKLabelNode(text: nextUp.title)
+            nextLabel.fontName = "AvenirNext-DemiBold"
+            nextLabel.fontSize = 17
+            nextLabel.fontColor = UIColor(white: 0.26, alpha: 1)
+            nextLabel.verticalAlignmentMode = .center
+            nextBtn.addChild(nextLabel)
+        }
 
         panel.setScale(0.88)
         panel.run(SKAction.group([
