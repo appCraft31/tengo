@@ -280,7 +280,7 @@ class LeaderboardScene: SKScene {
             if node.name == "back" || node.parent?.name == "back" {
                 let menu = MenuScene(size: size)
                 menu.scaleMode = .aspectFill
-                view?.presentScene(menu, transition: SceneTransition.crossFade(0.28))
+                view?.presentScene(menu, transition: SceneTransition.fade(0.28))
                 return
             }
             if node.name == "worldLeaderboard" || node.parent?.name == "worldLeaderboard" {

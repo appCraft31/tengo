@@ -154,10 +154,11 @@ enum TabBar {
     /// Ouvre l'écran d'un onglet. Regroupé ici pour que les quatre scènes de
     /// premier niveau naviguent exactement de la même façon.
     ///
-    /// Les onglets forment une rangée : aller de Jouer à Boutique doit se voir
-    /// partir vers la droite. L'écran glisse donc dans le sens du déplacement,
-    /// au lieu d'un fondu qui ne dit rien de la direction.
-    static func present(_ tab: Tab, from scene: SKScene, current: Tab) {
+    /// Sans transition, volontairement : les quatre écrans forment un même
+    /// espace, pas une succession de pages. Une animation, si courte soit-elle,
+    /// les ferait paraître plus éloignés les uns des autres qu'ils ne le sont,
+    /// et ajouterait une attente à chaque aller-retour.
+    static func present(_ tab: Tab, from scene: SKScene) {
         let size = scene.size
         let destination: SKScene
         switch tab {
@@ -167,13 +168,6 @@ enum TabBar {
         case .shop:     destination = BoutiqueScene(size: size)
         }
         destination.scaleMode = .aspectFill
-
-        let forward = index(of: tab) > index(of: current)
-        scene.view?.presentScene(destination,
-                                 transition: SceneTransition.slide(from: forward ? .left : .right))
-    }
-
-    private static func index(of tab: Tab) -> Int {
-        Tab.allCases.firstIndex(of: tab) ?? 0
+        scene.view?.presentScene(destination)
     }
 }

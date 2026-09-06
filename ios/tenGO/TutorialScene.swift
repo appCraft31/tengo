@@ -518,13 +518,13 @@ class TutorialScene: SKScene {
     private func navigateToMenu() {
         let menu = MenuScene(size: size)
         menu.scaleMode = .aspectFill
-        view?.presentScene(menu, transition: SceneTransition.crossFade(0.28))
+        view?.presentScene(menu, transition: SceneTransition.fade(0.28))
     }
 
     private func navigateToNewGame() {
         GameState.clear()
         let scene = GameScene(size: size, savedState: nil)
         scene.scaleMode = .aspectFill
-        view?.presentScene(scene, transition: SceneTransition.crossFade(0.35))
+        view?.presentScene(scene, transition: SceneTransition.fade(0.35))
     }
 }

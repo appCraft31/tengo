@@ -4,34 +4,32 @@
 //
 //  Transitions entre écrans, au même endroit pour tout le jeu.
 //
-//  `SKTransition.fade(withDuration:)` ne fait PAS un fondu enchaîné : il
-//  fond vers le noir, puis depuis le noir. D'où le clignotement sombre à
-//  chaque changement d'écran, d'autant plus visible que le jeu est posé sur
-//  un fond crème. `crossFade` croise directement les deux scènes.
+//  Deux règles, et une seule exception :
 //
-//  Les deux scènes restent animées pendant la transition (`pausesIncomingScene`
-//  et `pausesOutgoingScene` à false) : sinon le fond à bulles se fige le temps
-//  du changement, et le mouvement paraît saccadé alors qu'il ne l'est pas.
+//  1. Changer d'écran fond par le fond du thème actif. `SKTransition.fade
+//     (withDuration:)` passe par le NOIR — d'où le clignotement sombre sur un
+//     jeu posé sur du crème. On lui donne donc explicitement la couleur du
+//     thème : la transition traverse la teinte que les deux écrans partagent
+//     déjà, et rien ne s'assombrit.
+//
+//  2. Les deux scènes restent animées pendant la transition. Sinon le fond à
+//     bulles se fige le temps du changement, et le mouvement paraît saccadé
+//     alors qu'il ne l'est pas.
+//
+//  L'exception, ce sont les onglets : ils ne s'animent pas du tout (cf.
+//  `TabBar.present`). Les quatre écrans de premier niveau forment un même
+//  espace, pas une succession de pages — les animer les ferait paraître plus
+//  éloignés qu'ils ne le sont.
 //
 
 import SpriteKit
 
 enum SceneTransition {
 
-    /// Fondu enchaîné : les deux écrans se croisent, sans passage au noir.
-    /// C'est la transition par défaut du jeu.
-    static func crossFade(_ duration: TimeInterval = 0.28) -> SKTransition {
-        live(SKTransition.crossFade(withDuration: duration))
-    }
-
-    /// Glissement horizontal, réservé à la navigation par onglets : le sens du
-    /// mouvement dit où l'on se déplace dans la rangée.
-    static func slide(from direction: SKTransitionDirection,
-                      duration: TimeInterval = 0.26) -> SKTransition {
-        live(SKTransition.push(with: direction, duration: duration))
-    }
-
-    private static func live(_ transition: SKTransition) -> SKTransition {
+    /// Fondu passant par le fond du thème actif. Transition par défaut du jeu.
+    static func fade(_ duration: TimeInterval = 0.28) -> SKTransition {
+        let transition = SKTransition.fade(with: ThemeManager.shared.active.background,
+                                           duration: duration)
         transition.pausesIncomingScene = false
         transition.pausesOutgoingScene = false
         return transition

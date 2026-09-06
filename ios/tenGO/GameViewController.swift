@@ -171,7 +171,7 @@ class GameViewController: UIViewController {
         scene.incomingCode = DeepLink.consumePendingDuelCode()
         scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scene.scaleMode = .aspectFill
-        skView.presentScene(scene, transition: SceneTransition.crossFade(0.3))
+        skView.presentScene(scene, transition: SceneTransition.fade(0.3))
     }
 
     /// Ouvre directement le Défi du jour (depuis un lien externe / événement intégré).
@@ -181,7 +181,7 @@ class GameViewController: UIViewController {
         let scene = GameScene(size: CGSize(width: 750, height: 1334), daily: DailyChallenge.make())
         scene.anchorPoint = CGPoint(x: 0.5, y: 0.5)
         scene.scaleMode = .aspectFill
-        skView.presentScene(scene, transition: SceneTransition.crossFade(0.3))
+        skView.presentScene(scene, transition: SceneTransition.fade(0.3))
     }
 
     // MARK: - Orientations

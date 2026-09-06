@@ -254,13 +254,13 @@ class ProfileScene: SKScene {
             }
             if let destination {
                 destination.scaleMode = .aspectFill
-                view?.presentScene(destination, transition: SceneTransition.crossFade(0.28))
+                view?.presentScene(destination, transition: SceneTransition.fade(0.28))
                 return
             }
         }
 
         if let tab = TabBar.tab(at: point, in: self), tab != .progress {
-            TabBar.present(tab, from: self, current: .progress)
+            TabBar.present(tab, from: self)
         }
     }
 }

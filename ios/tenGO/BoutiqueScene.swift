@@ -917,7 +917,7 @@ class BoutiqueScene: SKScene {
         if returnDestination == .menu, let startY = dragStartY, startY < viewportBottom,
            let tab = TabBar.tab(at: point, in: self) {
             isDragging = false
-            if tab != .shop { TabBar.present(tab, from: self, current: .shop) }
+            if tab != .shop { TabBar.present(tab, from: self) }
             return
         }
         if isDragging { isDragging = false; return }
@@ -1121,6 +1121,6 @@ class BoutiqueScene: SKScene {
                                     resuming: true)
         }
         destination.scaleMode = .aspectFill
-        view?.presentScene(destination, transition: SceneTransition.crossFade(0.3))
+        view?.presentScene(destination, transition: SceneTransition.fade(0.3))
     }
 }

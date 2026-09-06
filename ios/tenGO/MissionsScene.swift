@@ -226,7 +226,7 @@ class MissionsScene: SKScene {
             if name == "back" {
                 let menu = MenuScene(size: size)
                 menu.scaleMode = .aspectFill
-                view?.presentScene(menu, transition: SceneTransition.crossFade(0.28))
+                view?.presentScene(menu, transition: SceneTransition.fade(0.28))
                 return
             }
             if name.hasPrefix("claim_") {
@@ -234,7 +234,7 @@ class MissionsScene: SKScene {
                 if MissionManager.shared.claim(id) > 0 {
                     let refreshed = MissionsScene(size: size)
                     refreshed.scaleMode = .aspectFill
-                    view?.presentScene(refreshed, transition: SceneTransition.crossFade(0.2))
+                    view?.presentScene(refreshed, transition: SceneTransition.fade(0.2))
                 }
                 return
             }
