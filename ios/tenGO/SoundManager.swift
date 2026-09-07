@@ -30,6 +30,15 @@ final class SoundManager {
     private let reverb = AVAudioUnitReverb()
     private let sampleRate: Double = 44100
 
+    // MARK: - Journal des notes (capture vidéo marketing)
+
+    /// `SOUND_LOG=1` : chaque note déclenchée est imprimée avec son horodatage.
+    /// La bande-son des publicités est rendue hors ligne à partir de ce journal
+    /// (`marketing/tiktok/`), car le simulateur n'enregistre pas l'audio.
+    /// Sans la variable d'environnement, pas une ligne n'est écrite.
+    private let soundLogEnabled = ProcessInfo.processInfo.environment["SOUND_LOG"] == "1"
+    private var didLogEpoch = false
+
     // MARK: - Pool de voix
 
     private var voices: [Voice] = []
@@ -257,6 +266,13 @@ final class SoundManager {
         // scène : il doit répondre sous le doigt et survivre au son coupé.
         if haptic { HapticManager.light() }
 
+        // Un seul point de journalisation : toutes les voix passent ici, quelle
+        // que soit la route (immédiate, arpégiateur, accord). Le journal porte
+        // donc la partition exacte de la session, sans rien réinventer.
+        if soundLogEnabled {
+            logNote(frequency: frequency, velocity: velocity)
+        }
+
         if let freeVoice = voices.first(where: { !$0.isActive }) {
             freeVoice.noteOn(frequency: frequency, velocity: velocity)
             return
@@ -264,6 +280,19 @@ final class SoundManager {
         if let oldest = voices.min(by: { $0.startTime < $1.startTime }) {
             oldest.noteOn(frequency: frequency, velocity: velocity)
         }
+    }
+
+    /// Écrit une note sur la sortie standard : `NOTE <t> <hz> <vel>`.
+    /// `t` est l'horloge monotone du système ; la première ligne (`EPOCH`) la
+    /// rattache à l'heure murale, seule référence commune avec le script qui
+    /// lance l'enregistrement vidéo.
+    private func logNote(frequency: Double, velocity: Float) {
+        let now = CACurrentMediaTime()
+        if !didLogEpoch {
+            didLogEpoch = true
+            print(String(format: "SFX EPOCH %.6f %.6f", Date().timeIntervalSince1970, now))
+        }
+        print(String(format: "SFX NOTE %.6f %.4f %.4f", now, frequency, velocity))
     }
 
     /// Déclenche une voix sans passer par l'arpégiateur (latence nulle).

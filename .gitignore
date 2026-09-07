@@ -48,3 +48,10 @@ ios/fastlane/screenshots_backup_*/
 marketing/screens_generator/render/
 # Captures brutes de l'émulateur Android (régénérables : capture_langs_android.sh).
 marketing/screens_generator/render_android/
+
+# Publicités TikTok : rushes, partitions et artefacts Gradle sont régénérables
+# (record-demo.sh + build-ad.sh) ; seules les vidéos finales sont versionnées.
+marketing/tiktok/capture/
+marketing/tiktok/sfx_render/build/
+marketing/tiktok/sfx_render/.gradle/
+marketing/tiktok/cta/.cta.html
