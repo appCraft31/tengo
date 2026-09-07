@@ -20,6 +20,13 @@
 #               anti-saturation de 40 ms avale des notes)
 #   DURATION    Durée du rush (s)           (def: 25)
 #   NAME        Nom du rush                 (def: rush-<SEED>)
+#   MAXLEN      Longueur maxi des chaînes   (def: 5 comme le jeu ; 7 pour des
+#               coups spectaculaires à 550 points)
+#   PUZZLE      Niveau de Puzzles à jouer   (vide = grille aléatoire)
+#   MOVES       Coups imposés               (cf. ios/tools/puzzle_solve)
+#   PRE_ROLL    Attente avant enregistrement (def: 3 ; 1.2 pour un puzzle)
+#   LANG_CODE   Langue de l'app             (def: en — les publicités sont en
+#               anglais, et le panneau de fin porte du texte)
 #
 set -euo pipefail
 
@@ -34,6 +41,9 @@ BUNDLE_ID="AppCraft31.tenGO"
 SIM_NAME="${SIM_NAME:-iPhone 16 Pro Max}"
 SEED="${SEED:-7}"
 DEMO_SPEED="${DEMO_SPEED:-1.0}"
+MAXLEN="${MAXLEN:-5}"
+PUZZLE="${PUZZLE:-}"
+MOVES="${MOVES:-}"
 DURATION="${DURATION:-25}"
 NAME="${NAME:-rush-$SEED}"
 DERIVED="$ROOT/ios/build/DerivedData"
@@ -60,18 +70,27 @@ fi
 APP_PATH="$(find "$DERIVED/Build/Products/Debug-iphonesimulator" -maxdepth 1 -name '*.app' | head -1)"
 xcrun simctl install "$SIM_ID" "$APP_PATH"
 
-echo "▶︎ Démo (seed=$SEED, speed=$DEMO_SPEED) + journal des notes"
+DESC="seed=$SEED, speed=$DEMO_SPEED, maxlen=$MAXLEN"
+[[ -n "$PUZZLE" ]] && DESC="niveau $PUZZLE, $(echo "$MOVES" | tr '|' '\n' | wc -l | tr -d ' ') coups imposés"
+echo "▶︎ Démo ($DESC) + journaux notes/score"
 : > "$LOG"
 SIMCTL_CHILD_DEMO_MODE=1 \
 SIMCTL_CHILD_DEMO_SEED="$SEED" \
 SIMCTL_CHILD_DEMO_SPEED="$DEMO_SPEED" \
+SIMCTL_CHILD_DEMO_MAXLEN="$MAXLEN" \
+SIMCTL_CHILD_DEMO_PUZZLE="$PUZZLE" \
+SIMCTL_CHILD_DEMO_MOVES="$MOVES" \
 SIMCTL_CHILD_SOUND_LOG=1 \
+SIMCTL_CHILD_DEMO_SCORE_LOG=1 \
   xcrun simctl launch --console-pty --terminate-running-process "$SIM_ID" "$BUNDLE_ID" \
-  >> "$LOG" 2>&1 &
+  -AppleLanguages "(${LANG_CODE:-en})" >> "$LOG" 2>&1 &
 APP_PID=$!
 
-# Laisse la grille apparaître (la démo attend elle-même 0,6 s avant le 1er coup).
-sleep 3
+# Laisse la grille apparaître (la démo attend elle-même 0,6 s avant le premier
+# coup). Trois secondes conviennent à un rush qui tourne en boucle ; une
+# résolution de puzzle, elle, est finie en quelques secondes — il faut alors
+# réduire l'attente pour ne pas rater les premiers coups.
+sleep "${PRE_ROLL:-3}"
 
 # Origine des temps de la vidéo, sur la MÊME horloge que le journal :
 # `time.monotonic()` et `CACurrentMediaTime()` mesurent tous deux la durée
@@ -87,5 +106,7 @@ wait "$REC_PID" 2>/dev/null || true
 kill "$APP_PID" 2>/dev/null || true
 
 NOTES=$(grep -c "SFX NOTE" "$LOG" || true)
+SCORES=$(grep -c "^SCORE " "$LOG" || true)
+FINAL=$(grep "^SCORE " "$LOG" | tail -1 | awk '{print $3}')
 echo "✅ $RAW"
-echo "   $LOG — $NOTES notes"
+echo "   $LOG — $NOTES notes, $SCORES relevés de score (dernier : ${FINAL:-0})"

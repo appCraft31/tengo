@@ -16,6 +16,12 @@ POSITIONS = {
     "top": (8, 340),   # sous les onglets et sous le logo du jeu
     "mid": (5, 0),     # centré
     "low": (2, 620),   # au-dessus de la légende et du bouton d'installation
+    # Compte à rebours : un chiffre géant, translucide, SANS bandeau. Au corps
+    # des accroches (72 px sur bandeau opaque) il se confondait avec les bulles
+    # numérotées de la grille — exactement ce qu'un compte à rebours ne doit pas
+    # faire. Translucide, il laisse le plateau lisible pendant les dix secondes
+    # de réflexion, ce qui est tout l'objet du gel.
+    "count": (5, 0),
 }
 
 INFO = """[Script Info]
@@ -35,6 +41,11 @@ Format: Name, Fontname, Fontsize, PrimaryColour, OutlineColour, BackColour, Bold
 # la colonne d'icônes de TikTok.
 STYLE = ("Style: Hook{name},Nunito,72,&H00FFFFFF,&H00000000,&HB0261F1C,-1,0,0,0,"
          "100,100,0,0,3,16,0,{align},110,250,{margin},1")
+
+# Le compte à rebours a son propre gabarit : 340 px, contour au lieu de bandeau,
+# blanc à 45 % d'opacité (&H73 en canal alpha ASS, où 00 est opaque).
+STYLE_COUNT = ("Style: Hookcount,Nunito,340,&H73FFFFFF,&H73261F1C,&H73261F1C,-1,0,0,0,"
+               "100,100,0,0,1,10,0,{align},110,250,{margin},1")
 
 EVENTS = """
 [Events]
@@ -69,7 +80,8 @@ def main() -> None:
                       f"{{\\fad(160,160)}}{text}")
 
     styles = "\n".join(
-        STYLE.format(name=p, align=POSITIONS[p][0], margin=POSITIONS[p][1]) for p in used)
+        (STYLE_COUNT if p == "count" else STYLE).format(
+            name=p, align=POSITIONS[p][0], margin=POSITIONS[p][1]) for p in used)
     with open(out, "w", encoding="utf-8") as f:
         f.write(INFO + styles + "\n" + EVENTS + "\n".join(events) + "\n")
     print(f"{len(events)} accroches → {out}")

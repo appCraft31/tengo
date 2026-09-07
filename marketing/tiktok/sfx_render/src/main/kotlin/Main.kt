@@ -28,6 +28,9 @@ import kotlin.math.roundToInt
  *               ce qui évite tout `atempo` et garde des attaques nettes
  *   --offset    décalage de calage vidéo/son (s), positif = son plus tard
  *   --gain      gain maître (défaut 0.5, celui du jeu)
+ *   --hold-at   instant (dans le montage final) d'un gel d'image
+ *   --hold-dur  durée de ce gel : les notes postérieures sont décalées d'autant,
+ *               sinon le son continuerait de jouer sur une image figée
  */
 private const val SAMPLE_RATE = 44100.0
 private const val VOICE_COUNT = 8
@@ -48,6 +51,8 @@ fun main(args: Array<String>) {
     val speed = opts["speed"] ?: 1.0
     val offset = opts["offset"] ?: 0.0
     val gain = (opts["gain"] ?: 0.5).toFloat()
+    val holdAt = opts["hold-at"]
+    val holdDur = opts["hold-dur"] ?: 0.0
 
     val notes = readNotes(logFile)
     if (notes.isEmpty()) {
@@ -64,7 +69,12 @@ fun main(args: Array<String>) {
     val timeline = notes.mapNotNull { n ->
         val videoTime = n.time - recordStart + offset
         if (videoTime < start || videoTime >= windowEnd) null
-        else Note((videoTime - start) / speed, n.frequency, n.velocity)
+        else {
+            var t = (videoTime - start) / speed
+            // Gel d'image : tout ce qui suit attend la reprise du mouvement.
+            if (holdAt != null && t >= holdAt) t += holdDur
+            Note(t, n.frequency, n.velocity)
+        }
     }
     if (timeline.isEmpty()) {
         System.err.println("aucune note dans la fenêtre demandée (start=$start durée=${opts["duration"]})")
@@ -72,7 +82,7 @@ fun main(args: Array<String>) {
     }
 
     val lastNote = timeline.last().time
-    val totalSeconds = (opts["duration"]?.let { it / speed } ?: lastNote) + TAIL_SECONDS
+    val totalSeconds = (opts["duration"]?.let { it / speed + holdDur } ?: lastNote) + TAIL_SECONDS
     val samples = render(timeline, totalSeconds, gain)
     writeWav(outFile, samples)
 

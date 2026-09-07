@@ -20,14 +20,20 @@ CONF="$HERE/creatives/$NAME.conf"
 [[ -f "$CONF" ]] || { echo "✗ Création inconnue : $CONF" >&2; exit 1; }
 
 # Valeurs par défaut, écrasées par le fichier de création.
-SOURCE="rush-a"; START=0; DURATION=14; SPEED=1.0; CTA_DUR=2.0; GAIN=0.40
-# Insert facultatif : une capture d'écran (l'écran Duel, par exemple) glissée
-# entre le gameplay et la carte finale, animée d'un zoom lent.
+SOURCE="rush7"; START=0; DURATION=14; SPEED=1.0; CTA_DUR=2.0; GAIN=0.40
+# Insert facultatif : une capture d'écran glissée entre le gameplay et la carte
+# finale, animée d'un zoom lent.
 INSERT=""; INSERT_DUR=2.5; INSERT_CROP_Y=""
+# Gel d'image : `FREEZE_AT` est un instant DANS LE RUSH ; l'image y est tenue
+# `FREEZE_DUR` secondes. C'est le temps de réflexion des accroches « saurez-vous
+# voir le coup ? ». Le son est décalé d'autant, sinon il jouerait sur une image
+# figée.
+FREEZE_AT=""; FREEZE_DUR=3.0
+# Compte à rebours affiché pendant le gel (10 → 1 si COUNTDOWN=10).
+COUNTDOWN=0
 HOOKS=()
 # `AUDIO_OFFSET` : décalage vidéo/son, mesuré une fois par corrélation entre
-# l'activité visuelle et l'énergie sonore (voir README). La latence de
-# `simctl io recordVideo` s'est révélée négligeable.
+# l'activité visuelle et l'énergie sonore (voir README).
 AUDIO_OFFSET="${AUDIO_OFFSET:--0.05}"
 # shellcheck source=/dev/null
 source "$CONF"
@@ -44,56 +50,100 @@ for f in "$RAW" "$LOG" "$CTA"; do
 done
 
 # LC_ALL=C : la virgule décimale de la locale française est rejetée par ffmpeg.
-BODY_DUR="$(LC_ALL=C awk "BEGIN{printf \"%.3f\", $DURATION / $SPEED}")"
+calc() { LC_ALL=C awk "BEGIN{printf \"%.3f\", $1}"; }
+
+BODY_DUR="$(calc "$DURATION / $SPEED")"
+HOLD_DUR=0
+HOLD_AT=""
+if [[ -n "$FREEZE_AT" ]]; then
+  HOLD_DUR="$FREEZE_DUR"
+  HOLD_AT="$(calc "($FREEZE_AT - $START) / $SPEED")"   # instant du gel, monté
+  SEG_A="$(calc "$FREEZE_AT - $START")"                # source avant le gel
+  SEG_B="$(calc "$START + $DURATION - $FREEZE_AT")"    # source après
+fi
 INS_DUR=0
 [[ -n "$INSERT" ]] && INS_DUR="$INSERT_DUR"
-TOTAL="$(LC_ALL=C awk "BEGIN{printf \"%.3f\", $BODY_DUR + $INS_DUR + $CTA_DUR}")"
+TOTAL="$(calc "$BODY_DUR + $HOLD_DUR + $INS_DUR + $CTA_DUR")"
 
-echo "▶︎ $NAME — corps ${BODY_DUR}s (×$SPEED) + insert ${INS_DUR}s + carte ${CTA_DUR}s = ${TOTAL}s"
+echo "▶︎ $NAME — corps ${BODY_DUR}s (×$SPEED) + gel ${HOLD_DUR}s + insert ${INS_DUR}s + carte ${CTA_DUR}s = ${TOTAL}s"
 
 # 1) Bande-son : rendue depuis le journal, déjà à la vitesse du montage.
+HOLD_ARGS=()
+[[ -n "$HOLD_AT" ]] && HOLD_ARGS=(--hold-at "$HOLD_AT" --hold-dur "$HOLD_DUR")
 ( cd "$HERE/sfx_render" && gradle run -q --args="$LOG $WORK/audio.wav \
-    --start $START --duration $DURATION --speed $SPEED --offset $AUDIO_OFFSET --gain $GAIN" )
+    --start $START --duration $DURATION --speed $SPEED --offset $AUDIO_OFFSET --gain $GAIN \
+    ${HOLD_ARGS[*]:-}" )
 
-# 2) Accroches.
-python3 "$HERE/make_ass.py" "$WORK/hooks.ass" "${HOOKS[@]}" >/dev/null
+# 2) Accroches, plus le compte à rebours s'il y en a un.
+CUES=("${HOOKS[@]}")
+if (( COUNTDOWN > 0 )); then
+  # Une réplique par seconde, centrée, pendant le gel.
+  STEP="$(calc "$FREEZE_DUR / $COUNTDOWN")"
+  for ((i=0; i<COUNTDOWN; i++)); do
+    S="$(calc "$HOLD_AT + $i * $STEP")"
+    E="$(calc "$HOLD_AT + ($i + 1) * $STEP")"
+    CUES+=("$S|$E|$((COUNTDOWN - i))|count")
+  done
+fi
+python3 "$HERE/make_ass.py" "$WORK/hooks.ass" "${CUES[@]}" >/dev/null
 
-# 3) Image + son en une passe.
+# 3) Entrées ffmpeg. L'ordre fixe les index utilisés dans le graphe de filtres.
+INPUTS=(); IDX=0
+if [[ -n "$FREEZE_AT" ]]; then
+  # L'image gelée est extraite d'abord : c'est la dernière image visible avant
+  # le coup, celle que le spectateur doit avoir le temps de lire.
+  ffmpeg -y -v error -ss "$FREEZE_AT" -i "$RAW" -frames:v 1 "$WORK/freeze.png"
+  INPUTS+=(-ss "$START" -t "$SEG_A" -i "$RAW");            I_A=$IDX; ((IDX++))
+  INPUTS+=(-loop 1 -t "$FREEZE_DUR" -i "$WORK/freeze.png"); I_F=$IDX; ((IDX++))
+  INPUTS+=(-ss "$FREEZE_AT" -t "$SEG_B" -i "$RAW");        I_B=$IDX; ((IDX++))
+else
+  INPUTS+=(-ss "$START" -t "$DURATION" -i "$RAW");         I_A=$IDX; ((IDX++))
+fi
+INPUTS+=(-loop 1 -t "$CTA_DUR" -i "$CTA");                 I_C=$IDX; ((IDX++))
+INPUTS+=(-i "$WORK/audio.wav");                            I_S=$IDX; ((IDX++))
+if [[ -n "$INSERT" ]]; then
+  INPUTS+=(-loop 1 -t "$INSERT_DUR" -i "$HERE/$INSERT");   I_I=$IDX; ((IDX++))
+fi
+
+# 4) Graphe de filtres.
 #    - recadrage 9:16 pleine largeur (retire l'encoche et l'indicateur d'accueil)
 #    - accélération par setpts, saturation/contraste légers (repris d'edit-social.sh)
-#    - carte finale animée d'un zoom lent, enchaînée par concat
+#    - accroches incrustées APRÈS le raccord des morceaux : leurs temps sont
+#      ceux du montage final, gel compris
 #    - audio normalisé à −14 LUFS, la référence des réseaux sociaux
 #    - débit visé 4 Mb/s : l'image du jeu est lisse et pastel, un CRF confortable
 #      y descendait sous les 2 Mb/s exigés par TikTok
-BODY_CHAIN="[0:v]crop=in_w:in_w*1920/1080,scale=1080:1920:flags=lanczos,setpts=PTS/${SPEED},\
-eq=saturation=1.12:contrast=1.04,fps=30,format=yuv420p,\
-subtitles='$WORK/hooks.ass':fontsdir='$FONTS'[body];"
-CTA_CHAIN="[1:v]scale=1080:1920,zoompan=z='min(1.0+0.0009*on\,1.05)':d=1:s=1080x1920:fps=30,\
-fade=t=in:st=0:d=0.3,format=yuv420p[cta];"
-AUDIO_CHAIN="[2:a]atrim=0:${TOTAL},apad=whole_dur=${TOTAL},\
-loudnorm=I=-14:TP=-1.5:LRA=11,aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a]"
+GAME_FX="crop=in_w:in_w*1920/1080,scale=1080:1920:flags=lanczos"
+GRADE="eq=saturation=1.12:contrast=1.04,fps=30,format=yuv420p"
 
+FG="[${I_A}:v]${GAME_FX},setpts=PTS/${SPEED},${GRADE}[segA];"
+if [[ -n "$FREEZE_AT" ]]; then
+  FG+="[${I_F}:v]${GAME_FX},${GRADE}[hold];"
+  FG+="[${I_B}:v]${GAME_FX},setpts=PTS/${SPEED},${GRADE}[segB];"
+  FG+="[segA][hold][segB]concat=n=3:v=1:a=0[raw];"
+else
+  FG+="[segA]null[raw];"
+fi
+FG+="[raw]subtitles='$WORK/hooks.ass':fontsdir='$FONTS'[body];"
+FG+="[${I_C}:v]scale=1080:1920,zoompan=z='min(1.0+0.0009*on\,1.05)':d=1:s=1080x1920:fps=30,\
+fade=t=in:st=0:d=0.3,format=yuv420p[cta];"
 if [[ -n "$INSERT" ]]; then
-  # L'insert est recadré comme le gameplay : même cadrage, raccord invisible.
   # Un écran d'interface n'est pas rempli comme une grille : le recadrage 9:16
   # centré couperait le titre. `INSERT_CROP_Y` cale la fenêtre sur le contenu.
   INS_CROP="crop=in_w:in_w*1920/1080"
   [[ -n "$INSERT_CROP_Y" ]] && INS_CROP="crop=in_w:in_w*1920/1080:0:${INSERT_CROP_Y}"
-  INS_CHAIN="[3:v]${INS_CROP},scale=1080:1920:flags=lanczos,\
+  FG+="[${I_I}:v]${INS_CROP},scale=1080:1920:flags=lanczos,\
 zoompan=z='min(1.0+0.0012*on\,1.08)':d=1:s=1080x1920:fps=30,\
 fade=t=in:st=0:d=0.25,format=yuv420p[ins];"
-  CONCAT="[body][ins][cta]concat=n=3:v=1:a=0[v];"
-  INS_INPUT=(-loop 1 -t "$INSERT_DUR" -i "$INSERT")
+  FG+="[body][ins][cta]concat=n=3:v=1:a=0[v];"
 else
-  INS_CHAIN=""; CONCAT="[body][cta]concat=n=2:v=1:a=0[v];"; INS_INPUT=()
+  FG+="[body][cta]concat=n=2:v=1:a=0[v];"
 fi
+FG+="[${I_S}:a]atrim=0:${TOTAL},apad=whole_dur=${TOTAL},\
+loudnorm=I=-14:TP=-1.5:LRA=11,aformat=sample_fmts=fltp:sample_rates=44100:channel_layouts=stereo[a]"
 
-ffmpeg -y -v error -stats \
-  -ss "$START" -t "$DURATION" -i "$RAW" \
-  -loop 1 -t "$CTA_DUR" -i "$CTA" \
-  -i "$WORK/audio.wav" \
-  ${INS_INPUT[@]+"${INS_INPUT[@]}"} \
-  -filter_complex "${BODY_CHAIN}${CTA_CHAIN}${INS_CHAIN}${CONCAT}${AUDIO_CHAIN}" \
+ffmpeg -y -v error -stats "${INPUTS[@]}" \
+  -filter_complex "$FG" \
   -map "[v]" -map "[a]" -t "$TOTAL" \
   -c:v libx264 -profile:v high -preset slow -b:v 4M -maxrate 5M -bufsize 10M \
   -pix_fmt yuv420p -r 30 \

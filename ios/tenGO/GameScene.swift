@@ -31,6 +31,17 @@ class GameScene: SKScene {
     private var demoSpeed: Double = 1.0
     /// Compteur de grilles enchaînées : décale la graine à chaque relance.
     private var demoRound = 0
+    /// Longueur maximale des chaînes cherchées par le solveur en démo. Le jeu
+    /// joue à 5 ; les captures marketing montent à 7 pour des chaînes plus
+    /// spectaculaires (une chaîne de 7 vaut 550 points contre 200 à 5).
+    private var demoMaxLen = 5
+    /// Démo d'un niveau de Puzzles : la grille vient du catalogue, pas d'une graine.
+    private var demoPuzzle: PuzzleLevel?
+    /// Suite de coups imposée au lieu du solveur (le glouton ne vide qu'un
+    /// niveau sur vingt : une vidéo « ce niveau semblait impossible » exige la
+    /// vraie solution). Coordonnées recalculées APRÈS la gravité de chaque coup.
+    private var demoScript: [[(row: Int, col: Int)]]?
+    private var demoScriptIndex = 0
 
     private var savedState: GameState?
     private var homeBubbleNode: SKNode!
@@ -57,10 +68,15 @@ class GameScene: SKScene {
 
     /// Mode démo : grille déterministe (graine) jouée automatiquement par le
     /// solveur, pour produire une capture vidéo de gameplay (marketing).
-    init(size: CGSize, demoSeed: UInt64, demoSpeed: Double = 1.0) {
+    init(size: CGSize, demoSeed: UInt64, demoSpeed: Double = 1.0,
+         maxLen: Int = 5, puzzle: PuzzleLevel? = nil,
+         script: [[(row: Int, col: Int)]]? = nil) {
         self.mode = .demo
         self.demoSeed = demoSeed
         self.demoSpeed = max(0.25, demoSpeed)
+        self.demoMaxLen = min(9, max(2, maxLen))
+        self.demoPuzzle = puzzle
+        self.demoScript = script
         self.resuming = false
         super.init(size: size)
     }
@@ -176,6 +192,9 @@ class GameScene: SKScene {
     private var duelShareCode: String?
     /// Étoiles obtenues sur le niveau de puzzle qui vient d'être terminé.
     private var puzzleStarsEarned = 0
+    /// `DEMO_SCORE_LOG=1` : imprime le score affiché à chaque changement, pour
+    /// que les publicités puissent annoncer un chiffre réellement à l'écran.
+    private let scoreLogEnabled = ProcessInfo.processInfo.environment["DEMO_SCORE_LOG"] == "1"
     /// XP créditée à la fin de cette partie (affiché dans le panel game-over).
     private var lastXPResult: LevelManager.GainResult?
 
@@ -261,8 +280,12 @@ class GameScene: SKScene {
         if mode == .daily, let today = dailyToday {
             gridModel = today.grid
         } else if mode == .demo {
-            var generator = SeededGenerator(seed: demoSeed)
-            gridModel = GridModel(using: &generator)
+            if let puzzle = demoPuzzle {
+                gridModel = GridModel(puzzleLayout: puzzle.layout)
+            } else {
+                var generator = SeededGenerator(seed: demoSeed)
+                gridModel = GridModel(using: &generator)
+            }
         } else if mode == .duel {
             var generator = SeededGenerator(seed: duelSeed)
             gridModel = GridModel(using: &generator)
@@ -1164,6 +1187,9 @@ class GameScene: SKScene {
     /// de la bulle « +N » (showScorePopup), pas ici.
     private func updateScoreLabel() {
         scoreLabel.text = "\(displayedScore)"
+        if scoreLogEnabled {
+            print(String(format: "SCORE %.6f %d", CACurrentMediaTime(), displayedScore))
+        }
     }
 
     /// Aligne l'affichage sur le score réel, sans attendre les bulles encore en
@@ -1373,7 +1399,7 @@ class GameScene: SKScene {
 
     private func afterPop() {
         if gridModel.isGridEmpty() {
-            if mode == .demo { demoReseed() }
+            if mode == .demo { if demoScript == nil { demoReseed() } else { triggerWin() } }
             else if mode == .rush { rushBoardCleared() }
             else { triggerWin() }
             return
@@ -1964,7 +1990,12 @@ class GameScene: SKScene {
             AnalyticsService.levelEnd(mode: "duel", score: score, won: isWinState)
             publishDuelResult()
         case .demo:
-            break   // démo : aucun score enregistré ni soumis
+            // Rien n'est enregistré ni soumis. Seules les étoiles sont
+            // calculées, pour que la capture vidéo montre la même récompense
+            // qu'un joueur qui vide le niveau.
+            if let puzzle = demoPuzzle, isWinState {
+                puzzleStarsEarned = puzzle.stars(forScore: score)
+            }
         }
         if mode != .demo { checkAchievements() }
     }
@@ -2079,7 +2110,7 @@ class GameScene: SKScene {
         isWinState = true
         // Le bonus de victoire fausserait les seuils d'étoiles du mode
         // Puzzles, calculés hors ligne sur le seul score des chaînes.
-        let bonus = mode == .puzzle ? 0 : 1000
+        let bonus = (mode == .puzzle || demoPuzzle != nil) ? 0 : 1000
         // Le bonus de victoire a lui aussi sa bulle : on rattrape d'abord les
         // gains encore en vol, puis on laisse le +1000 créditer à son arrivée.
         syncDisplayedScore()
@@ -2548,7 +2579,7 @@ class GameScene: SKScene {
 
         // Mode Puzzles : les étoiles remplacent la comparaison au record, qui
         // n'a pas de sens sur une grille fixe.
-        if mode == .puzzle {
+        if mode == .puzzle || demoPuzzle != nil {
             let stars = SKLabelNode(text: String(repeating: "★", count: puzzleStarsEarned)
                                     + String(repeating: "☆", count: 3 - puzzleStarsEarned))
             stars.fontName = "AvenirNext-Bold"
@@ -2566,7 +2597,7 @@ class GameScene: SKScene {
         let isNewRecord = scores.first == score && score > 0
         let nearMissGap = Self.nearMissGap(score: score, best: scores.first)
 
-        if mode == .puzzle || mode == .duel {
+        if mode == .puzzle || mode == .duel || demoPuzzle != nil {
             // rien : les étoiles ou l'issue du duel occupent déjà cette place
         } else if isNewRecord {
             // Record battu : l'événement le plus fort de l'écran, il se voit.
@@ -2653,7 +2684,7 @@ class GameScene: SKScene {
 
         // Bouton Rejouer — masqué en mode Défi (une seule partie par jour) ;
         // en Rush, "Rejouer" EST le CTA principal (courtes sessions répétées).
-        if mode == .normal || mode == .rush || mode == .puzzle {
+        if mode == .normal || mode == .rush || mode == .puzzle || demoPuzzle != nil {
             let replayBtn = SKNode()
             replayBtn.name = "replayBtn"
             replayBtn.position = CGPoint(x: 0, y: -152)
@@ -2917,7 +2948,17 @@ class GameScene: SKScene {
             ]), withKey: "demoLoop")
             return
         }
-        guard let path = gridModel.showcasePath(maxLen: 5), path.count >= 2 else {
+        // Suite de coups imposée : on la déroule dans l'ordre. Une fois épuisée,
+        // on ne relance RIEN — la grille vidée et le panneau de fin restent à
+        // l'écran, c'est la récompense de la vidéo.
+        if let script = demoScript {
+            guard demoScriptIndex < script.count else { return }
+            let path = script[demoScriptIndex]
+            demoScriptIndex += 1
+            animateDemoPath(path)
+            return
+        }
+        guard let path = gridModel.showcasePath(maxLen: demoMaxLen), path.count >= 2 else {
             demoReseed()
             return
         }
@@ -2964,7 +3005,7 @@ class GameScene: SKScene {
     /// Vide la grille et en regénère une nouvelle (graine décalée) pour enchaîner
     /// les parties en boucle. Le score continue de grimper (effet « ça monte »).
     private func demoReseed() {
-        guard mode == .demo else { return }
+        guard mode == .demo, demoScript == nil else { return }
         isAnimating = true
         demoRound += 1
 

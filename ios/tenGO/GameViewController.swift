@@ -64,7 +64,30 @@ class GameViewController: UIViewController {
             // Capture vidéo marketing : grille déterministe jouée par l'auto-player.
             let seed = UInt64(env["DEMO_SEED"] ?? "") ?? 7
             let speed = Double(env["DEMO_SPEED"] ?? "") ?? 1.0
-            scene = GameScene(size: CGSize(width: 750, height: 1334), demoSeed: seed, demoSpeed: speed)
+            // Le jeu cherche des chaînes de 5 au plus ; les captures montent à 7
+            // pour des coups plus spectaculaires (550 points contre 200).
+            let maxLen = Int(env["DEMO_MAXLEN"] ?? "") ?? 5
+            // `DEMO_PUZZLE=19` : la démo joue un niveau du catalogue.
+            let puzzle = Int(env["DEMO_PUZZLE"] ?? "").flatMap { PuzzleWorld.level(world: 1, index: $0) }
+            // `DEMO_MOVES="0,1;1,2|0,3;0,4"` : coups imposés, séparés par `|`,
+            // cellules par `;`, au format ligne,colonne (ligne 0 = bas), chaque
+            // coup exprimé APRÈS la gravité du précédent. Sans cette liste, un
+            // niveau de Puzzles ne se vide pas : le solveur glouton n'y arrive
+            // que sur un niveau du monde 1 sur vingt.
+            // Une variable vide vaut « pas de script » : sans ce filtre, la
+            // chaîne vide produit une liste de zéro coup, et l'auto-player
+            // s'arrête avant d'avoir joué quoi que ce soit.
+            let script = env["DEMO_MOVES"].flatMap { $0.isEmpty ? nil : $0 }.map { raw in
+                raw.split(separator: "|").map { move in
+                    move.split(separator: ";").compactMap { cell -> (row: Int, col: Int)? in
+                        let parts = cell.split(separator: ",")
+                        guard parts.count == 2, let r = Int(parts[0]), let c = Int(parts[1]) else { return nil }
+                        return (row: r, col: c)
+                    }
+                }
+            }
+            scene = GameScene(size: CGSize(width: 750, height: 1334), demoSeed: seed,
+                              demoSpeed: speed, maxLen: maxLen, puzzle: puzzle, script: script)
         } else if env["SCREENSHOT_DAILY"] == "1" {
             scene = GameScene(size: CGSize(width: 750, height: 1334), daily: DailyChallenge.make())
         } else if env["GAME_NORMAL"] == "1" {
