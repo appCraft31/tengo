@@ -149,7 +149,7 @@ platform :ios do
       skip_screenshots: true,
       skip_metadata: true,
       submit_for_review: true,
-      automatic_release: true,
+      automatic_release: false,
       run_precheck_before_submit: false,
       force: true
     )
