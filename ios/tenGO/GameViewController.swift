@@ -177,6 +177,13 @@ class GameViewController: UIViewController {
         d.set(true, forKey: k.hasSeenTutorial)
         d.set(true, forKey: k.noAdsPurchased)          // boutique sans prix
 
+        // La demande système de notifications ne doit jamais recouvrir une
+        // capture de fiche store. Le script lance plusieurs parties à la
+        // suite et atteignait sinon le seuil du troisième lancement, avec une
+        // boîte localisée selon la langue du simulateur hôte plutôt que celle
+        // de la capture.
+        d.set(true, forKey: k.notifRequested)
+
         // Tutoriels marqués comme vus : sans cela, le coach-mark d'un booster
         // s'ouvre sur la première partie avec son voile sombre, et la capture
         // de la grille sort grisée derrière une bulle d'aide.
