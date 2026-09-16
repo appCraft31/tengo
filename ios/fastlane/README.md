@@ -67,6 +67,16 @@ Envoie les métadonnées (notes de version) sur App Store Connect — sans binai
 
 Usage : bundle exec fastlane release_notes [version:1.8]
 
+### ios submit_review
+
+```sh
+[bundle exec] fastlane ios submit_review
+```
+
+Sélectionne un build déjà envoyé et soumet la version à la vérification Apple
+
+Usage : fastlane submit_review version:3.0.1 build:258
+
 ### ios iap_sync
 
 ```sh
