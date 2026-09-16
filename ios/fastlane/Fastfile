@@ -136,6 +136,25 @@ platform :ios do
     )
   end
 
+  desc "Sélectionne un build déjà envoyé et soumet la version à la vérification Apple"
+  desc "Usage : fastlane submit_review version:3.0.1 build:258"
+  lane :submit_review do |options|
+    version = options[:version] || get_version_number(xcodeproj: "tenGO.xcodeproj", target: "tenGO")
+    build = options[:build] || get_build_number(xcodeproj: "tenGO.xcodeproj")
+    deliver(
+      api_key: api_key,
+      app_version: version,
+      build_number: build,
+      skip_binary_upload: true,
+      skip_screenshots: true,
+      skip_metadata: true,
+      submit_for_review: true,
+      automatic_release: true,
+      run_precheck_before_submit: false,
+      force: true
+    )
+  end
+
   desc "Crée / met à jour les achats in-app (packs de pièces) depuis fastlane/iap/coin_packs.json"
   desc "Lecture seule par défaut. Pour appliquer : bundle exec fastlane iap_sync apply:true"
   desc "Note : `deliver` ne gère pas les IAP — on passe par l'API App Store Connect (Spaceship)."
