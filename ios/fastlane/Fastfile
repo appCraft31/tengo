@@ -150,6 +150,9 @@ platform :ios do
       skip_metadata: true,
       submit_for_review: true,
       automatic_release: false,
+      submission_information: {
+        export_compliance_uses_encryption: false
+      },
       run_precheck_before_submit: false,
       force: true
     )
