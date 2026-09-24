@@ -12,7 +12,7 @@ if not os.path.isabs(OUT):
 DO_IOS = os.environ.get("IOS", "1") == "1"
 
 # Nombre de panneaux (ASC en accepte 10, Play 8).
-PANELS = 8
+PANELS = 7
 IOS = "/Users/nicolas/StudioProjects/tenGO/ios/fastlane/screenshots"
 AND = "/Users/nicolas/StudioProjects/tenGO/android/fastlane/metadata/android"
 
@@ -32,6 +32,9 @@ n_ios = n_and = 0
 for loc, lang in (IOS_LOCALES.items() if DO_IOS else {}.items()):
     d = os.path.join(IOS, loc)
     os.makedirs(d, exist_ok=True)
+    # Retire les panneaux au-delà de PANELS (la fiche est passée de 8 à 7).
+    for old in glob.glob(os.path.join(d, "*.png")):
+        os.remove(old)
     for p in range(1, PANELS + 1):
         shutil.copy(f"{OUT}/p{p}_{lang}_phone.png", f"{d}/iPhone 6.5 inch-{p}.png")
         shutil.copy(f"{OUT}/p{p}_{lang}_ipad.png",

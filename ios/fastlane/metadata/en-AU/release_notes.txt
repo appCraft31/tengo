@@ -1,22 +1,6 @@
-TEN·GO 3.0 — the biggest update since launch.
+Cleaner, more readable sound:
+• each number always plays the same note — your ear learns the grid;
+• a completed chain resolves with a short chord that never slows you down;
+• the victory jingle is shorter.
 
-NEW MODES
-• Duel — challenge a friend on the exact same grid, each plays whenever
-• Rush — 60 seconds on the clock, for those who like the pressure
-• Puzzles — 20 grids to solve, every one guaranteed solvable
-
-PROGRESSION
-• 100 experience levels and titles to earn
-• Daily missions, a day streak and 26 achievements
-• A Profile screen gathering all your stats
-
-REDESIGNED HOME
-Four clear tabs replace the long list of buttons. Everything is within thumb's reach.
-
-NO MORE AD BANNER
-It's gone. The game now fills the whole screen.
-
-BALANCING
-Long chains score substantially more than before, and your records stay comparable.
-
-Finger tracing responds better: gestures started right after a move are no longer lost.
+Minor fixes and improvements.

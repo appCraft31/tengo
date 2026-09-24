@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # Génère les screenshots App Store / Play Store de tenGO :
-# 8 panneaux × 10 langues × 3 formats, rendus par Chrome headless.
+# 7 panneaux × 10 langues × 3 formats, rendus par Chrome headless.
 import os, subprocess, sys, shutil
 
 S = os.path.dirname(os.path.abspath(__file__))
@@ -29,104 +29,93 @@ T = {
    p1=dict(t=['Relie les chiffres.', 'Fais 10.'], s='Une règle comprise en quelques secondes'),
    p2=dict(t=['Allonge tes chaînes.', 'Multiplie les points.'], s='Une chaîne de six vaut bien plus que trois paires'),
    p3=dict(t=['Défi du jour.', 'Rush. Missions.'], s='Une nouvelle raison de jouer à chaque partie'),
-   p4=dict(t=['Chaque combo', 'joue sa mélodie.'], s='Chaque bulle est une note — tes doigts deviennent la partition'),
-   p5=dict(t=['Un défi.', 'Chaque jour.', 'Le même pour tous.'], s='Grille unique, twists et classement mondial'),
+   p4=dict(t=['Un défi.', 'Chaque jour.', 'Le même pour tous.'], s='Grille unique, twists et classement mondial'),
    p6=dict(t=['Ta grille,', 'ton style.'], s='Thèmes, matières et tracés à débloquer — jamais obligatoires'),
-   p7=dict(t=['Défie un ami.', 'Même grille.'], s='Il joue quand il veut — un code suffit à lancer le duel'),
-   p8=dict(t=['Chaque partie', 'te fait progresser.'], s='100 niveaux, missions du jour, séries et succès à décrocher')),
+   p5=dict(t=['Défie un ami.', 'Même grille.'], s='Il joue quand il veut — un code suffit à lancer le duel'),
+   p7=dict(t=['Chaque partie', 'te fait progresser.'], s='100 niveaux, missions du jour, séries et succès à décrocher')),
  "en": dict(
    p1=dict(t=['Connect numbers.', 'Make 10.'], s='One rule you understand in seconds'),
    p2=dict(t=['Build longer chains.', 'Score much more.'], s='A chain of six is worth far more than three pairs'),
    p3=dict(t=['Daily puzzles.', 'Rush. Challenges.'], s='A fresh reason to play every time'),
-   p4=dict(t=['Every combo plays', 'its own melody.'], s='Each bubble is a note — your fingers become the score'),
-   p5=dict(t=['One puzzle.', 'Every day.', 'The same for everyone.'], s='A unique grid, daily twists and a worldwide leaderboard'),
+   p4=dict(t=['One puzzle.', 'Every day.', 'The same for everyone.'], s='A unique grid, daily twists and a worldwide leaderboard'),
    p6=dict(t=['Your grid,', 'your style.'], s='Themes, bubble skins and trails to unlock — never required'),
-   p7=dict(t=['Challenge a friend.', 'Same grid.'], s='They play whenever — one code starts the duel'),
-   p8=dict(t=['Every game', 'moves you forward.'], s='100 levels, daily missions, streaks and achievements')),
+   p5=dict(t=['Challenge a friend.', 'Same grid.'], s='They play whenever — one code starts the duel'),
+   p7=dict(t=['Every game', 'moves you forward.'], s='100 levels, daily missions, streaks and achievements')),
  "de": dict(
    p1=dict(t=['Verbinde Zahlen.', 'Mach 10.'], s='Eine Regel, die du in Sekunden verstehst'),
    p2=dict(t=['Bilde längere Ketten.', 'Punkte viel höher.'], s='Eine Sechserkette bringt weit mehr als drei Paare'),
    p3=dict(t=['Tagesrätsel.', 'Rush. Missionen.'], s='Bei jeder Partie ein neuer Grund weiterzuspielen'),
-   p4=dict(t=['Jede Kombo spielt', 'ihre eigene Melodie.'], s='Jede Blase ist eine Note — deine Finger werden zur Partitur'),
-   p5=dict(t=['Ein Rätsel.', 'Jeden Tag.', 'Für alle dasselbe.'], s='Einzigartiges Gitter, Twists und weltweite Rangliste'),
+   p4=dict(t=['Ein Rätsel.', 'Jeden Tag.', 'Für alle dasselbe.'], s='Einzigartiges Gitter, Twists und weltweite Rangliste'),
    p6=dict(t=['Dein Gitter,', 'dein Stil.'], s='Themen, Blasen-Looks und Spuren zum Freischalten — nie Pflicht'),
-   p7=dict(t=['Fordere Freunde heraus.', 'Gleiches Feld.'], s='Sie spielen wann sie wollen — ein Code genügt'),
-   p8=dict(t=['Jede Partie', 'bringt dich weiter.'], s='100 Stufen, Tagesmissionen, Serien und Erfolge')),
+   p5=dict(t=['Fordere Freunde heraus.', 'Gleiches Feld.'], s='Sie spielen wann sie wollen — ein Code genügt'),
+   p7=dict(t=['Jede Partie', 'bringt dich weiter.'], s='100 Stufen, Tagesmissionen, Serien und Erfolge')),
  "es": dict(
    p1=dict(t=['Conecta números.', 'Haz 10.'], s='Una regla que entiendes en segundos'),
    p2=dict(t=['Crea cadenas largas.', 'Suma muchos más puntos.'], s='Una cadena de seis vale mucho más que tres parejas'),
    p3=dict(t=['Reto diario.', 'Rush. Misiones.'], s='Un motivo nuevo para jugar cada vez'),
-   p4=dict(t=['Cada combo toca', 'su propia melodía.'], s='Cada burbuja es una nota: tus dedos son la partitura'),
-   p5=dict(t=['Un reto.', 'Cada día.', 'El mismo para todos.'], s='Cuadrícula única, sorpresas y clasificación mundial'),
+   p4=dict(t=['Un reto.', 'Cada día.', 'El mismo para todos.'], s='Cuadrícula única, sorpresas y clasificación mundial'),
    p6=dict(t=['Tu cuadrícula,', 'tu estilo.'], s='Temas, burbujas y trazos por desbloquear, nunca obligatorios'),
-   p7=dict(t=['Reta a un amigo.', 'Misma cuadrícula.'], s='Juega cuando quiera — basta un código para el duelo'),
-   p8=dict(t=['Cada partida', 'te hace avanzar.'], s='100 niveles, misiones diarias, rachas y logros')),
+   p5=dict(t=['Reta a un amigo.', 'Misma cuadrícula.'], s='Juega cuando quiera — basta un código para el duelo'),
+   p7=dict(t=['Cada partida', 'te hace avanzar.'], s='100 niveles, misiones diarias, rachas y logros')),
  "it": dict(
    p1=dict(t=['Collega i numeri.', 'Fai 10.'], s='Una regola che capisci in pochi secondi'),
    p2=dict(t=['Crea catene più lunghe.', 'Fai molti più punti.'], s='Una catena da sei vale molto più di tre coppie'),
    p3=dict(t=['Sfida giornaliera.', 'Rush. Missioni.'], s='Un nuovo motivo per giocare ogni volta'),
-   p4=dict(t=['Ogni combo suona', 'la sua melodia.'], s='Ogni bolla è una nota: le tue dita diventano lo spartito'),
-   p5=dict(t=['Una sfida.', 'Ogni giorno.', 'Uguale per tutti.'], s='Griglia unica, varianti e classifica mondiale'),
+   p4=dict(t=['Una sfida.', 'Ogni giorno.', 'Uguale per tutti.'], s='Griglia unica, varianti e classifica mondiale'),
    p6=dict(t=['La tua griglia,', 'il tuo stile.'], s='Temi, materiali e scie da sbloccare, mai obbligatori'),
-   p7=dict(t=['Sfida un amico.', 'Stessa griglia.'], s='Gioca quando vuole — basta un codice per il duello'),
-   p8=dict(t=['Ogni partita', 'ti fa progredire.'], s='100 livelli, missioni del giorno, serie e obiettivi')),
+   p5=dict(t=['Sfida un amico.', 'Stessa griglia.'], s='Gioca quando vuole — basta un codice per il duello'),
+   p7=dict(t=['Ogni partita', 'ti fa progredire.'], s='100 livelli, missioni del giorno, serie e obiettivi')),
  "ja": dict(
    p1=dict(t=['数字をつないで、', '10を作ろう。'], s='数秒でわかる、たったひとつのルール'),
    p2=dict(t=['長いチェーンで、', 'もっと高得点。'], s='6個のチェーンは、2個×3回よりはるかに高得点'),
    p3=dict(t=['デイリーパズル。', 'ラッシュ。ミッション。'], s='プレイするたびに、新しい楽しみ'),
-   p4=dict(t=['コンボが', 'メロディを奏でる。'], s='バブルは音符。指先が楽譜になる'),
-   p5=dict(t=['毎日ひとつの挑戦。', 'みんな同じ問題。'], s='日替わりグリッドと世界ランキング'),
+   p4=dict(t=['毎日ひとつの挑戦。', 'みんな同じ問題。'], s='日替わりグリッドと世界ランキング'),
    p6=dict(t=['自分らしい', 'グリッドに。'], s='テーマや質感、軌跡を解放 — 課金は不要'),
-   p7=dict(t=['友だちに挑戦。', '同じ盤面で。'], s='相手はいつでもプレイ可能。コードひとつで対戦開始'),
-   p8=dict(t=['一局ごとに、', '前へ進む。'], s='100レベル、デイリーミッション、連続記録と実績')),
+   p5=dict(t=['友だちに挑戦。', '同じ盤面で。'], s='相手はいつでもプレイ可能。コードひとつで対戦開始'),
+   p7=dict(t=['一局ごとに、', '前へ進む。'], s='100レベル、デイリーミッション、連続記録と実績')),
  "ko": dict(
    p1=dict(t=['숫자를 이어', '10을 만드세요.'], s='몇 초면 이해하는 단 하나의 규칙'),
    p2=dict(t=['더 긴 체인으로', '더 높은 점수를.'], s='여섯 개의 체인은 두 개짜리 세 번보다 훨씬 높은 점수'),
    p3=dict(t=['일일 퍼즐.', '러시. 미션.'], s='플레이할 때마다 새로운 즐거움'),
-   p4=dict(t=['콤보마다', '멜로디가 흐릅니다.'], s='버블은 음표, 손끝이 악보가 됩니다'),
-   p5=dict(t=['하루 하나의 도전.', '모두에게 같은 퍼즐.'], s='매일 새로운 그리드와 세계 랭킹'),
+   p4=dict(t=['하루 하나의 도전.', '모두에게 같은 퍼즐.'], s='매일 새로운 그리드와 세계 랭킹'),
    p6=dict(t=['내 그리드,', '내 스타일.'], s='테마·버블·궤적을 해금 — 강요는 없어요'),
-   p7=dict(t=['친구에게 도전.', '같은 보드로.'], s='상대는 언제든 플레이 — 코드 하나면 듀얼 시작'),
-   p8=dict(t=['한 판마다', '앞으로 나아간다.'], s='100레벨, 일일 미션, 연속 기록과 업적')),
+   p5=dict(t=['친구에게 도전.', '같은 보드로.'], s='상대는 언제든 플레이 — 코드 하나면 듀얼 시작'),
+   p7=dict(t=['한 판마다', '앞으로 나아간다.'], s='100레벨, 일일 미션, 연속 기록과 업적')),
  "nl": dict(
    p1=dict(t=['Verbind getallen.', 'Maak 10.'], s='Eén regel die je in enkele seconden begrijpt'),
    p2=dict(t=['Maak langere kettingen.', 'Scoor veel meer.'], s='Een ketting van zes levert veel meer op dan drie paren'),
    p3=dict(t=['Dagpuzzel.', 'Rush. Missies.'], s='Elke partij een nieuwe reden om te spelen'),
-   p4=dict(t=['Elke combo speelt', 'zijn eigen melodie.'], s='Elke bel is een noot — je vingers worden de partituur'),
-   p5=dict(t=['Eén uitdaging.', 'Elke dag.', 'Voor iedereen dezelfde.'], s='Uniek raster, twists en wereldwijde ranglijst'),
+   p4=dict(t=['Eén uitdaging.', 'Elke dag.', 'Voor iedereen dezelfde.'], s='Uniek raster, twists en wereldwijde ranglijst'),
    p6=dict(t=['Jouw raster,', 'jouw stijl.'], s='Thema’s, bellen en sporen om vrij te spelen — nooit verplicht'),
-   p7=dict(t=['Daag een vriend uit.', 'Zelfde raster.'], s='Hij speelt wanneer hij wil — één code start het duel'),
-   p8=dict(t=['Elke partij', 'brengt je verder.'], s='100 niveaus, dagmissies, reeksen en prestaties')),
+   p5=dict(t=['Daag een vriend uit.', 'Zelfde raster.'], s='Hij speelt wanneer hij wil — één code start het duel'),
+   p7=dict(t=['Elke partij', 'brengt je verder.'], s='100 niveaus, dagmissies, reeksen en prestaties')),
  "pt-BR": dict(
    p1=dict(t=['Ligue os números.', 'Faça 10.'], s='Uma regra que você entende em segundos'),
    p2=dict(t=['Crie correntes maiores.', 'Marque muito mais.'], s='Uma corrente de seis vale bem mais que três pares'),
    p3=dict(t=['Desafio diário.', 'Rush. Missões.'], s='Um novo motivo para jogar a cada partida'),
-   p4=dict(t=['Cada combo toca', 'a própria melodia.'], s='Cada bolha é uma nota — seus dedos viram a partitura'),
-   p5=dict(t=['Um desafio.', 'Todo dia.', 'O mesmo para todos.'], s='Grade única, surpresas e ranking mundial'),
+   p4=dict(t=['Um desafio.', 'Todo dia.', 'O mesmo para todos.'], s='Grade única, surpresas e ranking mundial'),
    p6=dict(t=['Sua grade,', 'seu estilo.'], s='Temas, bolhas e traços para desbloquear, nunca obrigatórios'),
-   p7=dict(t=['Desafie um amigo.', 'Mesma grade.'], s='Ele joga quando quiser — um código inicia o duelo'),
-   p8=dict(t=['Cada partida', 'faz você avançar.'], s='100 níveis, missões diárias, sequências e conquistas')),
+   p5=dict(t=['Desafie um amigo.', 'Mesma grade.'], s='Ele joga quando quiser — um código inicia o duelo'),
+   p7=dict(t=['Cada partida', 'faz você avançar.'], s='100 níveis, missões diárias, sequências e conquistas')),
  "zh-Hans": dict(
    p1=dict(t=['连接数字，', '凑成 10。'], s='几秒就能掌握的简单规则'),
    p2=dict(t=['连得越长，', '得分越高。'], s='一条六连的得分，远高于三次两连'),
    p3=dict(t=['每日谜题。', '冲刺。任务。'], s='每一局都有新的乐趣'),
-   p4=dict(t=['每个连击', '都会奏出旋律。'], s='每个气泡都是音符，指尖化作乐谱'),
-   p5=dict(t=['每日一题，', '全球同题。'], s='每天一张新棋盘，还有世界排行榜'),
+   p4=dict(t=['每日一题，', '全球同题。'], s='每天一张新棋盘，还有世界排行榜'),
    p6=dict(t=['你的棋盘,', '你的风格。'], s='解锁主题、材质与轨迹，绝不强制'),
-   p7=dict(t=['挑战朋友。', '同一个棋盘。'], s='对方随时开局 — 一个代码就能发起对战'),
-   p8=dict(t=['每一局', '都让你更进一步。'], s='100 个等级、每日任务、连续记录与成就')),
+   p5=dict(t=['挑战朋友。', '同一个棋盘。'], s='对方随时开局 — 一个代码就能发起对战'),
+   p7=dict(t=['每一局', '都让你更进一步。'], s='100 个等级、每日任务、连续记录与成就')),
 }
 
 # panneau → (capture localisée par langue, fond, bulles déco, tilt)
 PANELS = {
- 1: dict(img="full_game_{lang}.png",  bg="#F7F2EB", tilt="",   deco=[("30%","#D1F2E0","top:-8%;left:-10%"),("19%","#FFB8DB","top:9%;right:-7%;opacity:.4"),("24%","#FFF59E","bottom:26%;left:-11%;opacity:.45")]),
- 2: dict(img="full_game_{lang}.png",  bg="#F0F6EF", tilt="tl", deco=[("27%","#9EDBFF","top:-6%;right:-10%;opacity:.35"),("21%","#FF9E9E","bottom:30%;left:-9%;opacity:.3")]),
+ 1: dict(img="full_path3_{lang}.png", bg="#F7F2EB", tilt="",   deco=[("30%","#D1F2E0","top:-8%;left:-10%"),("19%","#FFB8DB","top:9%;right:-7%;opacity:.4"),("24%","#FFF59E","bottom:26%;left:-11%;opacity:.45")]),
+ 2: dict(img="full_path6_{lang}.png", bg="#F0F6EF", tilt="tl", deco=[("27%","#9EDBFF","top:-6%;right:-10%;opacity:.35"),("21%","#FF9E9E","bottom:30%;left:-9%;opacity:.3")]),
  3: dict(img="full_menu_{lang}.png",  bg="#F1F2FB", tilt="",   deco=[("32%","#ABF2BF","top:-9%;right:-12%;opacity:.4"),("19%","#D1F2E0","bottom:34%;left:-7%;opacity:.6")]),
- 4: dict(img="full_game_{lang}.png",  bg="#F4F1FA", tilt="tr", deco=[("29%","#CCB8FF","top:-8%;left:-10%;opacity:.4"),("22%","#FFB8DB","bottom:32%;right:-9%;opacity:.35")]),
- 5: dict(img="full_daily_{lang}.png", bg="#F1F2FB", tilt="",   deco=[("30%","#B8C2FF","top:-9%;right:-10%;opacity:.45"),("19%","#9EDBFF","bottom:31%;left:-7%;opacity:.4")]),
+ 4: dict(img="full_daily_{lang}.png", bg="#F1F2FB", tilt="tr", deco=[("30%","#B8C2FF","top:-9%;right:-10%;opacity:.45"),("19%","#9EDBFF","bottom:31%;left:-7%;opacity:.4")]),
+ 5: dict(img="full_duel_{lang}.png",    bg="#FBF0F0", tilt="",   deco=[("28%","#FF9E9E","top:-8%;right:-10%;opacity:.35"),("20%","#FFC79E","bottom:32%;left:-8%;opacity:.4")]),
  6: dict(img="full_shop_{lang}.png",  bg="#F7F2EB", tilt="tl", deco=[("26%","#FFB8DB","top:-7%;left:-9%;opacity:.4"),("21%","#FFC79E","bottom:33%;right:-7%;opacity:.4")]),
- 7: dict(img="full_duel_{lang}.png",    bg="#FBF0F0", tilt="tr", deco=[("28%","#FF9E9E","top:-8%;right:-10%;opacity:.35"),("20%","#FFC79E","bottom:32%;left:-8%;opacity:.4")]),
- 8: dict(img="full_profile_{lang}.png", bg="#F0F4FA", tilt="",   deco=[("31%","#9EDBFF","top:-9%;left:-11%;opacity:.4"),("19%","#ABF2BF","bottom:30%;right:-7%;opacity:.5")]),
+ 7: dict(img="full_profile_{lang}.png", bg="#F0F4FA", tilt="",   deco=[("31%","#9EDBFF","top:-9%;left:-11%;opacity:.4"),("19%","#ABF2BF","bottom:30%;right:-7%;opacity:.5")]),
 }
 
 CSS = """
@@ -170,7 +159,6 @@ body{background:var(--bg);color:#3D3D3D;
 .zen span{width:5.4vw;height:5.4vw;border-radius:50%;display:flex;align-items:center;justify-content:center;
  font-size:2.8vw;color:#404040;flex:none}
 .pad .zen span{width:3.8vw;height:3.8vw;font-size:2vw}
-.melody{position:absolute;z-index:4;opacity:.85;font-size:4.2vw}
 """
 
 def chain_html(fmt):
@@ -192,15 +180,6 @@ def theme_dots(fmt):
     dots = "".join(f'<span class="bub" style="width:{d};height:{d};background:{c};margin:0 .7vw"></span>' for c in cols)
     return f'<div class="chain" style="top:{top}">{dots}</div>'
 
-def melody(fmt):
-    notes = [("♪","25%","10%",""), ("♫","22.5%","20%","font-size:5vw"), ("♩","25.5%",None,""), ("♪","23%",None,"font-size:4.8vw")]
-    out = []
-    for ch, top, left, extra in notes[:2]:
-        out.append(f'<span class="melody" style="top:{top};left:{left};{extra}">{ch}</span>')
-    out.append(f'<span class="melody" style="top:25.5%;right:18%">♩</span>')
-    out.append(f'<span class="melody" style="top:23%;right:9%;font-size:4.8vw">♪</span>')
-    return "".join(out)
-
 def panel_html(p, lang, fmt):
     cfg = PANELS[p]
     tx = T[lang][f"p{p}"]
@@ -212,8 +191,6 @@ def panel_html(p, lang, fmt):
     body += f'<div class="sub">{tx["s"]}</div>'
     if p == 1:
         body += chain_html(fmt)
-    if p == 4:
-        body += melody(fmt)
     if p == 6:
         body += theme_dots(fmt)
     tilt = {"tl": " tl", "tr": " tr", "": ""}[cfg["tilt"]]

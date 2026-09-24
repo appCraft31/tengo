@@ -19,14 +19,17 @@ echo "simulateur : $UD"
 # menu, profile et duel passent par SCREENSHOT_SCENE : il ouvre l'écran voulu
 # ET coupe la feuille Game Center, qui se superposait aux captures.
 for LANGCODE in fr en de es it ja ko nl pt-BR zh-Hans; do
-  for MODE in menu game daily shop duel profile; do
+  for MODE in menu path3 path6 daily shop duel profile; do
     xcrun simctl terminate "$UD" AppCraft31.tenGO 2>/dev/null || true
     unset SIMCTL_CHILD_GAME_NORMAL SIMCTL_CHILD_SCREENSHOT_DAILY \
-          SIMCTL_CHILD_SHOP_MODE SIMCTL_CHILD_SCREENSHOT_SCENE
+          SIMCTL_CHILD_SHOP_MODE SIMCTL_CHILD_SCREENSHOT_SCENE SIMCTL_CHILD_SCREENSHOT_PATH
     export SIMCTL_CHILD_SCREENSHOT_SEED_DATA=1
     case $MODE in
       menu)    export SIMCTL_CHILD_SCREENSHOT_SCENE=menu ;;
-      game)    export SIMCTL_CHILD_GAME_NORMAL=1 ;;
+      # Partie avec une chaîne tracée (non validée) : la mécanique se voit.
+      # SCREENSHOT_PATH n'existe qu'en build Debug.
+      path3)   export SIMCTL_CHILD_GAME_NORMAL=1 SIMCTL_CHILD_SCREENSHOT_PATH=3 ;;
+      path6)   export SIMCTL_CHILD_GAME_NORMAL=1 SIMCTL_CHILD_SCREENSHOT_PATH=6 ;;
       daily)   export SIMCTL_CHILD_SCREENSHOT_DAILY=1 ;;
       shop)    export SIMCTL_CHILD_SHOP_MODE=1 ;;
       duel)    export SIMCTL_CHILD_SCREENSHOT_SCENE=duel ;;
@@ -42,5 +45,6 @@ for LANGCODE in fr en de es it ja ko nl pt-BR zh-Hans; do
   done
 done
 unset SIMCTL_CHILD_GAME_NORMAL SIMCTL_CHILD_SCREENSHOT_DAILY \
-      SIMCTL_CHILD_SHOP_MODE SIMCTL_CHILD_SCREENSHOT_SCENE SIMCTL_CHILD_SCREENSHOT_SEED_DATA
+      SIMCTL_CHILD_SHOP_MODE SIMCTL_CHILD_SCREENSHOT_SCENE SIMCTL_CHILD_SCREENSHOT_SEED_DATA \
+      SIMCTL_CHILD_SCREENSHOT_PATH
 echo "→ $R"

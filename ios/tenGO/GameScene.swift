@@ -361,7 +361,28 @@ class GameScene: SKScene {
         queueBoosterCoachMarks()
         setupSettingsButton(in: view)
         HapticManager.prepare()
+        #if DEBUG
+        showcasePathForScreenshot()
+        #endif
     }
+
+    #if DEBUG
+    /// Capture de fiche (`SCREENSHOT_PATH=N`) : trace, sans le valider, le plus
+    /// long chemin de N bulles au plus dont la somme fait 10. Sur une capture
+    /// figée, c'est le seul moyen de montrer la mécanique du jeu.
+    private func showcasePathForScreenshot() {
+        guard mode != .demo,
+              let n = Int(ProcessInfo.processInfo.environment["SCREENSHOT_PATH"] ?? "") else { return }
+        run(SKAction.sequence([
+            SKAction.wait(forDuration: 1.2),
+            SKAction.run { [weak self] in
+                guard let self, let path = self.gridModel.showcasePath(maxLen: n), path.count >= 2 else { return }
+                self.demoBeginPath(at: path[0])
+                for coord in path.dropFirst() { self.tryAppendCell(coord) }
+            }
+        ]))
+    }
+    #endif
 
     /// Bouton paramètres — même composant visuel et même position que sur la
     /// page d'accueil (MenuScene.addIconButton : engrenage, fond teinté logo).
@@ -2097,8 +2118,8 @@ class GameScene: SKScene {
         // que son historique de scores méritait déjà : n'en annoncer qu'un
         // seul laisserait croire que les autres n'ont pas été crédités.
         let text = unlocked.count > 1
-            ? "🏆 " + String(format: String(localized: "achievements.unlocked_multi"), unlocked.count)
-            : "🏆 " + AchievementManager.title(for: first)
+            ? String(format: String(localized: "achievements.unlocked_multi"), unlocked.count)
+            : AchievementManager.title(for: first)
         flashMessage(text, duration: 2.2)
     }
 

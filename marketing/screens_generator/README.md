@@ -7,7 +7,7 @@ Les trois scripts partagent le dossier `render/` (ignoré par git). Ils
 pointaient auparavant vers **trois chemins différents**, dont un scratchpad de
 session éphémère — plus rien ne se régénérait.
 
-1. `capture_langs.sh` — capture 6 écrans (menu, partie, défi, boutique, duel,
+1. `capture_langs.sh` — capture 7 écrans (menu, deux chaînes en jeu, défi, boutique, duel,
    profil) dans les 10 langues (`-AppleLanguages`).
    Prérequis : app buildée et installée sur le simulateur.
    `UDID=xxx ./capture_langs.sh` pour cibler un simulateur ; sans variable, le
@@ -15,7 +15,7 @@ session éphémère — plus rien ne se régénérait.
    Les captures sont prises **en pleine hauteur** : la bannière publicitaire
    ayant été supprimée du jeu (commit `3f62595`), l'ancien recadrage
    `crop=1206:2340` amputait la barre d'onglets.
-2. `gen_screens.py` — 8 panneaux × 10 langues × 3 formats :
+2. `gen_screens.py` — 7 panneaux × 10 langues × 3 formats :
    iPhone 6,5" 1242×2688, iPad 12,9" 2048×2732 (ASC), 1080×2160 (Play, ≤ 2:1).
    Textes/hooks traduits dans le dict `T`. Rendu unitaire :
    `gen_screens.py 1 fr phone`.
@@ -27,18 +27,22 @@ session éphémère — plus rien ne se régénérait.
    réactiver le jour où le portage aura rattrapé.
 4. Upload : `cd ios && fastlane upload_screenshots` (la version vient du projet).
 
-## Les 8 panneaux
+## Les 7 panneaux
 
 | # | écran source | angle |
 |---|---|---|
-| 1 | menu | identité — « Relie. Additionne. Respire. » |
-| 2 | partie | la règle en une phrase |
-| 3 | partie | les chaînes longues rapportent bien plus |
-| 4 | partie | chaque combo joue sa mélodie |
-| 5 | défi du jour | une grille, la même pour tous |
+| 1 | partie, chaîne de 3 tracée | la règle en une phrase — « Relie les chiffres. Fais 10. » |
+| 2 | partie, chaîne de 6 tracée | les chaînes longues rapportent bien plus |
+| 3 | menu | les modes : défi du jour, Rush, missions |
+| 4 | défi du jour | une grille, la même pour tous |
+| 5 | duel | défier un ami sur la même grille |
 | 6 | boutique | thèmes et personnalisation |
-| 7 | duel | défier un ami sur la même grille |
-| 8 | profil | progression, niveaux, succès |
+| 7 | profil | progression, niveaux, succès |
+
+Les deux premiers panneaux sont ceux qu'affichent les résultats de recherche :
+ils montrent une chaîne en cours de tracé (`SCREENSHOT_PATH`, build Debug).
+Le panneau « chaque combo joue sa mélodie » a été retiré en 3.0.2, avec la
+simplification du son (plus de rejeu mélodique des combos).
 
 Le panneau 3 portait jusqu'ici une liste « Pas de chronomètre / Pas de vies… »
 devenue **fausse** avec le mode Rush. Il vend désormais le barème de score.

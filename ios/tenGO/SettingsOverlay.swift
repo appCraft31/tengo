@@ -338,6 +338,7 @@ final class SettingsOverlay: SKNode {
 
     private func toggleSound() {
         SoundManager.shared.isMuted.toggle()
+        AnalyticsService.soundToggled(enabled: !SoundManager.shared.isMuted)
         updateSoundVisual(animated: true)
     }
 

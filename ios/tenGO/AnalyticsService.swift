@@ -47,6 +47,23 @@ enum AnalyticsService {
         ])
     }
 
+    // MARK: - Son
+    //
+    // Mesure l'intérêt réel du retour sonore : part des joueurs qui jouent
+    // avec le son, et bascules dans les réglages. Noms identiques sur Android.
+
+    /// Le joueur active ou coupe le son depuis les réglages.
+    static func soundToggled(enabled: Bool) {
+        Analytics.logEvent("sound_toggled", parameters: ["enabled": enabled ? 1 : 0])
+        setSoundProperty(enabled: enabled)
+    }
+
+    /// Propriété utilisateur `sound_on` (« on » / « off ») : permet de
+    /// segmenter tous les rapports selon que le joueur a le son ou non.
+    static func setSoundProperty(enabled: Bool) {
+        Analytics.setUserProperty(enabled ? "on" : "off", forName: "sound_on")
+    }
+
     // MARK: - Boosters
     //
     // Funnel visé :

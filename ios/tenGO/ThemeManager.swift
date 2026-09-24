@@ -15,7 +15,6 @@ private func rgb(_ r: CGFloat, _ g: CGFloat, _ b: CGFloat) -> UIColor {
 
 struct Theme {
     let id: String
-    let emoji: String
     let price: Int
     let background: UIColor
     let accent: UIColor       // bouton principal du menu
@@ -44,7 +43,7 @@ final class ThemeManager {
     /// Catalogue. Le défaut en premier ; les autres dans l'ordre d'affichage boutique.
     let themes: [Theme] = [
         Theme(
-            id: "default", emoji: "🎨", price: 0,
+            id: "default", price: 0,
             background: rgb(0.97, 0.95, 0.92),
             accent: rgb(0.82, 0.95, 0.88),
             digit: rgb(0.25, 0.25, 0.25),
@@ -52,7 +51,7 @@ final class ThemeManager {
             bubbles: [rgb(1.00, 0.62, 0.62), rgb(1.00, 0.78, 0.62), rgb(1.00, 0.96, 0.62), rgb(0.67, 0.95, 0.75), rgb(0.62, 0.86, 1.00), rgb(0.80, 0.72, 1.00), rgb(1.00, 0.72, 0.86), rgb(0.75, 0.91, 0.75), rgb(0.72, 0.76, 1.00)]
         ),
         Theme(
-            id: "forest", emoji: "🌲", price: 150,
+            id: "forest", price: 150,
             background: rgb(0.93, 0.95, 0.88),
             accent: rgb(0.55, 0.68, 0.48),
             digit: rgb(0.20, 0.16, 0.12),
@@ -60,7 +59,7 @@ final class ThemeManager {
             bubbles: [rgb(0.70, 0.80, 0.60), rgb(0.62, 0.74, 0.55), rgb(0.80, 0.82, 0.62), rgb(0.74, 0.68, 0.50), rgb(0.66, 0.72, 0.60), rgb(0.82, 0.72, 0.56), rgb(0.58, 0.70, 0.58), rgb(0.76, 0.78, 0.66), rgb(0.68, 0.66, 0.52)]
         ),
         Theme(
-            id: "ocean", emoji: "🌊", price: 200,
+            id: "ocean", price: 200,
             background: rgb(0.91, 0.96, 0.97),
             accent: rgb(0.36, 0.72, 0.78),
             digit: rgb(0.08, 0.22, 0.33),
@@ -68,7 +67,7 @@ final class ThemeManager {
             bubbles: [rgb(0.62, 0.85, 0.86), rgb(0.46, 0.78, 0.80), rgb(0.40, 0.74, 0.72), rgb(0.52, 0.80, 0.66), rgb(0.66, 0.84, 0.72), rgb(0.45, 0.71, 0.83), rgb(0.38, 0.62, 0.80), rgb(0.50, 0.68, 0.86), rgb(0.63, 0.78, 0.88)]
         ),
         Theme(
-            id: "desert", emoji: "🏜️", price: 200,
+            id: "desert", price: 200,
             background: rgb(0.96, 0.91, 0.83),
             accent: rgb(0.85, 0.55, 0.40),
             digit: rgb(0.30, 0.18, 0.12),
@@ -76,7 +75,7 @@ final class ThemeManager {
             bubbles: [rgb(0.94, 0.84, 0.68), rgb(0.93, 0.78, 0.62), rgb(0.91, 0.72, 0.55), rgb(0.90, 0.68, 0.58), rgb(0.89, 0.62, 0.50), rgb(0.87, 0.58, 0.45), rgb(0.85, 0.66, 0.62), rgb(0.82, 0.55, 0.48), rgb(0.80, 0.50, 0.42)]
         ),
         Theme(
-            id: "candy", emoji: "🍬", price: 250,
+            id: "candy", price: 250,
             background: rgb(0.98, 0.94, 0.95),
             accent: rgb(0.96, 0.55, 0.72),
             digit: rgb(0.28, 0.16, 0.30),
@@ -84,7 +83,7 @@ final class ThemeManager {
             bubbles: [rgb(0.97, 0.62, 0.74), rgb(0.98, 0.66, 0.62), rgb(0.99, 0.79, 0.63), rgb(0.98, 0.90, 0.58), rgb(0.80, 0.91, 0.62), rgb(0.62, 0.89, 0.74), rgb(0.64, 0.85, 0.93), rgb(0.74, 0.74, 0.93), rgb(0.86, 0.68, 0.91)]
         ),
         Theme(
-            id: "space", emoji: "🌌", price: 300,
+            id: "space", price: 300,
             background: rgb(0.09, 0.08, 0.18),
             accent: rgb(0.55, 0.45, 0.85),
             digit: rgb(0.12, 0.10, 0.22),
@@ -92,7 +91,7 @@ final class ThemeManager {
             bubbles: [rgb(0.62, 0.74, 0.95), rgb(0.78, 0.72, 0.96), rgb(0.94, 0.72, 0.88), rgb(0.72, 0.88, 0.92), rgb(0.69, 0.83, 0.78), rgb(0.96, 0.84, 0.70), rgb(0.95, 0.76, 0.74), rgb(0.84, 0.80, 0.95), rgb(0.74, 0.79, 0.96)]
         ),
         Theme(
-            id: "night", emoji: "🌙", price: 300,
+            id: "night", price: 300,
             background: rgb(0.09, 0.11, 0.20),
             accent: rgb(0.55, 0.62, 0.85),
             digit: rgb(0.10, 0.13, 0.26),

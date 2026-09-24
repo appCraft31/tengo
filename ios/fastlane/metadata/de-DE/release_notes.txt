@@ -1,22 +1,6 @@
-TEN·GO 3.0 — das größte Update seit dem Start.
+Klarerer, ruhigerer Sound:
+• jede Zahl spielt immer denselben Ton – dein Ohr lernt das Feld;
+• eine fertige Kette endet mit einem kurzen Akkord, ohne das Spiel zu bremsen;
+• die Siegesmelodie ist kürzer.
 
-NEUE MODI
-• Duell — fordere Freunde auf demselben Feld heraus, jeder spielt wann er will
-• Rush — 60 Sekunden für alle, die Spannung mögen
-• Puzzles — 20 Felder mit garantierter Lösung
-
-FORTSCHRITT
-• 100 Erfahrungsstufen und Titel zum Freischalten
-• Tagesmissionen, Tagesserie und 26 Erfolge
-• Ein Profil-Bildschirm mit all deinen Statistiken
-
-NEU GESTALTETE STARTSEITE
-Vier klare Tabs statt einer langen Knopfliste. Alles in Daumenreichweite.
-
-KEIN WERBEBANNER MEHR
-Es ist weg. Das Spiel füllt jetzt den ganzen Bildschirm.
-
-BALANCE
-Lange Ketten bringen deutlich mehr als zuvor, und deine Rekorde bleiben vergleichbar.
-
-Die Fingerführung reagiert besser: Gesten direkt nach einem Zug gehen nicht mehr verloren.
+Kleinere Korrekturen und Verbesserungen.

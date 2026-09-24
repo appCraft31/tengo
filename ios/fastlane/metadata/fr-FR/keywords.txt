@@ -1,1 +1,1 @@
-gratuit,duel,ami,somme,10,addition,maths,zen,relaxant,cerveau,defi,quotidien,detente,pause
+nombres,calcul,somme,cerveau,logique,defi,quotidien,casse-tete,zen,duel,rush,puzzle,chaine,pause

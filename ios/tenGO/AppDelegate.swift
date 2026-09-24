@@ -17,6 +17,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Initialise Firebase (lit tenGO/GoogleService-Info.plist).
         FirebaseApp.configure()
+        // Lecture directe de la préférence : ne démarre pas le moteur audio.
+        AnalyticsService.setSoundProperty(enabled: !UserDefaults.standard.bool(forKey: "tenGO_soundMuted"))
         // Reprogramme le rappel quotidien si l'utilisateur a autorisé les notifications.
         NotificationManager.shared.refreshIfAuthorized()
         // Reduce Motion peut être basculé depuis le Centre de contrôle en cours

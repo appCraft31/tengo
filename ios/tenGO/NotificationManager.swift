@@ -85,7 +85,7 @@ final class NotificationManager {
         center.removePendingNotificationRequests(withIdentifiers: [legacyReminderID])
 
         let content = UNMutableNotificationContent()
-        content.title = String(localized: "notif.daily_available_title", defaultValue: "Défi du jour 🧩")
+        content.title = String(localized: "notif.daily_available_title", defaultValue: "Défi du jour")
         content.body = String(localized: "notif.daily_available_body", defaultValue: "Un nouveau défi t'attend !")
         content.sound = .default
 

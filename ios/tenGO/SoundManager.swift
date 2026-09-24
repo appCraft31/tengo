@@ -4,11 +4,20 @@
 //
 //  Synthèse temps réel — Piano électrique doux (type Rhodes).
 //
+//  Le son est un retour d'information, pas une bande-son :
+//   - chaque bulle joue sa note, dans une gamme FIXE (un 7 sonne toujours
+//     pareil : l'oreille apprend la grille) ;
+//   - à l'approche de 10, la note monte d'une octave : la progression
+//     s'entend sans qu'aucun chiffre ne soit affiché ;
+//   - une chaîne validée se résout par un accord bref, immédiat, qui
+//     s'étoffe avec la longueur de la chaîne ;
+//   - la victoire tient en trois notes montantes et un accord.
+//
 //  Architecture :
 //   - 8 voix pré-allouées (AVAudioSourceNode), polyphonie sans allocation runtime
 //   - Oscillateur par voix : mélange sinus 85% + triangle 15% (doux, peu d'harmoniques)
-//   - Enveloppe ADSR (0.05s / 0.2s / 30% / 2.0s) appliquée dans le render block
-//   - Arpégiateur : file FIFO dépilée toutes les 150 ms → pas d'empilement brutal
+//   - Enveloppe ADSR appliquée dans le render block : courte et feutrée pour
+//     les notes du tracé (≈ 0,5 s), longue pour les accords (≈ 2,5 s)
 //   - Chaîne d'effets : Voix → EQ passe-bas 1000 Hz → Reverb largeRoom 30% → Sortie
 //   - Sortie globale atténuée à 50 % pour un rendu feutré, non agressif
 //
@@ -44,42 +53,29 @@ final class SoundManager {
     private var voices: [Voice] = []
     private static let voiceCount = 8
 
-    // MARK: - Arpégiateur
-
-    private struct QueuedNote {
-        let frequency: Double
-        let haptic: Bool   // true → vibration synchronisée sur cette note
-        var velocity: Float = 1.0
-    }
-
     /// Anti-saturation des 8 voix sur un swipe très rapide.
     private var lastImmediateAt: TimeInterval = 0
     private static let immediateThrottle: TimeInterval = 0.040
 
-    private var noteQueue: [QueuedNote] = []
-    private let queueLock = NSLock()
-    private var arpTimer: DispatchSourceTimer?
-    private static let arpInterval: TimeInterval = 0.150
+    /// Décalage entre les notes d'un accord « gratté » : assez court pour
+    /// sonner comme un seul geste, assez long pour ne pas claquer.
+    private static let strumInterval: TimeInterval = 0.025
 
-    // MARK: - Sélection dynamique de gamme
+    // MARK: - Gamme fixe
 
-    private var currentScale: [Double] = []
-    /// Mémorise les notes réellement jouées pendant le chemin (pour le combo)
+    /// Pentatonique majeure de La (220 Hz) sur deux octaves : 10 notes pour
+    /// les valeurs 1 à 9. Aucune dissonance possible, quel que soit le tracé.
+    private let scale: [Double] = {
+        let root = 220.0
+        let offsets = [0, 2, 4, 7, 9]
+        return (0..<2).flatMap { octave in
+            offsets.map { root * pow(2.0, Double(octave * 12 + $0) / 12.0) }
+        }
+    }()
+
+    /// Notes du tracé en cours (dans la gamme, sans le saut d'octave) :
+    /// la dernière sert de fondamentale à l'accord de résolution.
     private var pathNotes: [Double] = []
-    private var lastScaleKey: Int = -1
-
-    private let scales: [[Int]] = [
-        [0, 2, 4, 7, 9],    // Pentatonique majeure
-        [0, 3, 5, 7, 10],   // Pentatonique mineure
-        [0, 2, 3, 7, 8],    // Hirajoshi
-        [0, 2, 3, 7, 9],    // Kumoi
-        [0, 1, 5, 7, 10],   // In Sen
-        [0, 2, 4, 7, 11]    // Hemitonic pentatonic
-    ]
-
-    private let roots: [Double] = [
-        196.0, 220.0, 233.1, 246.9, 261.6, 277.2, 293.7, 311.1, 329.6
-    ]
 
     // MARK: - État
 
@@ -94,26 +90,19 @@ final class SoundManager {
         configureSession()
         setupVoices()
         buildGraph()
-        startArpeggiator()
         observeInterruptions()
-        pickNewScale()  // gamme initiale (renouvelée après chaque combo)
     }
 
     // MARK: - Interface publique
 
-    /// Première bulle — la valeur détermine la note dans la gamme courante
-    /// (même bulle = même note, tant que la gamme n'a pas été renouvelée par un combo)
-    ///
-    /// Joué HORS FIFO : la note du tracé doit sortir sous le doigt. Via
-    /// l'arpégiateur, un chemin de 5 bulles finissait sa mélodie 750 ms après
-    /// le geste. La FIFO reste utilisée pour les mélodies (combo, victoire),
-    /// où l'égrenage régulier est justement l'effet recherché.
+    /// Première bulle — la valeur détermine la note (toujours la même).
+    /// Les notes du tracé sont courtes et feutrées : elles accompagnent le
+    /// geste sans s'empiler (enveloppe courte, vélocité modérée).
     func playSelect(bubbleValue: Int) {
         guard !isMuted else { return }
-        let idx = noteIndex(for: bubbleValue)
-        let freq = currentScale[idx]
+        let freq = scale[noteIndex(for: bubbleValue)]
         pathNotes = [freq]
-        playImmediate(frequency: freq, velocity: 0.7)
+        playImmediate(frequency: freq, velocity: 0.45)
     }
 
     /// Bulle suivante — même logique que playSelect.
@@ -122,13 +111,10 @@ final class SoundManager {
     /// qu'aucun chiffre ne soit affiché.
     func playConnect(bubbleValue: Int, tension: Double = 0) {
         guard !isMuted else { return }
-        let idx = noteIndex(for: bubbleValue)
-        var freq = currentScale[idx]
-        // La mélodie mémorisée reste celle de la gamme : le replay du combo
-        // doit rester exactement ce que le joueur a tracé.
+        var freq = scale[noteIndex(for: bubbleValue)]
         pathNotes.append(freq)
         if tension >= 0.8 { freq *= 2 }
-        playImmediate(frequency: freq, velocity: Float(0.7 + 0.3 * min(1, max(0, tension))))
+        playImmediate(frequency: freq, velocity: Float(0.45 + 0.2 * min(1, max(0, tension))))
     }
 
     /// Bulle refusée (elle ferait dépasser 10) — note grave et discrète.
@@ -141,144 +127,84 @@ final class SoundManager {
         if !pathNotes.isEmpty { pathNotes.removeLast() }
     }
 
-    /// Combo — rejoue exactement la mélodie tracée par le joueur + quinte finale
-    /// (SANS haptic sur chaque note : le medium de GameScene marque déjà la validation)
-    /// Renouvelle la gamme après validation → nouvelle ambiance pour le combo suivant.
-    /// `length` = longueur de la chaîne validée : la résolution s'étoffe avec
-    /// elle (quinte → + octave → + accord), sans jamais altérer le replay de
-    /// la mélodie tracée, qui doit rester exactement ce que le joueur a joué.
+    /// Chaîne validée — accord bref et immédiat sur la dernière note tracée.
+    /// Il s'étoffe avec la longueur : quinte, puis octave, puis tierce aiguë.
+    /// (Pas d'haptique ici : le medium de GameScene marque déjà la validation.)
     func playCombo(length: Int = 0) {
+        defer { pathNotes = [] }
         guard !isMuted else { return }
-        let melody = pathNotes
-        queueLock.lock()
-        for freq in melody {
-            noteQueue.append(QueuedNote(frequency: freq, haptic: false))
-        }
-        if let last = melody.last {
-            noteQueue.append(QueuedNote(frequency: last * 1.498, haptic: false))
-            if length >= 4 {
-                noteQueue.append(QueuedNote(frequency: last * 2, haptic: false))
-            }
-        }
-        queueLock.unlock()
-
-        // Grandes chaînes : accord final, posé après l'égrenage de la mélodie.
-        if length >= 6, let last = melody.last {
-            let delay = Double(melody.count + 2) * SoundManager.arpInterval
-            DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-                self?.playChord([last, last * 1.498, last * 2], velocity: 0.5)
-            }
-        }
-
-        pathNotes = []
-        pickNewScale()  // nouvelle gamme pour la prochaine tentative
+        let base = pathNotes.last ?? scale[0]
+        var chord = [base, base * 1.498]
+        if length >= 4 { chord.append(base * 2) }
+        if length >= 6 { chord.append(base * 2.52) }
+        strum(chord, velocity: 0.55)
     }
 
     func cancelPath() { pathNotes = [] }
 
-    /// Mappe la valeur d'une bulle (1–9) sur un index sûr dans `currentScale`
+    /// Mappe la valeur d'une bulle (1–9) sur un index sûr dans la gamme.
     private func noteIndex(for bubbleValue: Int) -> Int {
-        let raw = bubbleValue - 1
-        return max(0, min(raw, currentScale.count - 1))
+        max(0, min(bubbleValue - 1, scale.count - 1))
     }
 
-    /// Victoire — mélodie ascendante générée dans la gamme courante.
-    /// 6 à 8 notes, sauts +1/+2 dans `currentScale`, terminée sur la note la plus aiguë.
+    /// Victoire — trois notes montantes puis l'accord de la tonique (< 1 s).
     func playWin() {
         guard !isMuted else { return }
-        guard currentScale.count >= 2 else { return }
-
-        let noteCount = Int.random(in: 10...12)
-        let topIndex = currentScale.count - 1
-        // On réserve l'index du haut pour la note finale : intermédiaires clampés en-dessous
-        let intermediateCeiling = topIndex - 1
-
-        // Première note : parmi les graves (3 premiers index, borné sur la taille)
-        var index = Int.random(in: 0...min(2, intermediateCeiling))
-
-        queueLock.lock()
-
-        // Première note
-        noteQueue.append(QueuedNote(frequency: currentScale[index], haptic: false))
-
-        // Notes intermédiaires — sauts +1 ou +2 vers les aigus
-        let intermediateCount = noteCount - 2
-        for _ in 0..<intermediateCount {
-            let jump = Int.random(in: 1...2)
-            index = min(index + jump, intermediateCeiling)
-            noteQueue.append(QueuedNote(frequency: currentScale[index], haptic: false))
+        let steps = [scale[4], scale[7], scale[9]]
+        for (i, freq) in steps.enumerated() {
+            after(Double(i) * 0.11) { $0.triggerVoice(frequency: freq, velocity: 0.8) }
         }
-
-        // Résolution : la plus aiguë de la gamme
-        noteQueue.append(QueuedNote(frequency: currentScale[topIndex], haptic: false))
-
-        queueLock.unlock()
-
-        // Accord parfait final, une fois la mélodie égrenée.
-        let root = currentScale[0]
-        let delay = Double(noteCount + 1) * SoundManager.arpInterval
-        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
-            self?.playChord([root, root * 1.498, root * 2, root * 2.52], velocity: 0.45)
-        }
+        let root = scale[5]
+        after(0.40) { $0.playChord([root, root * 1.498, root * 2, root * 2.52], velocity: 0.45) }
     }
 
+    /// Défaite — une note grave, avec une vibration légère.
     func playLose() {
         guard !isMuted else { return }
-        scheduleNote(frequency: 98.0)
+        HapticManager.light()
+        triggerVoice(frequency: 98.0, velocity: 1.0)
     }
 
-    // MARK: - Queue FIFO
-
-    private func scheduleNote(frequency: Double, haptic: Bool = true) {
-        queueLock.lock()
-        noteQueue.append(QueuedNote(frequency: frequency, haptic: haptic))
-        queueLock.unlock()
-    }
-
-    // MARK: - Arpégiateur (tick 150 ms)
-
-    private func startArpeggiator() {
-        let timer = DispatchSource.makeTimerSource(queue: .main)
-        timer.schedule(deadline: .now() + SoundManager.arpInterval,
-                       repeating: SoundManager.arpInterval,
-                       leeway: .milliseconds(10))
-        timer.setEventHandler { [weak self] in self?.arpeggiatorTick() }
-        timer.resume()
-        self.arpTimer = timer
-    }
-
-    private func arpeggiatorTick() {
-        queueLock.lock()
-        guard !noteQueue.isEmpty else {
-            queueLock.unlock()
-            return
+    /// Notes simultanées (résolution de la victoire).
+    func playChord(_ frequencies: [Double], velocity: Float) {
+        guard !isMuted else { return }
+        for freq in frequencies {
+            triggerVoice(frequency: freq, velocity: velocity)
         }
-        let note = noteQueue.removeFirst()
-        queueLock.unlock()
-        triggerVoice(frequency: note.frequency, haptic: note.haptic)
     }
 
-    // MARK: - Allocation de voix (libre ou vol de voix)
+    // MARK: - Déclenchement
 
-    private func triggerVoice(frequency: Double, haptic: Bool, velocity: Float = 1.0) {
-        // Vibration synchronisée avec la note, pour les mélodies jouées à la
-        // file. Le tracé, lui, déclenche son haptique directement depuis la
-        // scène : il doit répondre sous le doigt et survivre au son coupé.
-        if haptic { HapticManager.light() }
+    /// Accord légèrement égrené (quelques millisecondes entre les notes).
+    private func strum(_ frequencies: [Double], velocity: Float) {
+        for (i, freq) in frequencies.enumerated() {
+            after(Double(i) * Self.strumInterval) { $0.triggerVoice(frequency: freq, velocity: velocity) }
+        }
+    }
 
+    private func after(_ delay: TimeInterval, _ action: @escaping (SoundManager) -> Void) {
+        guard delay > 0 else { action(self); return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
+            guard let self, !self.isMuted else { return }
+            action(self)
+        }
+    }
+
+    /// Allocation de voix : libre en priorité, sinon vol de la plus ancienne.
+    private func triggerVoice(frequency: Double, velocity: Float = 1.0, short: Bool = false) {
         // Un seul point de journalisation : toutes les voix passent ici, quelle
-        // que soit la route (immédiate, arpégiateur, accord). Le journal porte
-        // donc la partition exacte de la session, sans rien réinventer.
+        // que soit la route (tracé, accord, victoire). Le journal porte donc la
+        // partition exacte de la session, sans rien réinventer.
         if soundLogEnabled {
             logNote(frequency: frequency, velocity: velocity)
         }
 
         if let freeVoice = voices.first(where: { !$0.isActive }) {
-            freeVoice.noteOn(frequency: frequency, velocity: velocity)
+            freeVoice.noteOn(frequency: frequency, velocity: velocity, short: short)
             return
         }
         if let oldest = voices.min(by: { $0.startTime < $1.startTime }) {
-            oldest.noteOn(frequency: frequency, velocity: velocity)
+            oldest.noteOn(frequency: frequency, velocity: velocity, short: short)
         }
     }
 
@@ -295,46 +221,12 @@ final class SoundManager {
         print(String(format: "SFX NOTE %.6f %.4f %.4f", now, frequency, velocity))
     }
 
-    /// Déclenche une voix sans passer par l'arpégiateur (latence nulle).
+    /// Déclenche une note courte immédiatement, sous le doigt (latence nulle).
     private func playImmediate(frequency: Double, velocity: Float) {
         let now = CACurrentMediaTime()
         guard now - lastImmediateAt >= Self.immediateThrottle else { return }
         lastImmediateAt = now
-        triggerVoice(frequency: frequency, haptic: false, velocity: velocity)
-    }
-
-    /// Notes simultanées (résolution des grandes chaînes, victoire).
-    /// Hors FIFO et hors throttle : c'est justement la simultanéité qu'on veut.
-    func playChord(_ frequencies: [Double], velocity: Float) {
-        guard !isMuted else { return }
-        for freq in frequencies {
-            triggerVoice(frequency: freq, haptic: false, velocity: velocity)
-        }
-    }
-
-    // MARK: - Sélection aléatoire de gamme
-
-    private func pickNewScale() {
-        var key: Int
-        repeat {
-            let r = Int.random(in: 0..<roots.count)
-            let s = Int.random(in: 0..<scales.count)
-            key = r * 100 + s
-        } while key == lastScaleKey
-        lastScaleKey = key
-
-        let root = roots[key / 100]
-        let offsets = scales[key % 100]
-
-        var notes: [Double] = []
-        notes.reserveCapacity(offsets.count * 2)
-        for octave in 0..<2 {
-            for offset in offsets {
-                let semitones = Double(octave * 12 + offset)
-                notes.append(root * pow(2.0, semitones / 12.0))
-            }
-        }
-        currentScale = notes
+        triggerVoice(frequency: frequency, velocity: velocity, short: true)
     }
 
     // MARK: - Configuration moteur + session
@@ -456,20 +348,27 @@ private final class Voice {
     private(set) var isActive: Bool = false
     private(set) var startTime: UInt64 = 0  // pour voice stealing
 
-    // Constantes ADSR (en échantillons)
+    // Enveloppe ADSR (en échantillons). Deux profils :
+    //  - long  (accords de combo, victoire) : 0.05 / 0.20 / maintien 0.25 / 2.00 s ;
+    //  - court (notes du tracé) : 0.03 / 0.10 / maintien 0.03 / 0.35 s — une note
+    //    douce qui s'éteint vite, pour ne pas s'empiler pendant un swipe.
+    // Réglés sur le thread principal au noteOn, lus tels quels par le render block.
     private let sampleRate: Double
-    private let attackSamples: Int
-    private let decaySamples: Int
-    private let sustainHoldSamples: Int
-    private let releaseSamples: Int
+    private let longProfile: (attack: Int, decay: Int, hold: Int, release: Int)
+    private let shortProfile: (attack: Int, decay: Int, hold: Int, release: Int)
+    private var attackSamples: Int
+    private var decaySamples: Int
+    private var sustainHoldSamples: Int
+    private var releaseSamples: Int
     private let sustainLevel: Float = 0.3
 
     init(sampleRate: Double) {
         self.sampleRate = sampleRate
-        self.attackSamples      = Int(0.05 * sampleRate)  // 0.05 s
-        self.decaySamples       = Int(0.20 * sampleRate)  // 0.20 s
-        self.sustainHoldSamples = Int(0.25 * sampleRate)  // maintien avant release auto
-        self.releaseSamples     = Int(2.00 * sampleRate)  // 2.00 s
+        longProfile  = (Int(0.05 * sampleRate), Int(0.20 * sampleRate),
+                        Int(0.25 * sampleRate), Int(2.00 * sampleRate))
+        shortProfile = (Int(0.03 * sampleRate), Int(0.10 * sampleRate),
+                        Int(0.03 * sampleRate), Int(0.35 * sampleRate))
+        (attackSamples, decaySamples, sustainHoldSamples, releaseSamples) = longProfile
 
         guard let fmt = AVAudioFormat(standardFormatWithSampleRate: sampleRate, channels: 1) else {
             fatalError("Cannot create AVAudioFormat")
@@ -479,7 +378,8 @@ private final class Voice {
 
     // MARK: - Déclenchement (thread principal)
 
-    func noteOn(frequency: Double, velocity: Float = 1.0) {
+    func noteOn(frequency: Double, velocity: Float = 1.0, short: Bool = false) {
+        (attackSamples, decaySamples, sustainHoldSamples, releaseSamples) = short ? shortProfile : longProfile
         phaseIncrement = frequency / sampleRate
         // phase conservée → oscillateur continu sur vol de voix (anti-clic)
         attackStartEnv = currentEnv

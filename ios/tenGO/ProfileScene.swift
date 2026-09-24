@@ -84,7 +84,7 @@ class ProfileScene: SKScene {
 
         cursorY -= 18
         let theme = ThemeManager.shared.active
-        let themeValue = "\(theme.emoji) " + String(localized: String.LocalizationValue(theme.nameKey))
+        let themeValue = String(localized: String.LocalizationValue(theme.nameKey))
         addStatRow(label: String(localized: "profile.active_theme"), value: themeValue, atY: cursorY)
 
         // Onglets en pied d'écran : cet écran EST l'onglet Progression.

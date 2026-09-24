@@ -3062,61 +3062,61 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tu bats %@ (%d) 🔥"
+            "value": "Tu bats %@ (%d)"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "You beat %@ (%d) 🔥"
+            "value": "You beat %@ (%d)"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Ganas a %@ (%d) 🔥"
+            "value": "Ganas a %@ (%d)"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Du schlägst %@ (%d) 🔥"
+            "value": "Du schlägst %@ (%d)"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Batti %@ (%d) 🔥"
+            "value": "Batti %@ (%d)"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Você venceu %@ (%d) 🔥"
+            "value": "Você venceu %@ (%d)"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@（%d）に勝利 🔥"
+            "value": "%@（%d）に勝利"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "你击败了 %@（%d）🔥"
+            "value": "你击败了 %@（%d）"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "%@(%d) 승리 🔥"
+            "value": "%@(%d) 승리"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Je verslaat %@ (%d) 🔥"
+            "value": "Je verslaat %@ (%d)"
           }
         }
       }
@@ -8717,61 +8717,61 @@
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "Tägliche Challenge 🧩"
+            "value": "Tägliche Challenge"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "Daily Challenge 🧩"
+            "value": "Daily Challenge"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "Reto diario 🧩"
+            "value": "Reto diario"
           }
         },
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "Défi du jour 🧩"
+            "value": "Défi du jour"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "Sfida del giorno 🧩"
+            "value": "Sfida del giorno"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "今日のチャレンジ 🧩"
+            "value": "今日のチャレンジ"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "오늘의 도전 🧩"
+            "value": "오늘의 도전"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "Dagelijkse uitdaging 🧩"
+            "value": "Dagelijkse uitdaging"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "Desafio diário 🧩"
+            "value": "Desafio diário"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "每日挑战 🧩"
+            "value": "每日挑战"
           }
         }
       }
@@ -8847,61 +8847,61 @@
         "fr": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 Ta série de %d jours t'attend"
+            "value": "Ta série de %d jours t'attend"
           }
         },
         "en": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 Your %d-day streak is waiting"
+            "value": "Your %d-day streak is waiting"
           }
         },
         "es": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 Tu racha de %d días te espera"
+            "value": "Tu racha de %d días te espera"
           }
         },
         "de": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 Deine %d-Tage-Serie wartet auf dich"
+            "value": "Deine %d-Tage-Serie wartet auf dich"
           }
         },
         "it": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 La tua serie di %d giorni ti aspetta"
+            "value": "La tua serie di %d giorni ti aspetta"
           }
         },
         "pt-BR": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 Sua sequência de %d dias está esperando"
+            "value": "Sua sequência de %d dias está esperando"
           }
         },
         "ja": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 %d日連続の記録が待っています"
+            "value": "%d日連続の記録が待っています"
           }
         },
         "zh-Hans": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 你的连续 %d 天记录在等你"
+            "value": "你的连续 %d 天记录在等你"
           }
         },
         "ko": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 %d일 연속 기록이 기다리고 있어요"
+            "value": "%d일 연속 기록이 기다리고 있어요"
           }
         },
         "nl": {
           "stringUnit": {
             "state": "translated",
-            "value": "🔥 Je reeks van %d dagen wacht op je"
+            "value": "Je reeks van %d dagen wacht op je"
           }
         }
       }

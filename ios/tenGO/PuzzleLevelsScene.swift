@@ -120,11 +120,18 @@ class PuzzleLevelsScene: SKScene {
             starsLabel.position = CGPoint(x: 0, y: -side * 0.22)
             tile.addChild(starsLabel)
         } else {
-            let lock = SKLabelNode(text: "🔒")
-            lock.fontSize = side * 0.30
-            lock.verticalAlignmentMode = .center
-            lock.position = .zero
-            tile.addChild(lock)
+            // Icône système monochrome (pas d'emoji dans le jeu).
+            let config = UIImage.SymbolConfiguration(pointSize: 40, weight: .semibold)
+            if let img = UIImage(systemName: "lock.fill", withConfiguration: config)?
+                .withTintColor(UIColor(white: 0.55, alpha: 1), renderingMode: .alwaysOriginal) {
+                let lock = SKSpriteNode(texture: SKTexture(image: img))
+                let target = side * 0.28
+                let maxDim = max(img.size.width, img.size.height)
+                lock.size = CGSize(width: img.size.width / maxDim * target,
+                                   height: img.size.height / maxDim * target)
+                lock.position = .zero
+                tile.addChild(lock)
+            }
         }
     }
 
