@@ -1,6 +1,1 @@
-Cleaner, more readable sound:
-• each number always plays the same note — your ear learns the grid;
-• a completed chain resolves with a short chord that never slows you down;
-• the victory jingle is shorter.
-
-Minor fixes and improvements.
+Stability and performance improvements.

@@ -1,6 +1,1 @@
-Un son plus sobre et plus lisible :
-• chaque chiffre garde toujours la même note — l’oreille apprend la grille ;
-• une chaîne validée se conclut par un accord bref, sans ralentir le jeu ;
-• la fanfare de victoire est plus courte.
-
-Petites corrections et améliorations.
+Améliorations de stabilité et de performances.

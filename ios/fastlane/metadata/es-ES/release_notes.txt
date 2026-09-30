@@ -1,6 +1,1 @@
-Un sonido más sobrio y claro:
-• cada número suena siempre con la misma nota: tu oído aprende la cuadrícula;
-• una cadena completada termina con un acorde breve, sin frenar el juego;
-• la fanfarria de victoria es más corta.
-
-Pequeñas correcciones y mejoras.
+Mejoras de estabilidad y rendimiento.

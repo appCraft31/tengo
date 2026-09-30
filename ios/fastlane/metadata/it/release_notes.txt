@@ -1,6 +1,1 @@
-Un suono più sobrio e leggibile:
-• ogni numero suona sempre la stessa nota: l’orecchio impara la griglia;
-• una catena completata si chiude con un accordo breve, senza rallentare il gioco;
-• la fanfara di vittoria è più corta.
-
-Piccole correzioni e miglioramenti.
+Miglioramenti di stabilità e prestazioni.

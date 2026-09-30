@@ -1,6 +1,1 @@
-Um som mais sóbrio e fácil de entender:
-• cada número toca sempre a mesma nota — o ouvido aprende a grade;
-• uma corrente concluída termina com um acorde curto, sem atrasar o jogo;
-• a fanfarra de vitória ficou mais curta.
-
-Pequenas correções e melhorias.
+Melhorias de estabilidade e desempenho.

@@ -1,6 +1,1 @@
-Rustiger en duidelijker geluid:
-• elk getal speelt altijd dezelfde noot – je oor leert het raster kennen;
-• een voltooide ketting eindigt met een kort akkoord, zonder het spel te vertragen;
-• het overwinningsdeuntje is korter.
-
-Kleine correcties en verbeteringen.
+Verbeteringen in stabiliteit en prestaties.

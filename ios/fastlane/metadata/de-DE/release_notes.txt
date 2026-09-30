@@ -1,6 +1,1 @@
-Klarerer, ruhigerer Sound:
-• jede Zahl spielt immer denselben Ton – dein Ohr lernt das Feld;
-• eine fertige Kette endet mit einem kurzen Akkord, ohne das Spiel zu bremsen;
-• die Siegesmelodie ist kürzer.
-
-Kleinere Korrekturen und Verbesserungen.
+Verbesserungen bei Stabilität und Leistung.
