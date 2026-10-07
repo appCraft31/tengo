@@ -115,14 +115,15 @@ class MenuScene: SKScene {
         // trophée a quitté ce coin — le classement vit dans l'onglet Progression.
         addIconButton(systemName: "gearshape.fill", name: "parametres", at: CGPoint(x: edgeX, y: topRowY))
         addCoinChip(rightEdgeX: edgeX - 36, atY: topRowY)
-        addLevelChip(leftEdgeX: -edgeX + 36, atY: topRowY)
+        // Calé sur le bord gauche des cartes, pas sur le symétrique du bouton réglages.
+        addLevelChip(leftEdgeX: -cardWidth / 2, atY: topRowY)
 
         addLogo(atY: topRowY - 145)
 
         let tagline = SKLabelNode(text: String(localized: "menu.tagline"))
-        tagline.fontName = "AvenirNext-Light"
+        tagline.fontName = "AvenirNext-Medium"
         tagline.fontSize = 22
-        tagline.fontColor = theme.logo.withAlphaComponent(0.6)
+        tagline.fontColor = theme.logo.withAlphaComponent(0.72)
         tagline.verticalAlignmentMode = .center
         tagline.position = CGPoint(x: 0, y: topRowY - 203)
         addChild(tagline)
@@ -138,7 +139,7 @@ class MenuScene: SKScene {
         // Hauteurs fixes, espacement calculé : « Reprendre » peut manquer sans
         // laisser un trou.
         let hasSave = GameState.exists
-        let heroH: CGFloat = 140, resumeH: CGFloat = 80, dailyH: CGFloat = 250, tilesH: CGFloat = 190
+        let heroH: CGFloat = 140, resumeH: CGFloat = 80, dailyH: CGFloat = 206, tilesH: CGFloat = 190
         var blocks: [CGFloat] = [heroH]
         if hasSave { blocks.append(resumeH) }
         blocks.append(contentsOf: [dailyH, tilesH])
@@ -186,6 +187,7 @@ class MenuScene: SKScene {
         bg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
         bg.lineWidth = 1
         node.addChild(bg)
+        Relief.raise(bg, depth: 8)
 
         let ink = accent.readableInk()
         let label = SKLabelNode(text: String(localized: "menu.play"))
@@ -195,12 +197,16 @@ class MenuScene: SKScene {
         label.verticalAlignmentMode = .center
 
         // Icône et libellé centrés comme un seul bloc.
-        let iconSize: CGFloat = 44, inner: CGFloat = 18
+        // L'icône est posée dans un rond clair, comme sur les tuiles de mode.
+        let iconSize: CGFloat = 76, inner: CGFloat = 20
         let contentW = iconSize + inner + label.frame.width
-        let icon = VectorIcon.play.node(size: iconSize, color: ink)
-        icon.position = CGPoint(x: -contentW / 2 + iconSize / 2, y: 0)
+        let chip = Relief.iconChip(radius: iconSize / 2, on: accent)
+        chip.position = CGPoint(x: -contentW / 2 + iconSize / 2, y: 0)
+        let icon = VectorIcon.play.node(size: 40, color: ink)
+        icon.position = chip.position
         label.horizontalAlignmentMode = .left
         label.position = CGPoint(x: -contentW / 2 + iconSize + inner, y: 0)
+        node.addChild(chip)
         node.addChild(icon)
         node.addChild(label)
     }
@@ -219,6 +225,7 @@ class MenuScene: SKScene {
         bg.strokeColor = theme.logo.withAlphaComponent(0.26)
         bg.lineWidth = 1
         node.addChild(bg)
+        Relief.raise(bg, depth: 5, surface: true)
 
         let label = SKLabelNode(text: String(localized: "menu.continue"))
         label.fontName = "AvenirNext-Medium"
@@ -249,6 +256,7 @@ class MenuScene: SKScene {
         bg.strokeColor = UIColor(white: 0.68, alpha: 0.28)
         bg.lineWidth = 1
         card.addChild(bg)
+        Relief.raise(bg, depth: 6)
 
         let title = SKLabelNode(text: String(localized: "menu.daily"))
         title.fontName = "AvenirNext-Bold"
@@ -259,64 +267,78 @@ class MenuScene: SKScene {
         title.position = CGPoint(x: leftX, y: half - 41)
         card.addChild(title)
 
-        // Série : flamme + jours, puis les boucliers restants s'il y en a.
+        // Série : pastille claire en haut à droite (flamme + jours, puis les
+        // boucliers restants s'il y en a).
         let streak = StreakManager.shared.current
-        let flame = VectorIcon.flame.node(size: 36, color: ink)
-        flame.position = CGPoint(x: leftX + 18, y: 22)
-        card.addChild(flame)
-
+        let shields = StreakManager.shared.shieldCount
         let days = SKLabelNode(text: "\(streak)")
         days.fontName = "AvenirNext-Heavy"
-        days.fontSize = 30
+        days.fontSize = 20
         days.fontColor = ink
         days.horizontalAlignmentMode = .left
         days.verticalAlignmentMode = .center
-        days.position = CGPoint(x: leftX + 44, y: 22)
+        let shieldCount = SKLabelNode(text: "\(shields)")
+        shieldCount.fontName = "AvenirNext-Bold"
+        shieldCount.fontSize = 17
+        shieldCount.fontColor = ink.withAlphaComponent(0.85)
+        shieldCount.horizontalAlignmentMode = .left
+        shieldCount.verticalAlignmentMode = .center
+
+        var chipContentW = 26 + 6 + days.frame.width
+        if shields > 0 { chipContentW += 14 + 22 + 5 + shieldCount.frame.width }
+        let chipW = chipContentW + 30
+        let chipY = half - 41
+        let chip = SKShapeNode(rectOf: CGSize(width: chipW, height: 42), cornerRadius: 21)
+        chip.fillColor = UIColor(white: 1, alpha: accent.perceivedLuminance > 0.5 ? 0.55 : 0.16)
+        chip.strokeColor = .clear
+        chip.position = CGPoint(x: cardWidth / 2 - 24 - chipW / 2, y: chipY)
+        card.addChild(chip)
+
+        var chipX = chip.position.x - chipContentW / 2
+        let flame = VectorIcon.flame.node(size: 26, color: ink)
+        flame.position = CGPoint(x: chipX + 13, y: chipY)
+        card.addChild(flame)
+        chipX += 26 + 6
+        days.position = CGPoint(x: chipX, y: chipY)
         card.addChild(days)
-
-        let shields = StreakManager.shared.shieldCount
+        chipX += days.frame.width
         if shields > 0 {
-            let x = leftX + 54 + days.frame.width + 26
-            let shield = VectorIcon.shield.node(size: 30, color: ink.withAlphaComponent(0.85))
-            shield.position = CGPoint(x: x, y: 22)
+            chipX += 14
+            let shield = VectorIcon.shield.node(size: 22, color: ink.withAlphaComponent(0.85))
+            shield.position = CGPoint(x: chipX + 11, y: chipY)
             card.addChild(shield)
-
-            let count = SKLabelNode(text: "\(shields)")
-            count.fontName = "AvenirNext-DemiBold"
-            count.fontSize = 20
-            count.fontColor = ink.withAlphaComponent(0.85)
-            count.horizontalAlignmentMode = .left
-            count.verticalAlignmentMode = .center
-            count.position = CGPoint(x: x + 21, y: 22)
-            card.addChild(count)
+            shieldCount.position = CGPoint(x: chipX + 22 + 5, y: chipY)
+            card.addChild(shieldCount)
         }
 
         if let nextDay = StreakManager.shared.nextMilestone {
             let next = SKLabelNode(text: String(format: String(localized: "streak.next_reward"), nextDay))
             next.fontName = "AvenirNext-Medium"
-            next.fontSize = 15
-            next.fontColor = ink.withAlphaComponent(0.8)
+            next.fontSize = 16
+            next.fontColor = ink.withAlphaComponent(0.85)
             next.horizontalAlignmentMode = .left
             next.verticalAlignmentMode = .center
-            next.position = CGPoint(x: leftX, y: -30)
+            next.position = CGPoint(x: leftX, y: half - 88)
             card.addChild(next)
         }
 
         // Bandeau d'état en bas de carte : l'affordance est explicite plutôt
         // que devinée à la couleur.
-        let pillH: CGFloat = 46
+        let pillH: CGFloat = 52
         let pill = SKShapeNode(rectOf: CGSize(width: cardWidth - 56, height: pillH), cornerRadius: pillH / 2)
         pill.fillColor = ink.withAlphaComponent(done ? 0.10 : 0.16)
         pill.strokeColor = .clear
-        pill.position = CGPoint(x: 0, y: -half + 40)
+        pill.position = CGPoint(x: 0, y: -half + 46)
         card.addChild(pill)
+        // Défi à jouer : le bandeau devient un vrai bouton clair, en relief.
+        if !done { Relief.raise(pill, depth: 4, surface: true) }
 
         let cta = SKLabelNode(text: String(localized: done ? "menu.daily_done" : "menu.play"))
         cta.fontName = "AvenirNext-DemiBold"
         cta.fontSize = 18
-        cta.fontColor = ink
+        cta.fontColor = done ? ink : theme.logo
         cta.verticalAlignmentMode = .center
-        cta.position = CGPoint(x: 0, y: -half + 40)
+        cta.position = CGPoint(x: 0, y: -half + 46)
         card.addChild(cta)
     }
 
@@ -347,9 +369,13 @@ class MenuScene: SKScene {
             bg.strokeColor = UIColor(white: 0.68, alpha: 0.28)
             bg.lineWidth = 1
             node.addChild(bg)
+            Relief.raise(bg, depth: 6)
 
             let ink = tile.accent.readableInk()
-            let icon = tile.icon.node(size: 64, color: ink)
+            let chip = Relief.iconChip(radius: 42, on: tile.accent)
+            chip.position = CGPoint(x: 0, y: 30)
+            node.addChild(chip)
+            let icon = tile.icon.node(size: 52, color: ink)
             icon.position = CGPoint(x: 0, y: 30)
             node.addChild(icon)
 
@@ -384,6 +410,7 @@ class MenuScene: SKScene {
         bg.strokeColor = theme.logo.withAlphaComponent(0.22)
         bg.lineWidth = 1
         node.addChild(bg)
+        Relief.raise(bg, depth: 4, surface: true)
 
         let config = UIImage.SymbolConfiguration(pointSize: 21, weight: .medium)
         if let img = UIImage(systemName: systemName, withConfiguration: config)?
@@ -410,9 +437,9 @@ class MenuScene: SKScene {
         coin.zPosition = 1
 
         let number = SKLabelNode(text: "\(CoinManager.shared.balance)")
-        number.fontName = "AvenirNext-Medium"
+        number.fontName = "AvenirNext-Bold"
         number.fontSize = 19
-        number.fontColor = UIColor(white: 0.35, alpha: 1)
+        number.fontColor = ThemeManager.shared.active.logo
         number.verticalAlignmentMode = .center
         number.horizontalAlignmentMode = .left
         number.zPosition = 1
@@ -435,6 +462,7 @@ class MenuScene: SKScene {
         number.position = CGPoint(x: startX + coinR * 2 + gap, y: 0)
 
         container.addChild(bg)
+        Relief.raise(bg, depth: 4, surface: true)
         container.addChild(coin)
         container.addChild(number)
         addChild(container)
@@ -449,15 +477,17 @@ class MenuScene: SKScene {
         container.name = "levelChip"
 
         let label = SKLabelNode(text: String(format: String(localized: "level.chip.label"), LevelManager.shared.level))
-        label.fontName = "AvenirNext-Medium"
-        label.fontSize = 19
-        label.fontColor = UIColor(white: 0.35, alpha: 1)
+        label.fontName = "AvenirNext-Bold"
+        label.fontSize = 18
+        label.fontColor = ThemeManager.shared.active.logo
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .center
         label.name = "levelChip"
+        // Décalé pour laisser place au point de couleur à sa gauche.
+        label.position = CGPoint(x: 9, y: 0)
 
         let height: CGFloat = 40
-        let width = max(label.frame.width + 40, 70)
+        let width = max(label.frame.width + 58, 88)
 
         let bg = SKShapeNode(rectOf: CGSize(width: width, height: height), cornerRadius: height / 2)
         bg.fillColor = ThemeManager.shared.active.accent.withAlphaComponent(0.14)
@@ -467,6 +497,13 @@ class MenuScene: SKScene {
 
         container.position = CGPoint(x: leftEdgeX + width / 2, y: y)
         container.addChild(bg)
+        Relief.raise(bg, depth: 4, surface: true)
+        let dot = SKShapeNode(circleOfRadius: 6)
+        dot.fillColor = ThemeManager.shared.active.color(forValue: 6)
+        dot.strokeColor = .clear
+        dot.position = CGPoint(x: -label.frame.width / 2 - 2, y: 0)
+        dot.name = "levelChip"
+        container.addChild(dot)
         container.addChild(label)
         addChild(container)
     }
@@ -485,6 +522,7 @@ class MenuScene: SKScene {
         bg.strokeColor = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 0.45)
         bg.lineWidth = 1.5
         node.addChild(bg)
+        Relief.raise(bg, depth: 4)
 
         // Triangle « play » (affordance vidéo), partie haute.
         let triPath = CGMutablePath()
@@ -609,6 +647,7 @@ class MenuScene: SKScene {
         bg.strokeColor = strokeColor
         bg.lineWidth = 1
         node.addChild(bg)
+        Relief.raise(bg, depth: 5, surface: accent == nil)
 
         let label = SKLabelNode(text: text)
         label.fontName = bold ? "AvenirNext-Bold" : "AvenirNext-Medium"

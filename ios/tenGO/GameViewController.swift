@@ -151,6 +151,9 @@ class GameViewController: UIViewController {
         // lu ; ceci le corrige après réinstallation, changement d'appareil ou
         // remboursement).
         Task { await AdFreeManager.shared.refreshEntitlements() }
+        // Prix StoreKit connus dès le lancement : la boutique n'affiche jamais
+        // de prix en dur, et l'offre de fin de partie exige un prix chargé.
+        Task { await StoreManager.shared.loadProducts() }
     }
 
     /// Données de vitrine pour les captures de la fiche stores.
@@ -314,6 +317,9 @@ class GameViewController: UIViewController {
     ///   RESET_ONBOARDING=1              rejoue guide d'achat + coach-marks
     ///   FORCE_SHOP_GUIDE=1              force le tutoriel d'achat (avec SHOP_MODE)
     ///   SHOP_RETURN=game                retour boutique → partie
+    ///   QA_GAME_OVER=3                  fin de partie forcée après 3 s (cf. GameScene)
+    ///   QA_FAKE_INTERSTITIAL=1          interstitielle simulée (cf. InterstitialAdManager)
+    ///   QA_STORE_FAIL=2                 les 2 premiers chargements StoreKit échouent (cf. StoreManager)
     private func applyQAOverrides(_ env: [String: String]) {
         let defaults = UserDefaults.standard
 

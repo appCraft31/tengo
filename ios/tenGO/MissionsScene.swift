@@ -78,6 +78,7 @@ class MissionsScene: SKScene {
         bg.strokeColor = UIColor(white: 0.70, alpha: 0.35)
         bg.lineWidth = 1
         row.addChild(bg)
+        Relief.raise(bg, depth: 4)
 
         // Deux colonnes : texte à gauche, récompense/bouton à droite. La barre
         // de progression court en bas sur toute la largeur, sans passer sous
@@ -145,6 +146,7 @@ class MissionsScene: SKScene {
             claimBg.strokeColor = UIColor(white: 0.60, alpha: 0.35)
             claimBg.lineWidth = 1
             claimBtn.addChild(claimBg)
+            Relief.raise(claimBg, depth: 4)
 
             let claimLabel = SKLabelNode(text: String(localized: "missions.claim"))
             claimLabel.fontName = "AvenirNext-Bold"
@@ -181,18 +183,7 @@ class MissionsScene: SKScene {
     }
 
     private func missionTitle(for def: MissionDefinition) -> String {
-        switch def.kind {
-        case .chainAtLeast:
-            return String(format: String(localized: "mission.chain_at_least"), def.target, def.param)
-        case .cumulativeScore:
-            return String(format: String(localized: "mission.cumulative_score"), def.target)
-        case .gamesPlayed:
-            return String(format: String(localized: "mission.games_played"), def.target)
-        case .perfectBoards:
-            return String(format: String(localized: "mission.perfect_boards"), def.target)
-        case .movesPlayed:
-            return String(format: String(localized: "mission.moves_played"), def.target)
-        }
+        def.localizedTitle
     }
 
     private func addBackButton(atY y: CGFloat) {
@@ -207,6 +198,7 @@ class MissionsScene: SKScene {
         circle.lineWidth = 1.5
         back.addChild(circle)
 
+        Relief.raise(circle, depth: 4)
         let icon = SKLabelNode(text: "‹")
         icon.fontName = "AvenirNext-Medium"
         icon.fontSize = 32

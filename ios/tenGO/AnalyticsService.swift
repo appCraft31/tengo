@@ -113,6 +113,65 @@ enum AnalyticsService {
         Analytics.logEvent("shop_from_game", parameters: ["reason": reason])
     }
 
+    // MARK: - Entonnoir d'achat
+    //
+    //   shop_opened / noads_offer_view → iap_tapped
+    //   → purchase | iap_cancelled | iap_pending | iap_failed
+
+    /// Boutique affichée. `source` : tab | game
+    static func shopOpened(source: String) {
+        logFunnel("shop_opened", parameters: ["source": source])
+    }
+
+    /// Offre « sans pub » vue. `source` : game_over (pastille après une
+    /// interstitielle) | shop (carte en tête de boutique).
+    static func noAdsOfferView(source: String) {
+        logFunnel("noads_offer_view", parameters: ["source": source])
+    }
+
+    /// Le joueur a lancé un achat en vraie monnaie.
+    static func iapTapped(productID: String, source: String) {
+        logFunnel("iap_tapped", parameters: [
+            AnalyticsParameterItemID: productID,
+            "source": source,
+        ])
+    }
+
+    /// Achat échoué (erreur StoreKit, transaction non vérifiée).
+    static func iapFailed(productID: String, source: String, reason: String) {
+        logFunnel("iap_failed", parameters: [
+            AnalyticsParameterItemID: productID,
+            "source": source,
+            // Firebase tronque les valeurs de paramètre au-delà de 100 caractères.
+            "reason": String(reason.prefix(100)),
+        ])
+    }
+
+    /// Feuille d'achat refermée sans payer.
+    static func iapCancelled(productID: String, source: String) {
+        logFunnel("iap_cancelled", parameters: [
+            AnalyticsParameterItemID: productID,
+            "source": source,
+        ])
+    }
+
+    /// Achat en attente de validation (autorisation parentale, SCA).
+    static func iapPending(productID: String, source: String) {
+        logFunnel("iap_pending", parameters: [
+            AnalyticsParameterItemID: productID,
+            "source": source,
+        ])
+    }
+
+    /// Envoi d'un événement de l'entonnoir, tracé en console en Debug pour
+    /// pouvoir le suivre pendant un test sur appareil.
+    private static func logFunnel(_ name: String, parameters: [String: Any]) {
+        #if DEBUG
+        print("[Analytics] \(name) \(parameters)")
+        #endif
+        Analytics.logEvent(name, parameters: parameters)
+    }
+
     // MARK: - Monétisation (conversion clé pour Google Ads)
 
     /// Achat d'un pack de pièces validé. Loggue la valeur réelle pour le ROAS.

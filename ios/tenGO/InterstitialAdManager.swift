@@ -41,7 +41,17 @@ final class InterstitialAdManager: NSObject {
         set { UserDefaults.standard.set(newValue, forKey: Self.lastShownKey) }
     }
 
-    private var pendingCompletion: (() -> Void)?
+    private var pendingCompletion: ((Bool) -> Void)?
+
+    #if DEBUG
+    /// QA (`QA_FAKE_INTERSTITIAL=1`) : aucune annonce n'est chargée ni affichée,
+    /// mais les garde-fous s'appliquent et `completion(true)` est rendu comme
+    /// après une vraie pub. Sert à tester ce qui suit une interstitielle quand
+    /// le réseau de test ne sert rien (simulateur, bloqueur de pubs).
+    private let fakesAds = ProcessInfo.processInfo.environment["QA_FAKE_INTERSTITIAL"] == "1"
+    #else
+    private let fakesAds = false
+    #endif
 
     // MARK: - Chargement
 
@@ -99,11 +109,12 @@ final class InterstitialAdManager: NSObject {
 
     /// Affiche l'interstitielle si toutes les conditions du trigger sont remplies,
     /// sinon appelle `completion` immédiatement (fallback silencieux).
+    /// `completion` reçoit `true` quand une pub vient réellement d'être montrée.
     func maybeShow(trigger: AdTrigger,
                    from viewController: UIViewController,
-                   completion: @escaping () -> Void) {
+                   completion: @escaping (_ adShown: Bool) -> Void) {
         guard shouldShow(for: trigger) else {
-            completion()
+            completion(false)
             return
         }
         present(from: viewController, completion: completion)
@@ -112,7 +123,7 @@ final class InterstitialAdManager: NSObject {
     private func shouldShow(for trigger: AdTrigger) -> Bool {
         guard !AdFreeManager.shared.isPurchased else { return false }
         discardIfExpired()
-        guard isReady, interstitial != nil else { return false }
+        guard fakesAds || (isReady && interstitial != nil) else { return false }
         guard Date().timeIntervalSince(lastShownAt) >= Self.cooldownSeconds else { return false }
 
         // Grâce 1re partie ; gameOverAuto épargne aussi le 1er game over
@@ -138,9 +149,15 @@ final class InterstitialAdManager: NSObject {
     }
 
     private func present(from viewController: UIViewController,
-                         completion: @escaping () -> Void) {
+                         completion: @escaping (Bool) -> Void) {
+        if fakesAds {
+            lastShownAt = Date()
+            print("[AdMob] Interstitiel simulé (QA)")
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { completion(true) }
+            return
+        }
         guard let ad = interstitial else {
-            completion()
+            completion(false)
             return
         }
         isReady = false
@@ -156,14 +173,14 @@ final class InterstitialAdManager: NSObject {
 extension InterstitialAdManager: FullScreenContentDelegate {
 
     func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
-        pendingCompletion?()
+        pendingCompletion?(true)
         pendingCompletion = nil
         loadAd()
     }
 
     func ad(_ ad: FullScreenPresentingAd, didFailToPresentFullScreenContentWithError error: Error) {
         print("[AdMob] Interstitiel échec affichage : \(error.localizedDescription)")
-        pendingCompletion?()
+        pendingCompletion?(false)
         pendingCompletion = nil
         loadAd()
     }

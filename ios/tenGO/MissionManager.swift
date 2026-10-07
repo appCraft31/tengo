@@ -243,3 +243,25 @@ final class MissionManager {
         return (c.year ?? 0) * 10000 + (c.month ?? 0) * 100 + (c.day ?? 0)
     }
 }
+
+// MARK: - Libellé
+
+extension MissionDefinition {
+
+    /// Libellé localisé de la mission (partagé par l'écran Missions et la
+    /// Progression).
+    var localizedTitle: String {
+        switch kind {
+        case .chainAtLeast:
+            return String(format: String(localized: "mission.chain_at_least"), target, param)
+        case .cumulativeScore:
+            return String(format: String(localized: "mission.cumulative_score"), target)
+        case .gamesPlayed:
+            return String(format: String(localized: "mission.games_played"), target)
+        case .perfectBoards:
+            return String(format: String(localized: "mission.perfect_boards"), target)
+        case .movesPlayed:
+            return String(format: String(localized: "mission.moves_played"), target)
+        }
+    }
+}

@@ -82,6 +82,7 @@ enum TabBar {
         capsule.lineWidth = 1
         capsule.position = CGPoint(x: 0, y: capsuleY)
         bar.addChild(capsule)
+        Relief.raise(capsule, depth: 5)
 
         let tabs = Tab.allCases
         let inner = capsuleW - padding * 2
@@ -116,6 +117,7 @@ enum TabBar {
                 pill.strokeColor = .clear
                 pill.name = item.name
                 item.addChild(pill)
+                Relief.raise(pill, depth: 3)
                 tint = accent.readableInk()
             } else {
                 tint = theme.logo.withAlphaComponent(0.55)

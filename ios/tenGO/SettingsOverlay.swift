@@ -50,7 +50,7 @@ final class SettingsOverlay: SKNode {
 
     private static let cardW: CGFloat = 490
     /// +58 pt par rapport à l'origine : une ligne de toggle supplémentaire.
-    private static let cardH: CGFloat = 796
+    private static let cardH: CGFloat = 820
 
     // MARK: - Init
 
@@ -137,8 +137,7 @@ final class SettingsOverlay: SKNode {
         let bg = SKShapeNode(rectOf: CGSize(width: Self.cardW, height: Self.cardH),
                              cornerRadius: 28)
         bg.fillColor = UIColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1)
-        bg.strokeColor = UIColor(white: 0.70, alpha: 0.25)
-        bg.lineWidth = 1
+        bg.strokeColor = .clear
         card.addChild(bg)
 
         // Titre
@@ -158,7 +157,7 @@ final class SettingsOverlay: SKNode {
 
         let closeBg = SKShapeNode(circleOfRadius: 18)
         closeBg.name = "closeBg"
-        closeBg.fillColor = UIColor(white: 0.92, alpha: 1)
+        closeBg.fillColor = .white
         closeBg.strokeColor = .clear
         closeNode.addChild(closeBg)
 
@@ -178,14 +177,16 @@ final class SettingsOverlay: SKNode {
         let rowStep: CGFloat = 58
 
         // Son (toggle)
-        let soundViews = addToggleRow(name: "row_sound", title: String(localized: "settings.sound"), y: y)
+        let soundViews = addToggleRow(name: "row_sound", title: String(localized: "settings.sound"), y: y,
+                                      symbol: "speaker.wave.2.fill", tint: UIColor(red: 1.00, green: 0.96, blue: 0.62, alpha: 1))
         soundToggleBg = soundViews.bg
         soundToggleKnob = soundViews.knob
         soundStatus = soundViews.status
         y -= rowStep
 
         // Retours haptiques
-        let hapticViews = addToggleRow(name: "row_haptic", title: String(localized: "settings.haptics"), y: y)
+        let hapticViews = addToggleRow(name: "row_haptic", title: String(localized: "settings.haptics"), y: y,
+                                       symbol: "iphone.radiowaves.left.and.right", tint: UIColor(red: 1.00, green: 0.72, blue: 0.86, alpha: 1))
         hapticToggleBg = hapticViews.bg
         hapticToggleKnob = hapticViews.knob
         hapticStatus = hapticViews.status
@@ -196,7 +197,7 @@ final class SettingsOverlay: SKNode {
         let effectsViews = addToggleRow(name: "row_effects",
                                         title: String(localized: "settings.reduced_effects",
                                                       defaultValue: "Effets réduits"),
-                                        y: y)
+                                        y: y, symbol: "sparkles", tint: UIColor(red: 0.62, green: 0.86, blue: 1.00, alpha: 1))
         effectsToggleBg = effectsViews.bg
         effectsToggleKnob = effectsViews.knob
         effectsStatus = effectsViews.status
@@ -222,9 +223,29 @@ final class SettingsOverlay: SKNode {
         addActionRow(name: "row_share", title: String(localized: "settings.share_tengo"), y: y); y -= rowStep
         addActionRow(name: "row_support", title: String(localized: "settings.contact_support"), y: y); y -= rowStep
 
+        // Fermeture explicite, en plus de la croix : le geste le plus attendu
+        // en bas de carte.
+        let closeButton = SKNode()
+        closeButton.name = "closeBtn"
+        closeButton.position = CGPoint(x: 0, y: -Self.cardH / 2 + 88)
+        card.addChild(closeButton)
+        let closeButtonBg = SKShapeNode(rectOf: CGSize(width: Self.cardW - 40, height: 54), cornerRadius: 27)
+        closeButtonBg.fillColor = ThemeManager.shared.active.color(forValue: 4)
+        closeButtonBg.strokeColor = .clear
+        closeButtonBg.name = "closeBtn"
+        closeButton.addChild(closeButtonBg)
+        Relief.raise(closeButtonBg, depth: 4)
+        let closeLabel = SKLabelNode(text: String(localized: "settings.close", defaultValue: "Fermer"))
+        closeLabel.name = "closeBtn"
+        closeLabel.fontName = "AvenirNext-Bold"
+        closeLabel.fontSize = 19
+        closeLabel.fontColor = ThemeManager.shared.active.color(forValue: 4).readableInk()
+        closeLabel.verticalAlignmentMode = .center
+        closeButton.addChild(closeLabel)
+
         // Footer version
         let footer = SKLabelNode(text: AppConfig.appVersion)
-        footer.fontName = "AvenirNext-Regular"
+        footer.fontName = "AvenirNext-Medium"
         footer.fontSize = 13
         footer.fontColor = UIColor(white: 0.55, alpha: 1)
         footer.verticalAlignmentMode = .center
@@ -239,24 +260,38 @@ final class SettingsOverlay: SKNode {
     // MARK: - Row builders
 
     @discardableResult
-    private func addToggleRow(name: String, title: String, y: CGFloat)
+    private func addToggleRow(name: String, title: String, y: CGFloat, symbol: String, tint: UIColor)
     -> (bg: SKShapeNode, knob: SKShapeNode, status: SKLabelNode, label: SKLabelNode) {
 
-        // Hitbox invisible couvrant toute la ligne (pour tap facile)
-        let hit = SKShapeNode(rectOf: CGSize(width: Self.cardW - 40, height: 48))
-        hit.name = name
-        hit.fillColor = .clear
-        hit.strokeColor = .clear
-        hit.position = CGPoint(x: 0, y: y)
-        card.addChild(hit)
+        addRowPlate(name: name, y: y)
+
+        // Pastille colorée + pictogramme : chaque réglage se repère d'un regard.
+        let chipX = -Self.cardW / 2 + 50
+        let chip = SKShapeNode(circleOfRadius: 17)
+        chip.name = name
+        chip.fillColor = tint
+        chip.strokeColor = .clear
+        chip.position = CGPoint(x: chipX, y: y)
+        card.addChild(chip)
+        let config = UIImage.SymbolConfiguration(pointSize: 15, weight: .semibold)
+        if let image = UIImage(systemName: symbol, withConfiguration: config)?
+            .withTintColor(UIColor(white: 0.24, alpha: 1), renderingMode: .alwaysOriginal) {
+            let sprite = SKSpriteNode(texture: SKTexture(image: image))
+            let maxDim = max(image.size.width, image.size.height)
+            sprite.size = CGSize(width: image.size.width / maxDim * 19, height: image.size.height / maxDim * 19)
+            sprite.position = chip.position
+            sprite.name = name
+            card.addChild(sprite)
+        }
 
         let label = SKLabelNode(text: title)
-        label.fontName = "AvenirNext-Medium"
-        label.fontSize = 21
-        label.fontColor = UIColor(white: 0.30, alpha: 1)
+        label.name = name
+        label.fontName = "AvenirNext-DemiBold"
+        label.fontSize = 19
+        label.fontColor = UIColor(white: 0.26, alpha: 1)
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .left
-        label.position = CGPoint(x: -Self.cardW / 2 + 36, y: y + 2)
+        label.position = CGPoint(x: chipX + 28, y: y)
         card.addChild(label)
 
         let container = SKNode()
@@ -277,33 +312,46 @@ final class SettingsOverlay: SKNode {
         container.addChild(knob)
 
         let status = SKLabelNode(text: "")
-        status.fontName = "AvenirNext-Regular"
+        status.fontName = "AvenirNext-Medium"
         status.fontSize = 12
         status.fontColor = UIColor(white: 0.55, alpha: 1)
         status.verticalAlignmentMode = .center
-        status.horizontalAlignmentMode = .center
-        status.position = CGPoint(x: Self.cardW / 2 - 72, y: y - 26)
+        status.horizontalAlignmentMode = .right
+        status.position = CGPoint(x: Self.cardW / 2 - 114, y: y)
         card.addChild(status)
 
         return (bg, knob, status, label)
     }
 
+    /// Fond d'une ligne : pastille blanche sur un socle discret. C'est elle qui
+    /// porte le nom de la ligne (hit-test et retour visuel au tap).
+    private func addRowPlate(name: String, y: CGFloat) {
+        let size = CGSize(width: Self.cardW - 40, height: 50)
+        let ledge = SKShapeNode(rectOf: size, cornerRadius: 20)
+        ledge.fillColor = UIColor(red: 0.90, green: 0.87, blue: 0.82, alpha: 1)
+        ledge.strokeColor = .clear
+        ledge.position = CGPoint(x: 0, y: y - 3)
+        card.addChild(ledge)
+
+        let plate = SKShapeNode(rectOf: size, cornerRadius: 20)
+        plate.name = name
+        plate.fillColor = .white
+        plate.strokeColor = .clear
+        plate.position = CGPoint(x: 0, y: y)
+        card.addChild(plate)
+    }
+
     private func addActionRow(name: String, title: String, y: CGFloat) {
-        let hit = SKShapeNode(rectOf: CGSize(width: Self.cardW - 40, height: 48))
-        hit.name = name
-        hit.fillColor = .clear
-        hit.strokeColor = .clear
-        hit.position = CGPoint(x: 0, y: y)
-        card.addChild(hit)
+        addRowPlate(name: name, y: y)
 
         let label = SKLabelNode(text: title)
         label.name = name
-        label.fontName = "AvenirNext-Medium"
-        label.fontSize = 21
-        label.fontColor = UIColor(white: 0.30, alpha: 1)
+        label.fontName = "AvenirNext-DemiBold"
+        label.fontSize = 19
+        label.fontColor = UIColor(white: 0.26, alpha: 1)
         label.verticalAlignmentMode = .center
         label.horizontalAlignmentMode = .left
-        label.position = CGPoint(x: -Self.cardW / 2 + 36, y: y + 2)
+        label.position = CGPoint(x: -Self.cardW / 2 + 40, y: y)
         card.addChild(label)
 
         let chevron = SKLabelNode(text: "›")
@@ -313,18 +361,13 @@ final class SettingsOverlay: SKNode {
         chevron.fontColor = UIColor(white: 0.55, alpha: 1)
         chevron.verticalAlignmentMode = .center
         chevron.horizontalAlignmentMode = .right
-        chevron.position = CGPoint(x: Self.cardW / 2 - 36, y: y + 2)
+        chevron.position = CGPoint(x: Self.cardW / 2 - 40, y: y + 2)
         card.addChild(chevron)
     }
 
-    private func addSeparator(y: CGFloat) {
-        let w = Self.cardW - 72
-        let line = SKShapeNode(rectOf: CGSize(width: w, height: 1))
-        line.fillColor = UIColor(white: 0.85, alpha: 1)
-        line.strokeColor = .clear
-        line.position = CGPoint(x: 0, y: y)
-        card.addChild(line)
-    }
+    /// Les groupes ne sont plus séparés par un filet : l'espacement suffit,
+    /// chaque ligne ayant désormais son propre fond.
+    private func addSeparator(y: CGFloat) {}
 
     private func animateRow(named name: String) {
         guard let node = card.childNode(withName: name) else { return }

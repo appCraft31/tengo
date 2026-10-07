@@ -93,7 +93,7 @@ class LeaderboardScene: SKScene {
 
         if scores.isEmpty {
             let emoji = SKLabelNode(text: "✦")
-            emoji.fontName = "AvenirNext-UltraLight"
+            emoji.fontName = "AvenirNext-Medium"
             emoji.fontSize = 36
             emoji.fontColor = UIColor(white: 0.65, alpha: 1)
             emoji.verticalAlignmentMode = .center
@@ -109,7 +109,7 @@ class LeaderboardScene: SKScene {
             addChild(empty)
 
             let sub = SKLabelNode(text: String(localized: "leaderboard.empty_subtitle"))
-            sub.fontName = "AvenirNext-UltraLight"
+            sub.fontName = "AvenirNext-Medium"
             sub.fontSize = 17
             sub.fontColor = UIColor(white: 0.55, alpha: 1)
             sub.verticalAlignmentMode = .center
@@ -170,7 +170,7 @@ class LeaderboardScene: SKScene {
         addChild(dot)
 
         let ptsLabel = SKLabelNode(text: String(localized: "game.points_label"))
-        ptsLabel.fontName = "AvenirNext-UltraLight"
+        ptsLabel.fontName = "AvenirNext-Medium"
         ptsLabel.fontSize = 14
         ptsLabel.fontColor = UIColor(white: 0.58, alpha: 1)
         ptsLabel.verticalAlignmentMode = .center
@@ -206,9 +206,10 @@ class LeaderboardScene: SKScene {
             bg.strokeColor = UIColor(white: 0.68, alpha: 0.35)
             bg.lineWidth = 1
             pill.addChild(bg)
+            Relief.raise(bg, depth: 3)
 
             let rankLabel = SKLabelNode(text: "#\(rank)")
-            rankLabel.fontName = "AvenirNext-UltraLight"
+            rankLabel.fontName = "AvenirNext-Medium"
             rankLabel.fontSize = 15
             rankLabel.fontColor = UIColor(white: 0.60, alpha: 1)
             rankLabel.horizontalAlignmentMode = .left
@@ -240,6 +241,7 @@ class LeaderboardScene: SKScene {
         bg.strokeColor = UIColor(white: 0.60, alpha: 0.35)
         bg.lineWidth = 1
         btn.addChild(bg)
+        Relief.raise(bg, depth: 5)
 
         let label = SKLabelNode(text: title)
         label.fontName = "AvenirNext-Medium"
@@ -261,6 +263,7 @@ class LeaderboardScene: SKScene {
         circle.strokeColor = UIColor(white: 0.68, alpha: 0.45)
         circle.lineWidth = 1.5
         back.addChild(circle)
+        Relief.raise(circle, depth: 4)
 
         let icon = SKLabelNode(text: "‹")
         icon.fontName = "AvenirNext-Medium"

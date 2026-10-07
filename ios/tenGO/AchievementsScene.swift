@@ -113,6 +113,7 @@ class AchievementsScene: SKScene {
             bg.strokeColor = UIColor(white: 0.68, alpha: 0.3)
             bg.lineWidth = 1
             tab.addChild(bg)
+            Relief.raise(bg, depth: 3)
 
             let label = SKLabelNode(text: String(localized: String.LocalizationValue(cat.titleKey)))
             label.fontName = selected ? "AvenirNext-Bold" : "AvenirNext-Medium"
@@ -141,6 +142,7 @@ class AchievementsScene: SKScene {
         bg.strokeColor = UIColor(white: 0.70, alpha: 0.3)
         bg.lineWidth = 1
         row.addChild(bg)
+        Relief.raise(bg, depth: 3)
 
         // Icône catégorie — se resserre avec la ligne sur les petits écrans.
         let iconR = min(26, height * 0.28)
@@ -178,7 +180,7 @@ class AchievementsScene: SKScene {
         row.addChild(titleLabel)
 
         let descLabel = SKLabelNode(text: AchievementManager.description(for: def))
-        descLabel.fontName = "AvenirNext-UltraLight"
+        descLabel.fontName = "AvenirNext-Medium"
         descLabel.fontSize = 14
         descLabel.fontColor = UIColor(white: 0.42, alpha: 1)
         descLabel.horizontalAlignmentMode = .left
@@ -212,6 +214,7 @@ class AchievementsScene: SKScene {
         circle.strokeColor = UIColor(white: 0.68, alpha: 0.45)
         circle.lineWidth = 1.5
         back.addChild(circle)
+        Relief.raise(circle, depth: 4)
 
         let icon = SKLabelNode(text: "‹")
         icon.fontName = "AvenirNext-Medium"

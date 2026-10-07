@@ -136,7 +136,7 @@ class TutorialScene: SKScene {
         prev.addChild(prevBg)
 
         let prevLabel = SKLabelNode(text: String(localized: "tutorial.previous_button"))
-        prevLabel.fontName = "AvenirNext-UltraLight"
+        prevLabel.fontName = "AvenirNext-Medium"
         prevLabel.fontSize = 17
         prevLabel.fontColor = UIColor(white: 0.40, alpha: 1)
         prevLabel.verticalAlignmentMode = .center
@@ -253,7 +253,7 @@ class TutorialScene: SKScene {
 
         // Texte somme
         let sumLabel = SKLabelNode(text: "4 + 2 + … = 10 ?")
-        sumLabel.fontName = "AvenirNext-UltraLight"
+        sumLabel.fontName = "AvenirNext-Medium"
         sumLabel.fontSize = 18
         sumLabel.fontColor = UIColor(white: 0.45, alpha: 1)
         sumLabel.verticalAlignmentMode = .center
@@ -287,7 +287,7 @@ class TutorialScene: SKScene {
 
         // Hint
         let hint = SKLabelNode(text: String(localized: "tutorial.step1_hint"))
-        hint.fontName = "AvenirNext-UltraLight"
+        hint.fontName = "AvenirNext-Medium"
         hint.fontSize = 16
         hint.fontColor = UIColor(white: 0.50, alpha: 1)
         hint.verticalAlignmentMode = .center
@@ -351,7 +351,7 @@ class TutorialScene: SKScene {
 
     private func addStepSubtitle(_ text: String, to parent: SKNode, y: CGFloat) {
         let label = SKLabelNode(text: text)
-        label.fontName = "AvenirNext-UltraLight"
+        label.fontName = "AvenirNext-Medium"
         label.fontSize = 18
         label.fontColor = UIColor(white: 0.42, alpha: 1)
         label.verticalAlignmentMode = .center
@@ -386,7 +386,7 @@ class TutorialScene: SKScene {
 
             if i < values.count - 1 {
                 let plus = SKLabelNode(text: "+")
-                plus.fontName = "AvenirNext-UltraLight"
+                plus.fontName = "AvenirNext-Medium"
                 plus.fontSize = 18
                 plus.fontColor = UIColor(white: 0.55, alpha: 1)
                 plus.verticalAlignmentMode = .center
@@ -417,7 +417,7 @@ class TutorialScene: SKScene {
         row.addChild(bg)
 
         let leftLabel = SKLabelNode(text: left)
-        leftLabel.fontName = "AvenirNext-UltraLight"
+        leftLabel.fontName = "AvenirNext-Medium"
         leftLabel.fontSize = 18
         leftLabel.fontColor = UIColor(white: 0.36, alpha: 1)
         leftLabel.verticalAlignmentMode = .center

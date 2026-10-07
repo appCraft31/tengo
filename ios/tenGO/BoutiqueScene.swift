@@ -13,6 +13,9 @@ import StoreKit
 class BoutiqueScene: SKScene {
 
     private var attemptedProductLoad = false
+    /// Centre de la pastille de solde (le « +500 » de l'achat sans pub en part).
+    private var balanceChipCenter: CGPoint = .zero
+    private var isLoadingProducts = false
 
     /// Mode guidé (premier achat) : défile jusqu'aux Boosters et met en avant
     /// la carte du lot d'indices jusqu'à l'achat ou une autre interaction.
@@ -64,7 +67,14 @@ class BoutiqueScene: SKScene {
         // safeAreaInsets peut être nul au lancement : plancher à ~47 pt (encoche).
         safeTop = max(view.safeAreaInsets.top, 47) / scale
         safeBottom = max(view.safeAreaInsets.bottom, 20) / scale
+        // Prix « sans pub » pas encore connu (chargement du lancement en cours
+        // ou échoué) : on l'attend ou on le relance, puis la page se reconstruit.
+        if !AdFreeManager.shared.isPurchased, StoreManager.shared.adFreeDisplayPrice == nil {
+            reloadProducts(rebuildFirst: false)
+        }
         rebuild()
+        AnalyticsService.shopOpened(source: returnDestination == .game ? "game" : "tab")
+        if !AdFreeManager.shared.isPurchased { AnalyticsService.noAdsOfferView(source: "shop") }
         // Capture de review App Store des achats in-app : « Sans pub » est déjà
         // en haut de page ; SHOP_COINS=1 défile en plus jusqu'aux packs.
         if ProcessInfo.processInfo.environment["SHOP_COINS"] == "1" { scrollTo(section: "coins") }
@@ -94,11 +104,14 @@ class BoutiqueScene: SKScene {
         title.fontSize = 38
         title.fontColor = theme.logo
         title.verticalAlignmentMode = .center
-        title.position = CGPoint(x: 0, y: topY)
+        // Titre à gauche, solde à droite sur la même ligne : la page gagne
+        // une rangée de contenu.
+        title.horizontalAlignmentMode = .left
+        title.position = CGPoint(x: -usableWidth / 2 + 24, y: topY - 14)
         title.zPosition = 10
         addChild(title)
 
-        addBalanceChip(atY: topY - 56, theme: theme)
+        addBalanceChip(atY: topY - 14, theme: theme)
 
         // Ouverte depuis l'accueil, la boutique EST l'onglet Boutique. Ouverte
         // depuis une partie, elle garde son bouton de retour : les onglets
@@ -117,7 +130,7 @@ class BoutiqueScene: SKScene {
         }
 
         // Zone défilante entre le solde et le pied d'écran (masquée au viewport).
-        viewportTop = topY - 100
+        viewportTop = topY - 56
         viewportBottom = bottomY + bottomChromeH + 16
         let crop = SKCropNode()
         let mask = SKSpriteNode(color: .white,
@@ -257,9 +270,12 @@ class BoutiqueScene: SKScene {
             for (i, m) in mocks.enumerated() { addCoinPackMock(amount: m.0, priceText: m.1, at: gridPlace(i)) }
             endGrid(count: mocks.count)
         } else if products.isEmpty {
-            let msg = attemptedProductLoad
-                ? String(localized: "shop.coins_unavailable", defaultValue: "Indisponible pour le moment")
-                : String(localized: "shop.coins_loading", defaultValue: "Chargement…")
+            // Premier affichage sans produits : on tente le chargement (celui
+            // du lancement a pu échouer hors ligne).
+            if !attemptedProductLoad { reloadProducts(rebuildFirst: false) }
+            let msg = isLoadingProducts
+                ? String(localized: "shop.coins_loading", defaultValue: "Chargement…")
+                : String(localized: "shop.coins_unavailable", defaultValue: "Indisponible pour le moment")
             let label = SKLabelNode(text: msg)
             label.fontName = "AvenirNext-Medium"
             label.fontSize = 19
@@ -268,12 +284,25 @@ class BoutiqueScene: SKScene {
             label.position = CGPoint(x: 0, y: cursor - 30)
             contentNode.addChild(label)
             cursor -= 80
-            if !attemptedProductLoad {
-                attemptedProductLoad = true
-                Task { @MainActor in
-                    await StoreManager.shared.loadProducts()
-                    self.rebuild()
-                }
+            if !isLoadingProducts {
+                // Échec : le joueur peut relancer le chargement d'un tap.
+                let retry = SKNode()
+                retry.name = "productsRetry"
+                retry.position = CGPoint(x: 0, y: cursor + 8)
+                let pill = SKShapeNode(rectOf: CGSize(width: 220, height: 44), cornerRadius: 22)
+                pill.fillColor = theme.logo.withAlphaComponent(0.06)
+                pill.strokeColor = theme.logo.withAlphaComponent(0.18)
+                pill.lineWidth = 1
+                retry.addChild(pill)
+                Relief.raise(pill, depth: 3)
+                let retryLabel = SKLabelNode(text: String(localized: "shop.retry", defaultValue: "Réessayer"))
+                retryLabel.fontName = "AvenirNext-DemiBold"
+                retryLabel.fontSize = 17
+                retryLabel.fontColor = theme.logo
+                retryLabel.verticalAlignmentMode = .center
+                retry.addChild(retryLabel)
+                contentNode.addChild(retry)
+                cursor -= 50
             }
         } else {
             for (i, p) in products.enumerated() { addCoinPackCard(p, at: gridPlace(i)) }
@@ -281,6 +310,21 @@ class BoutiqueScene: SKScene {
         }
 
         contentHeight = -cursor + 8
+    }
+
+    /// (Re)charge les produits StoreKit puis reconstruit la page. Sert au
+    /// premier affichage, au bouton « Réessayer » et au tap sur la carte
+    /// « Sans pub » tant que son prix est inconnu.
+    private func reloadProducts(rebuildFirst: Bool = true) {
+        guard !isLoadingProducts else { return }
+        attemptedProductLoad = true
+        isLoadingProducts = true
+        if rebuildFirst { rebuild() }   // affiche « Chargement… »
+        Task { @MainActor in
+            await StoreManager.shared.loadProducts()
+            self.isLoadingProducts = false
+            self.rebuild()
+        }
     }
 
     /// Carte pleine largeur « Sans pub » (non-consommable), mise en avant
@@ -321,10 +365,12 @@ class BoutiqueScene: SKScene {
         bg.strokeColor = theme.logo.withAlphaComponent(0.25)
         bg.lineWidth = purchased ? 3 : 1.5
         card.addChild(bg)
+        Relief.raise(bg, depth: 6)
 
         // Pictogramme « écran publicitaire barré ».
         let picto = SKNode()
         picto.position = CGPoint(x: -w / 2 + 48, y: 0)
+        picto.addChild(Relief.iconChip(radius: 32, on: theme.accent))
         let screen = SKShapeNode(rectOf: CGSize(width: 34, height: 24), cornerRadius: 5)
         screen.fillColor = .clear
         screen.strokeColor = ink.withAlphaComponent(0.85)
@@ -389,12 +435,15 @@ class BoutiqueScene: SKScene {
             label.position = pill.position
             card.addChild(label)
         } else {
-            let priceText = StoreManager.shared.adFreeProduct?.displayPrice ?? "3,99 €"
+            // Prix StoreKit uniquement (devise du joueur) ; « … » tant qu'il
+            // n'est pas chargé — l'achat est alors inactif (cf. handleNoAds).
+            let priceText = StoreManager.shared.adFreeProduct?.displayPrice ?? "…"
             let pill = SKShapeNode(rectOf: CGSize(width: 110, height: 36), cornerRadius: 18)
             pill.fillColor = theme.background
             pill.strokeColor = .clear
             pill.position = CGPoint(x: w / 2 - 74, y: 0)
             card.addChild(pill)
+            Relief.raise(pill, depth: 3)
             let label = SKLabelNode(text: priceText)
             label.fontName = "AvenirNext-Bold"
             label.fontSize = 16
@@ -434,8 +483,15 @@ class BoutiqueScene: SKScene {
         bg.strokeColor = theme.logo.withAlphaComponent(0.18)
         bg.lineWidth = 1.5
         card.addChild(bg)
+        Relief.raise(bg, depth: 5)
 
-        let icon = BoosterIcon.make(booster, size: 40, color: theme.logo)
+        let iconChip = SKShapeNode(circleOfRadius: 30)
+        iconChip.fillColor = theme.color(forValue: [3, 5, 7][(Booster.allCases.firstIndex(of: booster) ?? 0) % 3])
+            .mixedWithWhite(0.35)
+        iconChip.strokeColor = .clear
+        iconChip.position = CGPoint(x: -w / 2 + 48, y: 0)
+        card.addChild(iconChip)
+        let icon = BoosterIcon.make(booster, size: 36, color: UIColor(white: 0.22, alpha: 1))
         icon.position = CGPoint(x: -w / 2 + 48, y: 0)
         card.addChild(icon)
 
@@ -498,6 +554,7 @@ class BoutiqueScene: SKScene {
         pill.strokeColor = .clear
         pill.position = position
         card.addChild(pill)
+        Relief.raise(pill, depth: 3)
 
         let ink = affordable ? theme.accent.readableInk() : UIColor(white: 0.45, alpha: 1)
 
@@ -527,44 +584,42 @@ class BoutiqueScene: SKScene {
         card.addChild(priceLabel)
     }
 
-    /// Bonus de bienvenue crédité avec l'achat « sans pub ».
-    private static let noAdsBonusCoins = 500
-
     /// Achat du mod « sans pub » depuis la Boutique. Succès → +500 pièces,
     /// rebuild (badge « Actif ») ; les interstitiels consultent `isPurchased`.
     private func handleNoAds() {
         guard !AdFreeManager.shared.isPurchased else { return }
-        guard let product = StoreManager.shared.adFreeProduct else {
+        guard StoreManager.shared.adFreeProduct != nil else {
+            // Prix inconnu : pas d'achat, on retente le chargement.
             shake(contentNode.childNode(withName: "noAds"))
-            Task { @MainActor in
-                await StoreManager.shared.loadProducts()
-                self.rebuild()
-            }
+            reloadProducts()
             return
         }
         HapticManager.light()
         Task { @MainActor in
-            let success = await StoreManager.shared.purchase(product)
-            if success {
+            let outcome = await StoreManager.shared.purchaseAdFree(source: "shop")
+            // rebuild() D'ABORD (il fait removeAllChildren), le retour ensuite.
+            self.rebuild()
+            if outcome == .success {
                 HapticManager.medium()
-                CoinManager.shared.add(Self.noAdsBonusCoins)
-                self.rebuild()
                 self.showNoAdsBonusFeedback()
+                self.showShopToast(String(format: String(localized: "shop.purchase_success_noads",
+                                                         defaultValue: "Publicités supprimées. +%lld pièces !"),
+                                          StoreManager.adFreeBonusCoins))
             } else {
-                self.shake(self.contentNode.childNode(withName: "noAds"))
+                if outcome == .failed { self.shake(self.contentNode.childNode(withName: "noAds")) }
+                if let message = outcome.message { self.showShopToast(message) }
             }
         }
     }
 
     /// « +500 » doré qui s'élève depuis le solde après l'achat sans pub.
     private func showNoAdsBonusFeedback() {
-        let chipY = usableHeight / 2 - safeTop - 26 - 56
-        let popup = SKLabelNode(text: "+\(Self.noAdsBonusCoins)")
+        let popup = SKLabelNode(text: "+\(StoreManager.adFreeBonusCoins)")
         popup.fontName = "AvenirNext-Heavy"
         popup.fontSize = 26
         popup.fontColor = UIColor(red: 0.85, green: 0.60, blue: 0.15, alpha: 1)
         popup.verticalAlignmentMode = .center
-        popup.position = CGPoint(x: 0, y: chipY - 34)
+        popup.position = CGPoint(x: balanceChipCenter.x, y: balanceChipCenter.y - 40)
         popup.zPosition = 30
         addChild(popup)
         popup.run(SKAction.sequence([
@@ -607,6 +662,7 @@ class BoutiqueScene: SKScene {
             pill.strokeColor = .clear
             pill.position = CGPoint(x: 0, y: -48)
             card.addChild(pill)
+            Relief.raise(pill, depth: 3)
             let label = SKLabelNode(text: product.displayPrice)
             label.fontName = "AvenirNext-Bold"
             label.fontSize = 16
@@ -632,6 +688,7 @@ class BoutiqueScene: SKScene {
         pill.strokeColor = .clear
         pill.position = CGPoint(x: 0, y: -48)
         card.addChild(pill)
+        Relief.raise(pill, depth: 3)
         let label = SKLabelNode(text: priceText)
         label.fontName = "AvenirNext-Bold"
         label.fontSize = 16
@@ -712,6 +769,7 @@ class BoutiqueScene: SKScene {
         bg.strokeColor = border
         bg.lineWidth = borderWidth
         card.addChild(bg)
+        Relief.raise(bg, depth: 5)
 
         preview.position = CGPoint(x: 0, y: previewY)
         card.addChild(preview)
@@ -734,6 +792,7 @@ class BoutiqueScene: SKScene {
             pill.strokeColor = .clear
             pill.position = CGPoint(x: 0, y: y)
             card.addChild(pill)
+            Relief.raise(pill, depth: 3)
             let label = SKLabelNode(text: String(localized: "shop.active", defaultValue: "Actif"))
             label.fontName = "AvenirNext-Bold"
             label.fontSize = 15
@@ -782,7 +841,7 @@ class BoutiqueScene: SKScene {
 
     private func addBalanceChip(atY y: CGFloat, theme: Theme) {
         let container = SKNode()
-        container.position = CGPoint(x: 0, y: y)
+        container.zPosition = 10
         let coin = CoinIcon.make(radius: 12)
         coin.zPosition = 1
         let label = SKLabelNode(text: "\(CoinManager.shared.balance)")
@@ -794,11 +853,15 @@ class BoutiqueScene: SKScene {
         label.zPosition = 1
         let gap: CGFloat = 9
         let contentW = 24 + gap + label.frame.width
+        // Ancré par son bord droit : la largeur varie avec le solde.
+        container.position = CGPoint(x: usableWidth / 2 - 24 - (contentW + 44) / 2, y: y)
+        balanceChipCenter = container.position
         let pill = SKShapeNode(rectOf: CGSize(width: contentW + 44, height: 46), cornerRadius: 23)
         pill.fillColor = UIColor(red: 0.98, green: 0.92, blue: 0.74, alpha: 0.95)
         pill.strokeColor = UIColor(red: 0.84, green: 0.64, blue: 0.28, alpha: 0.4)
         pill.lineWidth = 1
         container.addChild(pill)
+        Relief.raise(pill, depth: 4)
         let startX = -contentW / 2
         coin.position = CGPoint(x: startX + 12, y: 0)
         label.position = CGPoint(x: startX + 24 + gap, y: 0)
@@ -817,6 +880,7 @@ class BoutiqueScene: SKScene {
         bg.strokeColor = UIColor(white: 0.68, alpha: 0.35)
         bg.lineWidth = 1
         node.addChild(bg)
+        Relief.raise(bg, depth: 5)
         let label = SKLabelNode(text: String(localized: "shop.back", defaultValue: "Accueil"))
         label.fontName = "AvenirNext-Medium"
         label.fontSize = 19
@@ -951,6 +1015,7 @@ class BoutiqueScene: SKScene {
 
             if name == "shopBack" { goBackToMenu(); return }
             if name == "noAds" { handleNoAds(); return }
+            if name == "productsRetry" { HapticManager.light(); reloadProducts(); return }
             if name.hasPrefix("item:theme:") {
                 handleTheme(String(name.dropFirst("item:theme:".count)), card: contentNode.childNode(withName: name)); return
             }
@@ -1047,10 +1112,20 @@ class BoutiqueScene: SKScene {
         toast.verticalAlignmentMode = .center
         toast.numberOfLines = 2
         toast.lineBreakMode = .byWordWrapping
-        toast.preferredMaxLayoutWidth = usableWidth - 48
-        toast.position = CGPoint(x: 0, y: -usableHeight / 2 + 140)
+        toast.preferredMaxLayoutWidth = usableWidth - 96
+        // Au-dessus du pied d'écran (onglets ou bouton retour), sur un fond
+        // opaque : le message passe par-dessus les cartes de la page.
+        toast.position = CGPoint(x: 0, y: viewportBottom + 46)
         toast.zPosition = 40
         toast.alpha = 0
+        let toastBg = SKShapeNode(rectOf: CGSize(width: toast.frame.width + 44,
+                                                 height: toast.frame.height + 26),
+                                  cornerRadius: 18)
+        toastBg.fillColor = UIColor(white: 1, alpha: 0.96)
+        toastBg.strokeColor = toast.fontColor?.withAlphaComponent(0.35) ?? .clear
+        toastBg.lineWidth = 1
+        toastBg.zPosition = -1
+        toast.addChild(toastBg)
         addChild(toast)
         toast.run(SKAction.sequence([
             SKAction.fadeIn(withDuration: 0.2),
@@ -1064,8 +1139,16 @@ class BoutiqueScene: SKScene {
         guard let product = StoreManager.shared.products.first(where: { $0.id == productID }) else { return }
         HapticManager.light()
         Task { @MainActor in
-            let success = await StoreManager.shared.purchase(product)
-            if success { HapticManager.medium(); rebuild() }
+            let outcome = await StoreManager.shared.purchase(product, source: "shop")
+            if outcome == .success {
+                HapticManager.medium()
+                rebuild()
+                showShopToast(String(format: String(localized: "shop.purchase_success_coins",
+                                                    defaultValue: "+%lld pièces ajoutées"),
+                                     StoreManager.shared.coins(for: product)))
+            } else if let message = outcome.message {
+                showShopToast(message)
+            }
         }
     }
 

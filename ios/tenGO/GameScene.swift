@@ -175,6 +175,9 @@ class GameScene: SKScene {
     /// non comme un chiffre qui a déjà changé avant que l'animation ne parte.
     private var displayedScore = 0
     private var gameOverPanel: SKNode?
+    /// L'offre « sans pub » a interrompu un « Rejouer » : la refuser relance la partie.
+    private var noAdsOfferResumesReplay = false
+    private var isPurchasingNoAds = false
     private var scoreBubbleNode: SKNode!
     private var restartBubbleNode: SKNode!
     private var settingsBubbleNode: SKNode!
@@ -363,10 +366,27 @@ class GameScene: SKScene {
         HapticManager.prepare()
         #if DEBUG
         showcasePathForScreenshot()
+        forceGameOverForQA()
         #endif
     }
 
     #if DEBUG
+    /// QA (`QA_GAME_OVER=N`) : termine la partie toutes les N secondes de jeu,
+    /// pour atteindre le panneau de fin (interstitielle, offre « sans pub »)
+    /// sans jouer une grille entière au simulateur. Vaut aussi après « Rejouer ».
+    private func forceGameOverForQA() {
+        guard mode == .normal,
+              let delay = Double(ProcessInfo.processInfo.environment["QA_GAME_OVER"] ?? "") else { return }
+        run(SKAction.repeatForever(SKAction.sequence([
+            SKAction.wait(forDuration: delay),
+            SKAction.run { [weak self] in
+                guard let self, self.gameOverPanel == nil, !self.isAnimating else { return }
+                self.isAnimating = true
+                self.triggerLose()
+            }
+        ])))
+    }
+
     /// Capture de fiche (`SCREENSHOT_PATH=N`) : trace, sans le valider, le plus
     /// long chemin de N bulles au plus dont la somme fait 10. Sur une capture
     /// figée, c'est le seul moyen de montrer la mécanique du jeu.
@@ -407,6 +427,7 @@ class GameScene: SKScene {
         bg.strokeColor = theme.logo.withAlphaComponent(0.22)
         bg.lineWidth = 1
         container.addChild(bg)
+        Relief.raise(bg, depth: 4, surface: true)
 
         let config = UIImage.SymbolConfiguration(pointSize: 21, weight: .medium)
         if let img = UIImage(systemName: "gearshape.fill", withConfiguration: config)?
@@ -449,6 +470,19 @@ class GameScene: SKScene {
         let gridEdgeBottom = gridBottom - BubbleNode.bubbleRadius
         let band = gridEdgeBottom - visibleBottom
         let bandMid = (gridEdgeBottom + visibleBottom) / 2
+
+        // Écran assez haut (iPhone) : accueil, score et réglages forment une
+        // rangée en haut, et la bande du bas ne porte plus que les boosters et
+        // « recommencer ». Sur un écran court (iPad), la rangée haute
+        // recouvrirait le titre : on garde la disposition historique ci-dessous.
+        let visibleW = view.bounds.width / scale
+        let topInset = max(view.safeAreaInsets.top, 47) / scale
+        let topRowY = -visibleBottom - topInset - 26
+        if mode != .demo, topRowY - 70 > gridTop + 95 + 30 {
+            layoutTopRow(y: topRowY, edgeX: visibleW / 2 - 58)
+            layoutBottomBand(midY: bandMid, animated: animated)
+            return
+        }
 
         // Position horizontale par défaut de la rangée de contrôle (⌂ / score / ↺).
         let sideX: CGFloat = 120
@@ -509,6 +543,75 @@ class GameScene: SKScene {
             scoreBubbleNode.position = CGPoint(x: 200, y: bandMid)
             restartBubbleNode.position = CGPoint(x: 308, y: bandMid)
         }
+    }
+
+    /// Rangée haute : ⌂ à gauche (au gabarit du bouton réglages), carte de
+    /// score au centre. Le bouton réglages occupe déjà le coin droit.
+    private func layoutTopRow(y: CGFloat, edgeX: CGFloat) {
+        homeBubbleNode.setScale(0.6)
+        homeBubbleNode.position = CGPoint(x: -edgeX, y: y)
+        // Le pictogramme garde une taille lisible malgré la réduction du bouton.
+        homeBubbleNode.children.compactMap { $0 as? SKLabelNode }.first?.fontSize = 42
+        // Sous l'encoche : la carte est plus haute que les deux boutons ronds.
+        scoreBubbleNode.position = CGPoint(x: 0, y: y - 22)
+
+        // La bulle ronde du score devient une carte large, une seule fois.
+        guard scoreBubbleNode.childNode(withName: "scoreCard") == nil else { return }
+        scoreBubbleNode.children.filter { $0.name == "scoreShape" }.forEach { $0.removeFromParent() }
+        let card = SKShapeNode(rectOf: CGSize(width: 208, height: 84), cornerRadius: 32)
+        card.fillColor = .white
+        card.strokeColor = .clear
+        card.name = "scoreCard"
+        scoreBubbleNode.insertChild(card, at: 0)
+        Relief.raise(card, depth: 5)
+        scoreLabel.fontName = "AvenirNext-Heavy"
+        scoreLabel.fontSize = 36
+        scoreLabel.position = CGPoint(x: 0, y: -10)
+        if let caption = scoreBubbleNode.childNode(withName: "scoreCaption") as? SKLabelNode {
+            caption.text = caption.text?.uppercased()
+            caption.fontName = "AvenirNext-Bold"
+            caption.fontSize = 12
+            caption.position = CGPoint(x: 0, y: 24)
+        }
+    }
+
+    /// Bande du bas quand le score est en haut : les boosters (ou la pastille
+    /// boutique) et « recommencer » partagent une seule rangée centrée.
+    private func layoutBottomBand(midY: CGFloat, animated: Bool) {
+        func place(_ node: SKNode, _ p: CGPoint) {
+            guard animated else {
+                node.position = p
+                return
+            }
+            let move = SKAction.move(to: p, duration: 0.22)
+            move.timingMode = .easeOut
+            node.run(move, withKey: "layout")
+        }
+        let showsRestart = !restartBubbleNode.isHidden
+
+        guard let bar = boosterBar, !boosterButtons.isEmpty || shopPillNode != nil else {
+            restartBubbleNode.position = CGPoint(x: 0, y: midY)
+            return
+        }
+        bar.position = CGPoint(x: 0, y: midY)
+
+        if boosterButtons.isEmpty {
+            // Pastille boutique (196 de large) + recommencer.
+            let total: CGFloat = showsRestart ? 196 + 26 + 88 : 196
+            shopPillNode?.position = CGPoint(x: -total / 2 + 98, y: 0)
+            restartBubbleNode.position = CGPoint(x: total / 2 - 44, y: midY)
+            return
+        }
+        shopPillNode?.position = .zero
+
+        let spacing: CGFloat = 124
+        let slots = boosterButtons.count + (showsRestart ? 1 : 0)
+        func slotX(_ index: Int) -> CGFloat { (CGFloat(index) - CGFloat(slots - 1) / 2) * spacing }
+        for (i, item) in boosterButtons.enumerated() {
+            place(item.node, CGPoint(x: slotX(i), y: 0))
+        }
+        boosterHitRadius = min(48, spacing / 2 - 2)
+        restartBubbleNode.position = CGPoint(x: slotX(slots - 1), y: midY)
     }
 
     // MARK: - Background
@@ -613,6 +716,7 @@ class GameScene: SKScene {
         homeCircle.strokeColor = UIColor(white: 0.70, alpha: 0.55)
         homeCircle.lineWidth = 1.5
         homeBubble.addChild(homeCircle)
+        Relief.raise(homeCircle, depth: 4, fill: .white)
 
         let homeIcon = SKLabelNode(text: "⌂")
         homeIcon.fontName = "AvenirNext-Medium"
@@ -632,10 +736,13 @@ class GameScene: SKScene {
         circle.fillColor = UIColor(red: 0.96, green: 0.93, blue: 0.90, alpha: 1)
         circle.strokeColor = UIColor(white: 0.70, alpha: 0.55)
         circle.lineWidth = 1.5
+        circle.name = "scoreShape"   // remplacée par une carte en disposition haute
         bubble.addChild(circle)
+        Relief.raise(circle, depth: 5, fill: .white)
 
         let ptsLabel = SKLabelNode(text: String(localized: "game.points_label"))
-        ptsLabel.fontName = "AvenirNext-UltraLight"
+        ptsLabel.name = "scoreCaption"
+        ptsLabel.fontName = "AvenirNext-Medium"
         ptsLabel.fontSize = 13
         ptsLabel.fontColor = UIColor(white: 0.58, alpha: 1)
         ptsLabel.verticalAlignmentMode = .center
@@ -661,6 +768,7 @@ class GameScene: SKScene {
         restartCircle.strokeColor = UIColor(white: 0.70, alpha: 0.55)
         restartCircle.lineWidth = 1.5
         restartBubble.addChild(restartCircle)
+        Relief.raise(restartCircle, depth: 4, fill: .white)
 
         restartButton = SKLabelNode(text: "↺")
         restartButton.fontName = "AvenirNext-Medium"
@@ -762,6 +870,10 @@ class GameScene: SKScene {
             return
         }
 
+        // Offre « sans pub » sous le panneau de fin : traitée avant les bulles
+        // ⌂ / réglages, qui restent actives sous le voile.
+        if handleNoAdsOfferTouch(at: point) { return }
+
         // Bouton paramètres en haut à droite
         if let settingsBubble = settingsBubbleNode,
            hypot(point.x - settingsBubble.position.x, point.y - settingsBubble.position.y) < 34 {
@@ -791,8 +903,13 @@ class GameScene: SKScene {
                     run(SKAction.wait(forDuration: 0.12)) { [weak self] in
                         guard let self else { return }
                         let rootVC = self.view?.window?.rootViewController ?? UIViewController()
-                        InterstitialAdManager.shared.maybeShow(trigger: .replay, from: rootVC) { [weak self] in
-                            self?.resetGame()
+                        InterstitialAdManager.shared.maybeShow(trigger: .replay, from: rootVC) { [weak self] adShown in
+                            guard let self else { return }
+                            // Une pub vient de passer : c'est le moment de proposer de
+                            // s'en passer. Le panneau reste ; un second « Rejouer » ou
+                            // « Non merci » relance la partie (sans pub : cooldown).
+                            if adShown, self.presentNoAdsOffer(resumesReplay: true) { return }
+                            self.resetGame()
                         }
                     }
                     return
@@ -1507,6 +1624,7 @@ class GameScene: SKScene {
         circle.strokeColor = UIColor(white: 0.70, alpha: 0.55)
         circle.lineWidth = 1.5
         node.addChild(circle)
+        Relief.raise(circle, depth: 4, fill: .white)
 
         node.addChild(BoosterIcon.make(booster, size: 44, color: UIColor(white: 0.42, alpha: 1)))
 
@@ -1613,6 +1731,7 @@ class GameScene: SKScene {
         pill.strokeColor = UIColor(white: 0.70, alpha: 0.55)
         pill.lineWidth = 1.5
         node.addChild(pill)
+        Relief.raise(pill, depth: 4, fill: .white)
 
         let icon = BoosterIcon.make(.hint, size: 26, color: UIColor(white: 0.42, alpha: 1))
         icon.position = CGPoint(x: -64, y: 0)
@@ -1857,6 +1976,7 @@ class GameScene: SKScene {
         pill.strokeColor = .clear
         pill.position = position
         panel.addChild(pill)
+        Relief.raise(pill, depth: 4)
 
         let label = SKLabelNode(text: title)
         label.name = name
@@ -2083,6 +2203,7 @@ class GameScene: SKScene {
         bg.lineWidth = 1
         bg.name = "duelShareBtn"
         button.addChild(bg)
+        Relief.raise(bg, depth: 5)
 
         let ink = ThemeManager.shared.active.color(forValue: 4).readableInk()
         let label = SKLabelNode(text: String(localized: "duel.share_button"))
@@ -2496,13 +2617,6 @@ class GameScene: SKScene {
         title.position = CGPoint(x: 0, y: 218)
         panel.addChild(title)
 
-        // Séparateur haut
-        let sep = SKShapeNode(rectOf: CGSize(width: 300, height: 1))
-        sep.fillColor = UIColor(white: 0.78, alpha: 0.55)
-        sep.strokeColor = .clear
-        sep.position = CGPoint(x: 0, y: 152)
-        panel.addChild(sep)
-
         // Score animé (count-up)
         let ptsLabel = String(localized: "game.points_label")
         let scoreDisplay = SKLabelNode(text: "0 \(ptsLabel)")
@@ -2510,7 +2624,7 @@ class GameScene: SKScene {
         scoreDisplay.fontSize = 64
         scoreDisplay.fontColor = UIColor(white: 0.26, alpha: 1)
         scoreDisplay.verticalAlignmentMode = .center
-        scoreDisplay.position = CGPoint(x: 0, y: 76)
+        scoreDisplay.position = CGPoint(x: 0, y: 70)
         panel.addChild(scoreDisplay)
         animateScoreCountUp(label: scoreDisplay, target: score)
 
@@ -2519,7 +2633,7 @@ class GameScene: SKScene {
         let xpGainedThisGame = lastXPResult?.xpGained ?? 0
         if coinsEarnedThisGame > 0 || xpGainedThisGame > 0 {
             let rewardLine = SKNode()
-            rewardLine.position = CGPoint(x: 0, y: 122)
+            rewardLine.position = CGPoint(x: 0, y: 138)
 
             var pieces: [(node: SKNode, width: CGFloat)] = []
 
@@ -2527,15 +2641,20 @@ class GameScene: SKScene {
                 let group = SKNode()
                 let label = SKLabelNode(text: "+\(coinsEarnedThisGame)")
                 label.fontName = "AvenirNext-Bold"
-                label.fontSize = 22
-                label.fontColor = UIColor(red: 0.78, green: 0.55, blue: 0.12, alpha: 1)
+                label.fontSize = 19
+                label.fontColor = UIColor(red: 0.45, green: 0.34, blue: 0.10, alpha: 1)
                 label.verticalAlignmentMode = .center
                 label.horizontalAlignmentMode = .left
-                let coin = CoinIcon.make(radius: 12)
+                let coin = CoinIcon.make(radius: 11)
                 let gap: CGFloat = 8
-                let width = 24 + gap + label.frame.width
-                coin.position = CGPoint(x: -width / 2 + 12, y: 0)
-                label.position = CGPoint(x: -width / 2 + 24 + gap, y: 0)
+                let content = 22 + gap + label.frame.width
+                let width = content + 32
+                let chip = SKShapeNode(rectOf: CGSize(width: width, height: 40), cornerRadius: 20)
+                chip.fillColor = UIColor(red: 0.99, green: 0.95, blue: 0.80, alpha: 1)
+                chip.strokeColor = .clear
+                group.addChild(chip)
+                coin.position = CGPoint(x: -content / 2 + 11, y: 0)
+                label.position = CGPoint(x: -content / 2 + 22 + gap, y: 0)
                 group.addChild(coin)
                 group.addChild(label)
                 pieces.append((group, width))
@@ -2544,14 +2663,21 @@ class GameScene: SKScene {
             if xpGainedThisGame > 0 {
                 let label = SKLabelNode(text: String(format: String(localized: "game_over.xp_gained"), xpGainedThisGame))
                 label.fontName = "AvenirNext-Bold"
-                label.fontSize = 22
-                label.fontColor = UIColor(red: 0.31, green: 0.52, blue: 0.85, alpha: 1)
+                label.fontSize = 19
+                label.fontColor = UIColor(red: 0.20, green: 0.34, blue: 0.68, alpha: 1)
                 label.verticalAlignmentMode = .center
                 label.horizontalAlignmentMode = .center
-                pieces.append((label, label.frame.width))
+                let group = SKNode()
+                let width = label.frame.width + 32
+                let chip = SKShapeNode(rectOf: CGSize(width: width, height: 40), cornerRadius: 20)
+                chip.fillColor = UIColor(red: 0.89, green: 0.92, blue: 1.00, alpha: 1)
+                chip.strokeColor = .clear
+                group.addChild(chip)
+                group.addChild(label)
+                pieces.append((group, width))
             }
 
-            let interGap: CGFloat = 28
+            let interGap: CGFloat = 12
             let totalWidth = pieces.reduce(0) { $0 + $1.width } + interGap * CGFloat(max(0, pieces.count - 1))
             var cursorX = -totalWidth / 2
             for piece in pieces {
@@ -2655,7 +2781,7 @@ class GameScene: SKScene {
             panel.addChild(miss)
         } else if let best = scores.first {
             let bestLabel = SKLabelNode(text: String(format: String(localized: "game_over.best_score"), best))
-            bestLabel.fontName = "AvenirNext-UltraLight"
+            bestLabel.fontName = "AvenirNext-Medium"
             bestLabel.fontSize = 19
             bestLabel.fontColor = UIColor(white: 0.38, alpha: 1)
             bestLabel.verticalAlignmentMode = .center
@@ -2679,36 +2805,37 @@ class GameScene: SKScene {
             panel.addChild(encouragement)
         }
 
-        // Stats
-        let statsLine1 = SKLabelNode(text: String(format: String(localized: "game_over.longest_chain"), longestChain))
-        statsLine1.fontName = "AvenirNext-UltraLight"
-        statsLine1.fontSize = 17
-        statsLine1.fontColor = UIColor(white: 0.38, alpha: 1)
-        statsLine1.verticalAlignmentMode = .center
-        statsLine1.position = CGPoint(x: 0, y: -22)
-        panel.addChild(statsLine1)
+        // Stats : deux tuiles douces côte à côte plutôt que deux lignes grises.
+        let theme = ThemeManager.shared.active
+        let stats: [(text: String, tint: UIColor)] = [
+            (String(format: String(localized: "game_over.longest_chain"), longestChain), theme.color(forValue: 6)),
+            (String(format: String(localized: "game_over.combos_created"), combosCreated), theme.color(forValue: 4)),
+        ]
+        let statW: CGFloat = 216, statH: CGFloat = 56
+        for (index, stat) in stats.enumerated() {
+            let tile = SKShapeNode(rectOf: CGSize(width: statW, height: statH), cornerRadius: 20)
+            tile.fillColor = stat.tint.mixedWithWhite(0.62)
+            tile.strokeColor = .clear
+            tile.position = CGPoint(x: (index == 0 ? -1 : 1) * (statW / 2 + 6), y: -50)
+            panel.addChild(tile)
 
-        let statsLine2 = SKLabelNode(text: String(format: String(localized: "game_over.combos_created"), combosCreated))
-        statsLine2.fontName = "AvenirNext-UltraLight"
-        statsLine2.fontSize = 17
-        statsLine2.fontColor = UIColor(white: 0.38, alpha: 1)
-        statsLine2.verticalAlignmentMode = .center
-        statsLine2.position = CGPoint(x: 0, y: -50)
-        panel.addChild(statsLine2)
-
-        // Séparateur bas
-        let sep2 = SKShapeNode(rectOf: CGSize(width: 300, height: 1))
-        sep2.fillColor = UIColor(white: 0.78, alpha: 0.55)
-        sep2.strokeColor = .clear
-        sep2.position = CGPoint(x: 0, y: -86)
-        panel.addChild(sep2)
+            let label = SKLabelNode(text: stat.text)
+            label.fontName = "AvenirNext-DemiBold"
+            label.fontSize = 15
+            label.fontColor = UIColor(white: 0.26, alpha: 1)
+            label.verticalAlignmentMode = .center
+            label.position = tile.position
+            // Les libellés longs (de, nl) se réduisent plutôt que de déborder.
+            if label.frame.width > statW - 20 { label.setScale((statW - 20) / label.frame.width) }
+            panel.addChild(label)
+        }
 
         // Bouton Rejouer — masqué en mode Défi (une seule partie par jour) ;
         // en Rush, "Rejouer" EST le CTA principal (courtes sessions répétées).
         if mode == .normal || mode == .rush || mode == .puzzle || demoPuzzle != nil {
             let replayBtn = SKNode()
             replayBtn.name = "replayBtn"
-            replayBtn.position = CGPoint(x: 0, y: -152)
+            replayBtn.position = CGPoint(x: 0, y: -144)
             panel.addChild(replayBtn)
 
             let replayBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
@@ -2716,14 +2843,27 @@ class GameScene: SKScene {
             replayBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
             replayBg.lineWidth = 1
             replayBtn.addChild(replayBg)
+            Relief.raise(replayBg, depth: 6)
 
             let replayLabel = SKLabelNode(text: String(localized: nearMissGap != nil
                                                         ? "game_over.beat_record"
                                                         : "game_over.replay"))
-            replayLabel.fontName = "AvenirNext-Medium"
+            replayLabel.fontName = "AvenirNext-Bold"
             replayLabel.fontSize = 24
-            replayLabel.fontColor = UIColor(white: 0.26, alpha: 1)
+            replayLabel.fontColor = UIColor(white: 0.22, alpha: 1)
             replayLabel.verticalAlignmentMode = .center
+            // Flèche « rejouer » et libellé centrés comme un seul bloc.
+            replayLabel.horizontalAlignmentMode = .left
+            let replayIcon = SKLabelNode(text: "↺")
+            replayIcon.fontName = "AvenirNext-Bold"
+            replayIcon.fontSize = 28
+            replayIcon.fontColor = replayLabel.fontColor
+            replayIcon.verticalAlignmentMode = .center
+            replayIcon.horizontalAlignmentMode = .left
+            let replayContentW = replayIcon.frame.width + 12 + replayLabel.frame.width
+            replayIcon.position = CGPoint(x: -replayContentW / 2, y: 1)
+            replayLabel.position = CGPoint(x: -replayContentW / 2 + replayIcon.frame.width + 12, y: 0)
+            replayBtn.addChild(replayIcon)
             replayBtn.addChild(replayLabel)
         } else if mode == .duel {
             // Mode Duel : le bouton n'apparaît qu'une fois le code connu, donc
@@ -2734,7 +2874,7 @@ class GameScene: SKScene {
             // Mode Défi : à la place du rejeu, accès au classement du jour.
             let lbBtn = SKNode()
             lbBtn.name = "dailyLeaderboardBtn"
-            lbBtn.position = CGPoint(x: 0, y: -152)
+            lbBtn.position = CGPoint(x: 0, y: -144)
             panel.addChild(lbBtn)
 
             let lbBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
@@ -2742,6 +2882,7 @@ class GameScene: SKScene {
             lbBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
             lbBg.lineWidth = 1
             lbBtn.addChild(lbBg)
+            Relief.raise(lbBg, depth: 6)
 
             let lbLabel = SKLabelNode(text: String(localized: "game_over.daily_leaderboard", defaultValue: "Classement du jour"))
             lbLabel.fontName = "AvenirNext-Medium"
@@ -2760,7 +2901,7 @@ class GameScene: SKScene {
 
         let homeBtn = SKNode()
         homeBtn.name = "homePanelBtn"
-        homeBtn.position = CGPoint(x: homeX, y: -216)
+        homeBtn.position = CGPoint(x: homeX, y: -220)
         panel.addChild(homeBtn)
 
         let homeBg = SKShapeNode(rectOf: CGSize(width: homeW, height: 52), cornerRadius: 26)
@@ -2768,9 +2909,10 @@ class GameScene: SKScene {
         homeBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
         homeBg.lineWidth = 1
         homeBtn.addChild(homeBg)
+        Relief.raise(homeBg, depth: 4)
 
         let homeLabel = SKLabelNode(text: String(localized: "game_over.home"))
-        homeLabel.fontName = "AvenirNext-UltraLight"
+        homeLabel.fontName = "AvenirNext-Medium"
         homeLabel.fontSize = 19
         homeLabel.fontColor = UIColor(white: 0.42, alpha: 1)
         homeLabel.verticalAlignmentMode = .center
@@ -2779,7 +2921,7 @@ class GameScene: SKScene {
         if let nextUp {
             let nextBtn = SKNode()
             nextBtn.name = nextUp.nodeName
-            nextBtn.position = CGPoint(x: 84, y: -216)
+            nextBtn.position = CGPoint(x: 84, y: -220)
             panel.addChild(nextBtn)
 
             let nextBg = SKShapeNode(rectOf: CGSize(width: 152, height: 52), cornerRadius: 26)
@@ -2787,6 +2929,7 @@ class GameScene: SKScene {
             nextBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
             nextBg.lineWidth = 1
             nextBtn.addChild(nextBg)
+            Relief.raise(nextBg, depth: 4)
 
             let nextLabel = SKLabelNode(text: nextUp.title)
             nextLabel.fontName = "AvenirNext-DemiBold"
@@ -2808,8 +2951,218 @@ class GameScene: SKScene {
             SKAction.run { [weak self] in
                 guard let self, self.gameOverPanel != nil else { return }
                 let rootVC = self.view?.window?.rootViewController ?? UIViewController()
-                InterstitialAdManager.shared.maybeShow(trigger: .gameOverAuto, from: rootVC) { }
+                InterstitialAdManager.shared.maybeShow(trigger: .gameOverAuto, from: rootVC) { [weak self] adShown in
+                    if adShown { self?.presentNoAdsOffer(resumesReplay: false) }
+                }
             }
+        ]))
+
+        // Prix « sans pub » encore inconnu (lancement hors ligne) : nouvel
+        // essai discret, l'offre ci-dessous exige un prix StoreKit.
+        if mode != .demo, !AdFreeManager.shared.isPurchased,
+           StoreManager.shared.adFreeDisplayPrice == nil {
+            Task { await StoreManager.shared.loadProducts() }
+        }
+    }
+
+    // MARK: - Offre « Sans pub » après une interstitielle
+
+    private static let noAdsOfferCardSize = CGSize(width: 500, height: 76)
+    private static let noAdsOfferDeclineRect = CGRect(x: -110, y: -102, width: 220, height: 50)
+
+    private var noAdsOffer: SKNode? { gameOverPanel?.childNode(withName: "noAdsOffer") }
+
+    /// Pastille « Sans pub + 500 pièces — prix » sous le panneau de fin, juste
+    /// après une interstitielle réellement affichée. Au plus une fois par
+    /// session, jamais si le mod est acquis ou si le prix StoreKit est inconnu.
+    /// Le refus (« Non merci ») est un bouton à part entière, pas une croix.
+    /// - Returns: true si l'offre est affichée.
+    @discardableResult
+    private func presentNoAdsOffer(resumesReplay: Bool) -> Bool {
+        guard let panel = gameOverPanel, noAdsOffer == nil,
+              !AdFreeManager.shared.isPurchased,
+              !StoreManager.shared.adFreeOfferShownThisSession,
+              let price = StoreManager.shared.adFreeDisplayPrice else { return false }
+        StoreManager.shared.adFreeOfferShownThisSession = true
+        noAdsOfferResumesReplay = resumesReplay
+        AnalyticsService.noAdsOfferView(source: "game_over")
+
+        let theme = ThemeManager.shared.active
+        let ink = theme.accent.readableInk()
+        let cardSize = Self.noAdsOfferCardSize
+
+        let offer = SKNode()
+        offer.name = "noAdsOffer"
+        // Sous le panneau (demi-hauteur 280), qui est déjà plein.
+        offer.position = CGPoint(x: 0, y: -334)
+        offer.zPosition = 2
+        offer.alpha = 0
+
+        let shadow = SKShapeNode(rectOf: cardSize, cornerRadius: 26)
+        shadow.fillColor = UIColor(white: 0, alpha: 0.14)
+        shadow.strokeColor = .clear
+        shadow.position = CGPoint(x: 2, y: -5)
+        shadow.zPosition = -1
+        offer.addChild(shadow)
+
+        let bg = SKShapeNode(rectOf: cardSize, cornerRadius: 26)
+        bg.fillColor = theme.accent
+        bg.strokeColor = theme.logo.withAlphaComponent(0.25)
+        bg.lineWidth = 1.5
+        offer.addChild(bg)
+        Relief.raise(bg, depth: 6)
+
+        // Pictogramme « écran publicitaire barré » (le même qu'en boutique).
+        let picto = SKNode()
+        picto.position = CGPoint(x: -cardSize.width / 2 + 44, y: 0)
+        let screen = SKShapeNode(rectOf: CGSize(width: 34, height: 24), cornerRadius: 5)
+        screen.fillColor = .clear
+        screen.strokeColor = ink.withAlphaComponent(0.85)
+        screen.lineWidth = 2.5
+        picto.addChild(screen)
+        let slashPath = CGMutablePath()
+        slashPath.move(to: CGPoint(x: -19, y: -14))
+        slashPath.addLine(to: CGPoint(x: 19, y: 14))
+        let slash = SKShapeNode(path: slashPath)
+        slash.strokeColor = ink.withAlphaComponent(0.85)
+        slash.lineWidth = 3
+        slash.lineCap = .round
+        picto.addChild(slash)
+        offer.addChild(picto)
+
+        // Prix StoreKit (devise du joueur) : la pilule s'élargit pour lui.
+        let priceLabel = SKLabelNode(text: price)
+        priceLabel.fontName = "AvenirNext-Bold"
+        priceLabel.fontSize = 18
+        priceLabel.fontColor = theme.logo
+        priceLabel.verticalAlignmentMode = .center
+        let pillW = max(104, priceLabel.frame.width + 30)
+        let pill = SKShapeNode(rectOf: CGSize(width: pillW, height: 42), cornerRadius: 21)
+        pill.fillColor = theme.background
+        pill.strokeColor = .clear
+        pill.position = CGPoint(x: cardSize.width / 2 - 16 - pillW / 2, y: 0)
+        offer.addChild(pill)
+        Relief.raise(pill, depth: 3)
+        priceLabel.position = pill.position
+        offer.addChild(priceLabel)
+
+        let titleX = -cardSize.width / 2 + 76
+        let title = SKLabelNode(text: String(format: String(localized: "offer.noads_title",
+                                                            defaultValue: "Sans pub + %lld pièces"),
+                                             StoreManager.adFreeBonusCoins))
+        title.fontName = "AvenirNext-Bold"
+        title.fontSize = 22
+        title.fontColor = ink
+        title.verticalAlignmentMode = .center
+        title.horizontalAlignmentMode = .left
+        title.position = CGPoint(x: titleX, y: 0)
+        // Les libellés longs (de, nl, pt-BR) se réduisent plutôt que de passer sous le prix.
+        let titleMaxW = cardSize.width / 2 - 16 - pillW - 12 - titleX
+        if title.frame.width > titleMaxW { title.setScale(titleMaxW / title.frame.width) }
+        offer.addChild(title)
+
+        let declineRect = Self.noAdsOfferDeclineRect
+        let declineBg = SKShapeNode(rectOf: declineRect.size, cornerRadius: declineRect.height / 2)
+        declineBg.fillColor = UIColor(red: 0.94, green: 0.91, blue: 0.88, alpha: 1)
+        declineBg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+        declineBg.lineWidth = 1
+        declineBg.position = CGPoint(x: declineRect.midX, y: declineRect.midY)
+        offer.addChild(declineBg)
+        Relief.raise(declineBg, depth: 4)
+        let decline = SKLabelNode(text: String(localized: "offer.noads_decline", defaultValue: "Non merci"))
+        decline.fontName = "AvenirNext-Medium"
+        decline.fontSize = 19
+        decline.fontColor = UIColor(white: 0.32, alpha: 1)
+        decline.verticalAlignmentMode = .center
+        decline.position = declineBg.position
+        offer.addChild(decline)
+
+        panel.addChild(offer)
+        offer.run(SKAction.fadeIn(withDuration: 0.25))
+        return true
+    }
+
+    /// - Returns: true si le tap visait l'offre (achat ou refus).
+    private func handleNoAdsOfferTouch(at point: CGPoint) -> Bool {
+        guard let offer = noAdsOffer else { return false }
+        let local = offer.convert(point, from: self)
+        let cardSize = Self.noAdsOfferCardSize
+        let cardRect = CGRect(x: -cardSize.width / 2, y: -cardSize.height / 2,
+                              width: cardSize.width, height: cardSize.height)
+        if cardRect.contains(local) {
+            purchaseNoAdsFromOffer()
+            return true
+        }
+        if Self.noAdsOfferDeclineRect.contains(local) {
+            HapticManager.light()
+            dismissNoAdsOffer()
+            if noAdsOfferResumesReplay { resetGame() }
+            return true
+        }
+        return false
+    }
+
+    private func dismissNoAdsOffer() {
+        guard let offer = noAdsOffer else { return }
+        offer.name = nil   // plus de tap pendant le fondu
+        offer.run(SKAction.sequence([SKAction.fadeOut(withDuration: 0.18), SKAction.removeFromParent()]))
+    }
+
+    private func purchaseNoAdsFromOffer() {
+        guard !isPurchasingNoAds else { return }
+        isPurchasingNoAds = true
+        HapticManager.light()
+        Task { @MainActor in
+            let outcome = await StoreManager.shared.purchaseAdFree(source: "game_over")
+            self.isPurchasingNoAds = false
+            switch outcome {
+            case .success:
+                HapticManager.medium()
+                self.dismissNoAdsOffer()
+                self.showPurchaseToast(String(format: String(localized: "shop.purchase_success_noads",
+                                                             defaultValue: "Publicités supprimées. +%lld pièces !"),
+                                              StoreManager.adFreeBonusCoins))
+            case .pending:
+                self.dismissNoAdsOffer()
+                if let message = outcome.message { self.showPurchaseToast(message) }
+            case .cancelled, .failed:
+                // L'offre reste en place : le joueur peut réessayer ou refuser.
+                if let message = outcome.message { self.showPurchaseToast(message) }
+            }
+        }
+    }
+
+    /// Retour d'achat au-dessus du panneau de fin. Attaché à la scène : il
+    /// survit au retrait du panneau si le joueur relance entre-temps.
+    private func showPurchaseToast(_ text: String) {
+        childNode(withName: "purchaseToast")?.removeFromParent()
+        let label = SKLabelNode(text: text)
+        label.fontName = "AvenirNext-DemiBold"
+        label.fontSize = 19
+        label.fontColor = .white
+        label.verticalAlignmentMode = .center
+        label.numberOfLines = 2
+        label.lineBreakMode = .byWordWrapping
+        label.preferredMaxLayoutWidth = 440
+        label.zPosition = 1
+
+        let toast = SKNode()
+        toast.name = "purchaseToast"
+        toast.position = CGPoint(x: 0, y: 340)
+        toast.zPosition = 20
+        toast.alpha = 0
+        let bg = SKShapeNode(rectOf: CGSize(width: label.frame.width + 48, height: label.frame.height + 30),
+                             cornerRadius: 20)
+        bg.fillColor = UIColor(white: 0.14, alpha: 0.92)
+        bg.strokeColor = .clear
+        toast.addChild(bg)
+        toast.addChild(label)
+        addChild(toast)
+        toast.run(SKAction.sequence([
+            SKAction.fadeIn(withDuration: 0.2),
+            SKAction.wait(forDuration: 2.6),
+            SKAction.fadeOut(withDuration: 0.4),
+            SKAction.removeFromParent()
         ]))
     }
 
@@ -3090,7 +3443,7 @@ class GameScene: SKScene {
             GameState.save(gridModel: gridModel, score: score)
         }
         let rootVC = view?.window?.rootViewController ?? UIViewController()
-        InterstitialAdManager.shared.maybeShow(trigger: .home, from: rootVC) { [weak self] in
+        InterstitialAdManager.shared.maybeShow(trigger: .home, from: rootVC) { [weak self] _ in
             guard let self else { return }
             // Depuis un puzzle, « retour » ramène à la liste des niveaux :
             // renvoyer au menu principal obligerait à tout renaviguer pour
