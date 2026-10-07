@@ -1,1 +1,8 @@
-Mejoras de estabilidad y rendimiento.
+Ten Go estrena imagen.
+
+- Un diseño más cuidado: botones, tarjetas y etiquetas ganan relieve, y los textos se leen mejor.
+- Pantalla de Progreso renovada: nivel, estadísticas, misiones del día y logros en un solo lugar. Reclama las recompensas de las misiones ahí mismo.
+- Duelos más claros: lanza un reto o responde a un código con un toque, y consulta tus duelos con su resultado.
+- Puzles: un botón te lleva directo al siguiente nivel.
+- Durante la partida, la puntuación pasa a la parte superior de la pantalla.
+- Tienda: los precios aparecen en tu moneda y cada compra confirma claramente su resultado.

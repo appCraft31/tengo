@@ -30,7 +30,7 @@
 	<key>CFBundleShortVersionString</key>
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleVersion</key>
-	<string>265</string>
+	<string>266</string>
 	<key>CFBundleURLTypes</key>
 	<array>
 		<dict>

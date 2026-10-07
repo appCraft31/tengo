@@ -1,1 +1,8 @@
-Verbeteringen in stabiliteit en prestaties.
+Ten Go in een nieuw jasje.
+
+- Een verzorgder ontwerp: knoppen, kaarten en labels krijgen diepte en tekst is beter leesbaar.
+- Vernieuwd Voortgang-scherm: level, statistieken, dagelijkse missies en prestaties op één plek. Missiebeloningen haal je daar meteen op.
+- Duidelijkere duels: start een uitdaging of beantwoord een code met één tik en bekijk je duels met hun uitslag.
+- Puzzels: één knop brengt je direct naar het volgende level.
+- Tijdens het spel staat je score nu bovenaan het scherm.
+- Winkel: prijzen verschijnen in je eigen valuta en elke aankoop bevestigt duidelijk het resultaat.

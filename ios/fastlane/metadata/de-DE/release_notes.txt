@@ -1,1 +1,8 @@
-Verbesserungen bei Stabilität und Leistung.
+Ten Go im neuen Look.
+
+- Ein hochwertigeres Design: Schaltflächen, Karten und Plaketten wirken plastischer, Texte sind besser lesbar.
+- Neuer Fortschritt-Bildschirm: Level, Statistiken, Tagesmissionen und Erfolge an einem Ort. Missionsbelohnungen holst du direkt dort ab.
+- Übersichtlichere Duelle: Starte eine Herausforderung oder antworte mit einem Tipp auf einen Code und sieh deine Duelle samt Ergebnis.
+- Puzzles: Eine Schaltfläche bringt dich direkt zum nächsten Level.
+- Im Spiel steht dein Punktestand jetzt oben auf dem Bildschirm.
+- Shop: Preise erscheinen in deiner Währung, und jeder Kauf bestätigt klar sein Ergebnis.
