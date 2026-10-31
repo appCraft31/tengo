@@ -6,10 +6,15 @@
 import GoogleMobileAds
 import UIKit
 
+// Espacement (TEN-3, audit du 23/10/2026 : ~4 € pour 1 000 affichages) :
+// moins de plein écran mais mieux placés, la vidéo récompensée prenant le relais.
+//   - 150 s minimum entre deux plein écran (60 s avant), vidéo récompensée comprise ;
+//   - aucun plein écran avant la 2e partie terminée de la session (1re avant) ;
+//   - fin de partie automatique : 1 sur 4 dès la 3e partie (1 sur 3 dès la 2e avant).
 enum AdTrigger {
-    case home          // bouton ⌂ — toujours (si conditions OK)
-    case replay        // bouton Rejouer du panel — à chaque fois (cooldown 60 s)
-    case gameOverAuto  // 1.5s après l'apparition du panel — 1 sur 3, dès la 2e partie
+    case home          // bouton ⌂ — dès la 2e partie (si conditions OK)
+    case replay        // bouton Rejouer du panel — dès la 2e partie (cooldown)
+    case gameOverAuto  // 1.5s après l'apparition du panel — 1 sur 4, dès la 3e partie
 }
 
 final class InterstitialAdManager: NSObject {
@@ -30,7 +35,7 @@ final class InterstitialAdManager: NSObject {
 
     // MARK: - Garde-fous
 
-    private static let cooldownSeconds: TimeInterval = 60
+    private static let cooldownSeconds: TimeInterval = 150
     private static let lastShownKey = "AdMob.interstitialLastShownAt"
 
     private var gamesCompletedThisSession = 0
@@ -132,6 +137,12 @@ final class InterstitialAdManager: NSObject {
     // MARK: - Suivi de session
 
     /// À appeler à la fin de chaque partie (win/lose).
+    /// Un plein écran vient d'être vu ailleurs (vidéo récompensée) : relance le
+    /// délai minimal pour ne pas enchaîner deux pubs.
+    func noteFullScreenAdShown() {
+        lastShownAt = Date()
+    }
+
     func markGameCompleted() {
         gamesCompletedThisSession += 1
         discardIfExpired()
@@ -165,7 +176,7 @@ final class InterstitialAdManager: NSObject {
         guard Date().timeIntervalSince(lastShownAt) >= Self.cooldownSeconds else { return false }
 
         // Grâce 1re partie ; gameOverAuto épargne aussi le 1er game over
-        let minimumGames = (trigger == .gameOverAuto) ? 2 : 1
+        let minimumGames = (trigger == .gameOverAuto) ? 3 : 2
         guard gamesCompletedThisSession >= minimumGames else { return false }
 
         switch trigger {
@@ -175,7 +186,7 @@ final class InterstitialAdManager: NSObject {
             return true
         case .gameOverAuto:
             gameOverCount += 1
-            return gameOverCount % 3 == 0
+            return gameOverCount % 4 == 0
         }
     }
 

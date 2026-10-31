@@ -319,6 +319,7 @@ class GameViewController: UIViewController {
     ///   SHOP_RETURN=game                retour boutique → partie
     ///   QA_GAME_OVER=3                  fin de partie forcée après 3 s (cf. GameScene)
     ///   QA_FAKE_INTERSTITIAL=1          interstitielle simulée (cf. InterstitialAdManager)
+    ///   QA_FAKE_REWARDED=1              vidéo récompensée simulée, toujours prête (cf. RewardedAdManager)
     ///   QA_STORE_FAIL=2                 les 2 premiers chargements StoreKit échouent (cf. StoreManager)
     private func applyQAOverrides(_ env: [String: String]) {
         let defaults = UserDefaults.standard
