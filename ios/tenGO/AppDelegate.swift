@@ -17,6 +17,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Initialise Firebase (lit tenGO/GoogleService-Info.plist).
         FirebaseApp.configure()
+        // Repère une installation neuve (parcours de premier lancement, TEN-4).
+        FirstRun.bootstrap()
         // Lecture directe de la préférence : ne démarre pas le moteur audio.
         AnalyticsService.setSoundProperty(enabled: !UserDefaults.standard.bool(forKey: "tenGO_soundMuted"))
         // Sépare les vrais joueurs des achats de test (TestFlight, Xcode).

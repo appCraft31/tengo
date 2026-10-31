@@ -112,6 +112,11 @@ class GameViewController: UIViewController {
             case "puzzles": scene = PuzzleLevelsScene(size: size, world: 1)
             default:        scene = MenuScene(size: size)
             }
+        } else if FirstRun.isPending
+                    && !UserDefaults.standard.bool(forKey: AppConfig.UserDefaultsKey.hasSeenTutorial) {
+            // Tout premier lancement : droit au tutoriel court, qui débouche
+            // sur une partie. Le menu et ses quatre onglets attendront.
+            scene = TutorialScene(size: CGSize(width: 750, height: 1334), firstRun: true)
         } else {
             scene = MenuScene(size: CGSize(width: 750, height: 1334))
         }
@@ -231,13 +236,44 @@ class GameViewController: UIViewController {
         guard !consentGathered else { return }
         consentGathered = true
 
-        GameCenterManager.shared.authenticate(from: self)
+        // Premier lancement : ni demande ATT ni feuille Game Center avant que
+        // le joueur ait terminé une partie. Aucune pub n'est chargée d'ici là
+        // (les gestionnaires attendent `isAdsSessionStarted`).
+        if FirstRun.isPending {
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(firstGameCompleted),
+                name: .tenGOFirstGameCompleted,
+                object: nil
+            )
+            return
+        }
+        startConsentAndServices(delay: 0.5)
+    }
+
+    /// Fin de la première partie : le panneau de fin s'affiche, puis la
+    /// demande ATT arrive sur ce temps mort plutôt qu'au premier écran.
+    @objc private func firstGameCompleted() {
+        NotificationCenter.default.removeObserver(self, name: .tenGOFirstGameCompleted, object: nil)
+        startConsentAndServices(delay: 1.6, gameCenterAfterConsent: true)
+    }
+
+    /// Game Center, consentement ATT, puis démarrage des pubs. Après la
+    /// première partie, Game Center attend la réponse ATT : deux boîtes
+    /// empilées sur le panneau de fin, c'est une de trop.
+    private func startConsentAndServices(delay: TimeInterval, gameCenterAfterConsent: Bool = false) {
+        if !gameCenterAfterConsent {
+            GameCenterManager.shared.authenticate(from: self)
+        }
 
         // Délai court pour laisser le windowScene se stabiliser (critique sur iPad) :
         // requestTrackingAuthorization est ignoré si la fenêtre n'est pas encore active.
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+        DispatchQueue.main.asyncAfter(deadline: .now() + delay) { [weak self] in
             guard self != nil else { return }
-            ConsentManager.shared.gatherConsent { outcome in
+            ConsentManager.shared.gatherConsent { [weak self] outcome in
+                if gameCenterAfterConsent, let self {
+                    GameCenterManager.shared.authenticate(from: self)
+                }
                 print("[AdMob] Démarrage pubs — mode \(outcome == .personalizedAds ? "personnalisé" : "non personnalisé")")
                 MobileAds.shared.start { _ in
                     DispatchQueue.main.async {

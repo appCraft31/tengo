@@ -149,7 +149,9 @@ final class InterstitialAdManager: NSObject {
         // Préchargement paresseux : la première interstitielle n'est demandée
         // qu'une fois qu'une partie a été jouée (condition minimale de
         // shouldShow), pour ne pas consommer d'annonce servie jamais affichée.
-        if !isReady && !isLoading {
+        // Au premier lancement, la première partie se termine AVANT la
+        // demande ATT (TEN-4) : aucune requête pub avant le consentement.
+        if !isReady && !isLoading && RewardedAdManager.shared.isAdsSessionStarted {
             loadAd()
         }
     }
@@ -175,8 +177,13 @@ final class InterstitialAdManager: NSObject {
         guard fakesAds || (isReady && interstitial != nil) else { return false }
         guard Date().timeIntervalSince(lastShownAt) >= Self.cooldownSeconds else { return false }
 
-        // Grâce 1re partie ; gameOverAuto épargne aussi le 1er game over
-        let minimumGames = (trigger == .gameOverAuto) ? 3 : 2
+        // Espacement TEN-3 : 2e partie (3e pour la fin de partie automatique).
+        // Première session de l'installation (TEN-4) : le joueur découvre le
+        // jeu, la pub n'arrive qu'après trois parties terminées (quatre pour
+        // la fin de partie automatique).
+        let baseMinimum = (trigger == .gameOverAuto) ? 3 : 2
+        let firstSessionMinimum = (trigger == .gameOverAuto) ? 4 : 3
+        let minimumGames = FirstRun.isFirstSession ? firstSessionMinimum : baseMinimum
         guard gamesCompletedThisSession >= minimumGames else { return false }
 
         switch trigger {
