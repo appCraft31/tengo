@@ -38,10 +38,15 @@ class TutorialScene: SKScene {
     private var stepContainer: SKNode?
     private var dotsNodes: [SKShapeNode] = []
     private var visibleHeight: CGFloat = 1334
+    /// Largeur réellement visible : sur un écran 19,5:9, l'aspectFill rogne
+    /// la scène de 750 pt à ~615 pt, et le « × » calé sur `size.width`
+    /// sortait de l'écran.
+    private var visibleWidth: CGFloat = 750
 
     override func didMove(to view: SKView) {
         let scale = max(view.bounds.width / size.width, view.bounds.height / size.height)
         visibleHeight = view.bounds.height / scale
+        visibleWidth = view.bounds.width / scale
         anchorPoint = CGPoint(x: 0.5, y: 0.5)
         backgroundColor = UIColor(red: 0.97, green: 0.95, blue: 0.92, alpha: 1)
         setupBackground()
@@ -89,7 +94,7 @@ class TutorialScene: SKScene {
         // Bouton Fermer (×)
         let closeNode = SKNode()
         closeNode.name = "close"
-        closeNode.position = CGPoint(x: size.width / 2 - 60, y: topY - 110)
+        closeNode.position = CGPoint(x: min(size.width, visibleWidth) / 2 - 60, y: topY - 110)
         addChild(closeNode)
 
         let closeCircle = SKShapeNode(circleOfRadius: 24)
