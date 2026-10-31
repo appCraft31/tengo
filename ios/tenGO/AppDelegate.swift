@@ -19,6 +19,8 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         FirebaseApp.configure()
         // Lecture directe de la préférence : ne démarre pas le moteur audio.
         AnalyticsService.setSoundProperty(enabled: !UserDefaults.standard.bool(forKey: "tenGO_soundMuted"))
+        // Sépare les vrais joueurs des achats de test (TestFlight, Xcode).
+        AnalyticsService.setStoreEnvironmentProperty()
         // Reprogramme le rappel quotidien si l'utilisateur a autorisé les notifications.
         NotificationManager.shared.refreshIfAuthorized()
         // Reduce Motion peut être basculé depuis le Centre de contrôle en cours

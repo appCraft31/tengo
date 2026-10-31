@@ -41,6 +41,44 @@ final class InterstitialAdManager: NSObject {
         set { UserDefaults.standard.set(newValue, forKey: Self.lastShownKey) }
     }
 
+    // MARK: - Série de pubs (offre « sans pub »)
+
+    private static let sinceNoAdsOfferKey = "AdMob.interstitialsSinceNoAdsOffer"
+    private static let todayCountKey = "AdMob.interstitialsTodayCount"
+    private static let todayDayKey = "AdMob.interstitialsTodayDay"
+
+    /// Interstitielles vues depuis la dernière offre « sans pub », toutes
+    /// sessions confondues : l'offre arrive au bout d'une série, pas au
+    /// hasard d'une première pub.
+    var shownSinceNoAdsOffer: Int {
+        UserDefaults.standard.integer(forKey: Self.sinceNoAdsOfferKey)
+    }
+
+    /// Interstitielles vues aujourd'hui (jour local).
+    var shownToday: Int {
+        let defaults = UserDefaults.standard
+        guard defaults.string(forKey: Self.todayDayKey) == Self.dayKey() else { return 0 }
+        return defaults.integer(forKey: Self.todayCountKey)
+    }
+
+    /// L'offre vient d'être montrée : une nouvelle série commence.
+    func resetNoAdsSeries() {
+        UserDefaults.standard.set(0, forKey: Self.sinceNoAdsOfferKey)
+    }
+
+    private func recordShown() {
+        let defaults = UserDefaults.standard
+        defaults.set(shownSinceNoAdsOffer + 1, forKey: Self.sinceNoAdsOfferKey)
+        let today = shownToday + 1
+        defaults.set(Self.dayKey(), forKey: Self.todayDayKey)
+        defaults.set(today, forKey: Self.todayCountKey)
+    }
+
+    private static func dayKey(_ date: Date = Date()) -> String {
+        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        return String(format: "%04d%02d%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
+    }
+
     private var pendingCompletion: ((Bool) -> Void)?
 
     #if DEBUG
@@ -152,6 +190,7 @@ final class InterstitialAdManager: NSObject {
                          completion: @escaping (Bool) -> Void) {
         if fakesAds {
             lastShownAt = Date()
+            recordShown()
             print("[AdMob] Interstitiel simulé (QA)")
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) { completion(true) }
             return
@@ -173,6 +212,9 @@ final class InterstitialAdManager: NSObject {
 extension InterstitialAdManager: FullScreenContentDelegate {
 
     func adDidDismissFullScreenContent(_ ad: FullScreenPresentingAd) {
+        // Comptée à la fermeture : une pub qui échoue à s'afficher n'entre
+        // pas dans la série.
+        recordShown()
         pendingCompletion?(true)
         pendingCompletion = nil
         loadAd()
