@@ -1,8 +1,7 @@
-Ten Go im neuen Look.
+Mehr Spiel, weniger Unterbrechungen.
 
-- Ein hochwertigeres Design: Schaltflächen, Karten und Plaketten wirken plastischer, Texte sind besser lesbar.
-- Neuer Fortschritt-Bildschirm: Level, Statistiken, Tagesmissionen und Erfolge an einem Ort. Missionsbelohnungen holst du direkt dort ab.
-- Übersichtlichere Duelle: Starte eine Herausforderung oder antworte mit einem Tipp auf einen Code und sieh deine Duelle samt Ergebnis.
-- Puzzles: Eine Schaltfläche bringt dich direkt zum nächsten Level.
-- Im Spiel steht dein Punktestand jetzt oben auf dem Bildschirm.
-- Shop: Preise erscheinen in deiner Währung, und jeder Kauf bestätigt klar sein Ergebnis.
+- Zweite Chance: Im klassischen Spiel festgefahren? Schau ein kurzes Video, um die Blasen neu zu mischen, und spiel weiter.
+- Kleine Hilfe: Wenn du nicht weiterkommst, gibt es einen Tipp gegen ein Video.
+- Weniger Vollbild-Werbung, mit mehr Abstand – und keine in deinen ersten Partien.
+- Schnellerer erster Start: Du spielst in wenigen Sekunden.
+- Der Schließen-Button im Tutorial bleibt jetzt auf jedem iPhone sichtbar.

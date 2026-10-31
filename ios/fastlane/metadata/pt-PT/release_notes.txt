@@ -1,8 +1,7 @@
-O Ten Go tem um novo visual.
+Mais jogo, menos interrupções.
 
-- Um aspeto mais cuidado: botões, cartões e etiquetas ganham relevo e os textos leem-se melhor.
-- Ecrã de Progresso redesenhado: nível, estatísticas, missões do dia e conquistas num só lugar. Resgata as recompensas das missões aí mesmo.
-- Duelos mais claros: lança um desafio ou responde a um código com um toque e consulta os teus duelos com o resultado.
-- Puzzles: um botão leva-te diretamente ao nível seguinte.
-- Durante o jogo, a pontuação passa a estar no topo do ecrã.
-- Loja: os preços aparecem na tua moeda e cada compra confirma claramente o resultado.
+- Segunda oportunidade: ficou sem jogadas numa partida clássica? Veja um vídeo curto para baralhar as bolhas e continuar.
+- Uma ajuda: se ficar preso, pode obter uma pista em troca de um vídeo.
+- Menos anúncios em ecrã inteiro, mais espaçados e nenhum nas primeiras partidas.
+- Primeira abertura mais rápida: começa a jogar em poucos segundos.
+- O botão para fechar o tutorial está agora visível em todos os iPhone.

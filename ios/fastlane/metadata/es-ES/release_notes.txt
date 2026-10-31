@@ -1,8 +1,7 @@
-Ten Go estrena imagen.
+Más juego, menos interrupciones.
 
-- Un diseño más cuidado: botones, tarjetas y etiquetas ganan relieve, y los textos se leen mejor.
-- Pantalla de Progreso renovada: nivel, estadísticas, misiones del día y logros en un solo lugar. Reclama las recompensas de las misiones ahí mismo.
-- Duelos más claros: lanza un reto o responde a un código con un toque, y consulta tus duelos con su resultado.
-- Puzles: un botón te lleva directo al siguiente nivel.
-- Durante la partida, la puntuación pasa a la parte superior de la pantalla.
-- Tienda: los precios aparecen en tu moneda y cada compra confirma claramente su resultado.
+- Segunda oportunidad: ¿bloqueado en una partida clásica? Mira un vídeo corto para mezclar las burbujas y seguir jugando.
+- Una ayudita: si te atascas, puedes conseguir una pista a cambio de un vídeo.
+- Menos anuncios a pantalla completa, más espaciados y ninguno en tus primeras partidas.
+- Primer inicio más rápido: juegas en pocos segundos.
+- El botón para cerrar el tutorial ahora se ve en todos los iPhone.

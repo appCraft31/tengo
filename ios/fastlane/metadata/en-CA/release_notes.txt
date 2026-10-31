@@ -1,8 +1,7 @@
-Ten Go has a fresh new look.
+More playing, fewer interruptions.
 
-- A more polished design: buttons, cards and badges now have depth, and text is easier to read.
-- Redesigned Progress screen: level, stats, daily missions and achievements in one place. Claim mission rewards right there.
-- Clearer Duels: start a challenge or answer a code in one tap, and see your duels with their results.
-- Puzzles: one button takes you straight to the next level.
-- In a game, your score now sits at the top of the screen.
-- Shop: prices appear in your currency, and every purchase clearly confirms its outcome.
+- Second chance: stuck in a classic game? Watch a short video to reshuffle the bubbles and keep going.
+- A helping hand: when you're stuck, you can get a hint for a video.
+- Fewer full-screen ads, more spaced out, and none during your first games.
+- Faster first launch: you're playing within seconds.
+- The tutorial's close button now stays visible on every iPhone.
