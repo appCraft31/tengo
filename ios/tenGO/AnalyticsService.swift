@@ -200,4 +200,24 @@ enum AnalyticsService {
             AnalyticsParameterCurrency: adValue.currencyCode,
         ])
     }
+
+    // MARK: - Vidéo récompensée
+    //
+    //   rewarded_offer_view → rewarded_started → rewarded_completed
+    //   `placement` : menu_coins | hint | second_chance
+
+    /// Proposition de vidéo affichée (indice gratuit, seconde chance).
+    static func rewardedOfferView(placement: String) {
+        logFunnel("rewarded_offer_view", parameters: ["placement": placement])
+    }
+
+    /// Le joueur a accepté : la vidéo démarre.
+    static func rewardedStarted(placement: String) {
+        logFunnel("rewarded_started", parameters: ["placement": placement])
+    }
+
+    /// Vidéo regardée jusqu'au bout : récompense versée.
+    static func rewardedCompleted(placement: String) {
+        logFunnel("rewarded_completed", parameters: ["placement": placement])
+    }
 }

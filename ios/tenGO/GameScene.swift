@@ -152,7 +152,10 @@ class GameScene: SKScene {
     private var trailComet: SKSpriteNode?
     private var isAnimating = false {
         didSet {
-            if oldValue && !isAnimating { resumePendingTouchIfNeeded() }
+            if oldValue && !isAnimating {
+                lastPlayerActionAt = Date()
+                resumePendingTouchIfNeeded()
+            }
         }
     }
 
@@ -237,6 +240,26 @@ class GameScene: SKScene {
     private var pendingShopSnapshot: (grid: GridModel, score: Int)?
     /// Pastille « Boutique » qui remplace la barre quand elle est vide.
     private var shopPillNode: SKNode?
+
+    // MARK: - Vidéo récompensée en partie (TEN-3)
+    /// Modale « seconde chance » (grille bloquée) et la grille mélangée
+    /// pré-calculée qu'elle promet : on ne propose la vidéo que si le mélange
+    /// débloque vraiment la partie.
+    private var secondChancePrompt: SKNode?
+    private var secondChanceGrid: GridModel?
+    /// Une seule seconde chance par partie.
+    private var secondChanceUsed = false
+    /// Pastille « indice gratuit » proposée quand le joueur sèche.
+    private var hintOfferNode: SKNode?
+    /// Indices offerts par vidéo dans la partie en cours (plafonnés).
+    private var hintVideosThisGame = 0
+    private static let maxHintVideosPerGame = 2
+    /// Délai d'inactivité avant de proposer l'indice gratuit.
+    private static let hintOfferIdleDelay: TimeInterval = 20
+    /// Dernier geste du joueur (ou fin d'animation) : base du délai d'inactivité.
+    private var lastPlayerActionAt = Date()
+    /// Une vidéo est à l'écran : rien d'autre ne doit réagir.
+    private var rewardedInFlight = false
 
     // MARK: - Haptics
     // Haptics via HapticManager (toggle dans les paramètres)
@@ -364,6 +387,10 @@ class GameScene: SKScene {
         queueBoosterCoachMarks()
         setupSettingsButton(in: view)
         HapticManager.prepare()
+        // Indice gratuit et seconde chance : la vidéo doit être prête avant
+        // d'en avoir besoin.
+        RewardedAdManager.shared.preloadIfNeeded()
+        lastPlayerActionAt = Date()
         #if DEBUG
         showcasePathForScreenshot()
         forceGameOverForQA()
@@ -382,7 +409,9 @@ class GameScene: SKScene {
             SKAction.run { [weak self] in
                 guard let self, self.gameOverPanel == nil, !self.isAnimating else { return }
                 self.isAnimating = true
-                self.triggerLose()
+                // Même chemin qu'une grille bloquée : la seconde chance passe
+                // d'abord (si une vidéo est prête, cf. QA_FAKE_REWARDED).
+                if !self.presentSecondChanceIfPossible() { self.triggerLose() }
             }
         ])))
     }
@@ -843,6 +872,35 @@ class GameScene: SKScene {
             overlay.handleTouch(at: point)
             if overlay.parent == nil { settingsOverlay = nil }
             return
+        }
+
+        guard !rewardedInFlight else { return }
+        lastPlayerActionAt = Date()
+
+        // Modale « seconde chance » : bloque le reste du touch.
+        if let prompt = secondChancePrompt, prompt.parent != nil {
+            for node in nodes(at: point) {
+                switch node.name ?? "" {
+                case "secondChanceWatch":
+                    watchSecondChanceVideo()
+                    return
+                case "secondChanceDecline":
+                    declineSecondChance()
+                    return
+                default: continue
+                }
+            }
+            return
+        }
+
+        // Pastille « indice gratuit » : un tap dessus lance la vidéo, tout
+        // autre tap la retire et poursuit normalement.
+        if hintOfferNode != nil {
+            if nodes(at: point).contains(where: { $0.name == "hintOffer" }) {
+                watchHintVideo()
+                return
+            }
+            dismissHintOffer()
         }
 
         // Modale « à court de boosters » : bloque le reste du touch.
@@ -1586,7 +1644,7 @@ class GameScene: SKScene {
                 // l'expiration du chrono.
                 performShuffle()
                 if !gridModel.hasValidMove() { rushReseed() }
-            } else {
+            } else if !presentSecondChanceIfPossible() {
                 triggerLose()
             }
         } else {
@@ -1993,6 +2051,227 @@ class GameScene: SKScene {
         boosterShopPrompt = nil
     }
 
+    // MARK: - Vidéo récompensée : seconde chance
+
+    /// Grille bloquée en mode normal : propose une vidéo pour mélanger la
+    /// grille et continuer, au lieu de perdre. Renvoie `false` si l'offre n'a
+    /// pas lieu d'être (déjà utilisée, pas de vidéo prête, mélange inutile) —
+    /// l'appelant déclenche alors la défaite.
+    ///
+    /// Défi du jour, puzzles et duels sont exclus : leur grille est la même
+    /// pour tous, une vidéo y fausserait le classement ou les étoiles.
+    private func presentSecondChanceIfPossible() -> Bool {
+        guard mode == .normal, !secondChanceUsed, secondChancePrompt == nil,
+              RewardedAdManager.shared.canOffer(.secondChance) else { return false }
+
+        // Le mélange est tiré maintenant : la promesse « tu pourras continuer »
+        // doit être tenue. Sans bulles adjacentes, aucun mélange n'y peut rien.
+        var shuffled = gridModel
+        shuffled.reshuffleValues()
+        guard shuffled.hasValidMove() else { return false }
+        secondChanceGrid = shuffled
+        dismissHintOffer()
+
+        let panel = SKNode()
+        panel.zPosition = 15
+        panel.name = "secondChancePrompt"
+
+        let dim = SKSpriteNode(color: UIColor(white: 0, alpha: 0.45),
+                               size: CGSize(width: size.width * 2, height: size.height * 2))
+        panel.addChild(dim)
+
+        let w: CGFloat = 470, h: CGFloat = 300
+        let card = SKShapeNode(rectOf: CGSize(width: w, height: h), cornerRadius: 32)
+        card.fillColor = UIColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1)
+        card.strokeColor = UIColor(white: 0.70, alpha: 0.25)
+        card.lineWidth = 1
+        panel.addChild(card)
+
+        let title = SKLabelNode(text: String(localized: "game.second_chance_title",
+                                             defaultValue: "Plus aucun coup !"))
+        title.fontName = "AvenirNext-Heavy"
+        title.fontSize = 28
+        title.fontColor = UIColor(white: 0.25, alpha: 1)
+        title.verticalAlignmentMode = .center
+        title.position = CGPoint(x: 0, y: h / 2 - 58)
+        panel.addChild(title)
+
+        let body = SKLabelNode(text: String(localized: "game.second_chance_body",
+                                            defaultValue: "Regarde une courte vidéo : la grille est mélangée et tu continues avec ton score."))
+        body.fontName = "AvenirNext-Medium"
+        body.fontSize = 17
+        body.fontColor = UIColor(white: 0.38, alpha: 1)
+        body.verticalAlignmentMode = .center
+        body.numberOfLines = 3
+        body.lineBreakMode = .byWordWrapping
+        body.preferredMaxLayoutWidth = w - 72
+        body.position = CGPoint(x: 0, y: 12)
+        panel.addChild(body)
+
+        addPromptButton(to: panel, name: "secondChanceWatch",
+                        title: String(localized: "game.second_chance_watch", defaultValue: "Voir la vidéo"),
+                        fill: ThemeManager.shared.active.accent,
+                        ink: UIColor(white: 0.20, alpha: 1),
+                        at: CGPoint(x: -w / 4 - 6, y: -h / 2 + 58))
+        addPromptButton(to: panel, name: "secondChanceDecline",
+                        title: String(localized: "game.second_chance_decline", defaultValue: "Non merci"),
+                        fill: UIColor(white: 0.90, alpha: 1),
+                        ink: UIColor(white: 0.35, alpha: 1),
+                        at: CGPoint(x: w / 4 + 6, y: -h / 2 + 58))
+
+        addChild(panel)
+        secondChancePrompt = panel
+        panel.alpha = 0
+        panel.run(SKAction.fadeIn(withDuration: 0.18))
+        AnalyticsService.rewardedOfferView(placement: RewardedPlacement.secondChance.rawValue)
+        return true
+    }
+
+    private func dismissSecondChancePrompt() {
+        secondChancePrompt?.removeFromParent()
+        secondChancePrompt = nil
+    }
+
+    private func watchSecondChanceVideo() {
+        guard let vc = view?.window?.rootViewController else { return declineSecondChance() }
+        rewardedInFlight = true
+        RewardedAdManager.shared.show(placement: .secondChance, from: vc, onReward: { [weak self] in
+            self?.applySecondChance()
+        }, onDismiss: { [weak self] rewarded in
+            guard let self else { return }
+            self.rewardedInFlight = false
+            // Vidéo coupée avant la fin : la partie se termine normalement.
+            if !rewarded { self.declineSecondChance() }
+        }, onUnavailable: { [weak self] in
+            self?.rewardedInFlight = false
+            self?.declineSecondChance()
+        })
+    }
+
+    /// Vidéo regardée : on joue le mélange promis et la main revient au joueur.
+    private func applySecondChance() {
+        guard let shuffled = secondChanceGrid else { return declineSecondChance() }
+        dismissSecondChancePrompt()
+        secondChanceGrid = nil
+        secondChanceUsed = true
+        cancelPath()
+        gridModel = shuffled
+        rebuildGridNodes()
+        HapticManager.medium()
+        run(SKAction.sequence([
+            SKAction.wait(forDuration: 0.25),
+            SKAction.run { [weak self] in self?.isAnimating = false }
+        ]))
+    }
+
+    private func declineSecondChance() {
+        guard secondChancePrompt != nil else { return }
+        dismissSecondChancePrompt()
+        secondChanceGrid = nil
+        triggerLose()
+    }
+
+    // MARK: - Vidéo récompensée : indice gratuit
+
+    /// Le joueur sèche depuis un moment sans indice en poche : une pastille
+    /// propose un indice contre une vidéo. Appelé à chaque frame en mode
+    /// normal — les gardes les moins chères passent en premier, le calcul
+    /// de chemin en dernier.
+    private func maybeOfferHintVideo() {
+        guard hintOfferNode == nil, !rewardedInFlight,
+              hintVideosThisGame < GameScene.maxHintVideosPerGame,
+              Date().timeIntervalSince(lastPlayerActionAt) >= GameScene.hintOfferIdleDelay,
+              !isAnimating, !hammerArmed, currentPath.isEmpty,
+              gameOverPanel == nil, secondChancePrompt == nil, boosterShopPrompt == nil,
+              boosterCoach == nil, settingsOverlay?.parent == nil,
+              BoosterManager.shared.count(.hint) == 0,
+              RewardedAdManager.shared.canOffer(.hint)
+        else { return }
+        // Pas de chemin court à montrer : on n'y revient pas avant un nouveau délai.
+        guard gridModel.showcasePath() != nil else {
+            lastPlayerActionAt = Date()
+            return
+        }
+        presentHintOffer()
+    }
+
+    private func presentHintOffer() {
+        let node = SKNode()
+        node.name = "hintOffer"
+        node.zPosition = 8
+        // Sous la grille, dans l'espace libre au-dessus de la barre du bas :
+        // la zone de consigne (au-dessus) chevauche le logo et la 1re rangée.
+        node.position = CGPoint(x: 0, y: gridBottom - BubbleNode.bubbleRadius - 50)
+
+        let pill = SKShapeNode(rectOf: CGSize(width: 260, height: 48), cornerRadius: 24)
+        pill.name = "hintOffer"
+        pill.fillColor = .white
+        pill.strokeColor = ThemeManager.shared.active.accent
+        pill.lineWidth = 2
+        node.addChild(pill)
+
+        let icon = BoosterIcon.make(.hint, size: 24, color: UIColor(white: 0.42, alpha: 1))
+        icon.name = "hintOffer"
+        icon.position = CGPoint(x: -100, y: 0)
+        node.addChild(icon)
+
+        let label = SKLabelNode(text: String(localized: "game.hint_video_offer",
+                                             defaultValue: "Indice gratuit"))
+        label.name = "hintOffer"
+        label.fontName = "AvenirNext-DemiBold"
+        label.fontSize = 18
+        label.fontColor = UIColor(white: 0.30, alpha: 1)
+        label.verticalAlignmentMode = .center
+        label.position = CGPoint(x: 0, y: 0)
+        node.addChild(label)
+
+        // Pastille « lecture » : annonce qu'il s'agit d'une vidéo.
+        let play = VectorIcon.play.node(size: 22, color: UIColor(white: 0.42, alpha: 1))
+        play.name = "hintOffer"
+        play.position = CGPoint(x: 100, y: 0)
+        node.addChild(play)
+
+        addChild(node)
+        hintOfferNode = node
+        if JuiceSettings.motionEnabled {
+            node.setScale(0.6)
+            node.alpha = 0
+            node.run(SKAction.group([SKAction.fadeIn(withDuration: 0.2),
+                                     SKAction.scale(to: 1.0, duration: 0.24)]))
+            node.run(SKAction.repeatForever(SKAction.sequence([
+                SKAction.wait(forDuration: 2.0),
+                SKAction.scale(to: 1.06, duration: 0.15),
+                SKAction.scale(to: 1.0, duration: 0.15)
+            ])))
+        }
+        AnalyticsService.rewardedOfferView(placement: RewardedPlacement.hint.rawValue)
+    }
+
+    private func dismissHintOffer() {
+        hintOfferNode?.removeFromParent()
+        hintOfferNode = nil
+    }
+
+    private func watchHintVideo() {
+        dismissHintOffer()
+        guard let vc = view?.window?.rootViewController else { return }
+        rewardedInFlight = true
+        RewardedAdManager.shared.show(placement: .hint, from: vc, onReward: { [weak self] in
+            guard let self else { return }
+            self.hintVideosThisGame += 1
+            // Grille recalculée à la fermeture de la vidéo.
+            if !self.isAnimating, let path = self.gridModel.showcasePath() {
+                self.showHint(path: path)
+            }
+        }, onDismiss: { [weak self] _ in
+            self?.rewardedInFlight = false
+            self?.lastPlayerActionAt = Date()
+        }, onUnavailable: { [weak self] in
+            self?.rewardedInFlight = false
+            self?.lastPlayerActionAt = Date()
+        })
+    }
+
     /// Feedback « plus de boosters » : secousse du bouton, puis explication.
     private func denyBooster(_ booster: Booster) {
         if let node = boosterButtons.first(where: { $0.booster == booster })?.node {
@@ -2385,6 +2664,7 @@ class GameScene: SKScene {
     /// durait en réalité plusieurs secondes de plus, et d'autant plus que le
     /// joueur enchaînait. Inacceptable pour un mode qui alimente un classement.
     override func update(_ currentTime: TimeInterval) {
+        if mode == .normal { maybeOfferHintVideo() }
         guard mode == .rush, rushTimerRunning, !rushEnded else { return }
 
         // Grille en cours de redistribution : le joueur ne peut pas jouer, le
@@ -3251,6 +3531,9 @@ class GameScene: SKScene {
                 // précédente — typiquement au 2e passage du Défi du jour, où
                 // aucun XP n'est recrédité.
                 self.lastXPResult = nil
+                self.secondChanceUsed = false
+                self.hintVideosThisGame = 0
+                self.lastPlayerActionAt = Date()
                 self.hammerArmed = false
                 self.boosterBar?.isHidden = false
                 self.refreshBoosterButtons()
