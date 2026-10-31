@@ -868,7 +868,9 @@ class MenuScene: SKScene {
     }
 
     private func navigateToTutorial() {
-        let scene = TutorialScene(size: size)
+        // Joueur qui n'a encore rien terminé (lien profond, retour au menu) :
+        // même tutoriel court que le premier lancement.
+        let scene = TutorialScene(size: size, firstRun: FirstRun.isPending)
         scene.scaleMode = .aspectFill
         view?.presentScene(scene, transition: SceneTransition.fade(0.28))
     }

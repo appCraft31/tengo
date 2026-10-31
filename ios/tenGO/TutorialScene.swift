@@ -21,7 +21,20 @@ class TutorialScene: SKScene {
     ]
 
     private var currentStep = 0
-    private let totalSteps = 3
+    /// Premier lancement (TEN-4) : seules les deux pages indispensables pour
+    /// jouer (relier, faire 10). Le barème reste dans « Revoir le tutoriel ».
+    private let firstRun: Bool
+    private var totalSteps: Int { firstRun ? 2 : 3 }
+
+    init(size: CGSize, firstRun: Bool = false) {
+        self.firstRun = firstRun
+        super.init(size: size)
+    }
+
+    required init?(coder aDecoder: NSCoder) {
+        self.firstRun = false
+        super.init(coder: aDecoder)
+    }
     private var stepContainer: SKNode?
     private var dotsNodes: [SKShapeNode] = []
     private var visibleHeight: CGFloat = 1334
@@ -495,7 +508,15 @@ class TutorialScene: SKScene {
             let name = node.name ?? node.parent?.name
             switch name {
             case "close":
-                navigateToMenu()
+                if firstRun {
+                    // Au premier lancement, fermer = passer : on va jouer.
+                    // Revenir au menu faisait réapparaître le tutoriel au
+                    // premier « Jouer », soit un détour de plus.
+                    UserDefaults.standard.set(true, forKey: AppConfig.UserDefaultsKey.hasSeenTutorial)
+                    navigateToNewGame()
+                } else {
+                    navigateToMenu()
+                }
             case "next":
                 if currentStep < totalSteps - 1 {
                     currentStep += 1

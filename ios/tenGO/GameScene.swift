@@ -18,6 +18,8 @@ class GameScene: SKScene {
     enum Mode { case normal, daily, demo, rush, puzzle, duel }
 
     private let mode: Mode
+    /// Cette partie est la toute première terminée de l'installation (TEN-4).
+    private var wasFirstGame = false
     private var dailyToday: DailyChallenge.Today?
     private var puzzleLevel: PuzzleLevel?
     private var duelSeed: UInt64 = 0
@@ -327,6 +329,7 @@ class GameScene: SKScene {
                 flashMessage(String(localized: "streak.protected"), duration: 2.4)
             }
             NotificationManager.shared.registerGameAndMaybeRequest()
+            FirstRun.gameStarted(mode: analyticsModeName)
         }
         setupBoosters()
 
@@ -2138,7 +2141,25 @@ class GameScene: SKScene {
                 puzzleStarsEarned = puzzle.stars(forScore: score)
             }
         }
-        if mode != .demo { checkAchievements() }
+        if mode != .demo {
+            checkAchievements()
+            // Toute première partie terminée de l'installation (TEN-4).
+            if FirstRun.gameCompleted(mode: analyticsModeName, score: score, won: isWinState) {
+                wasFirstGame = true
+            }
+        }
+    }
+
+    /// Nom du mode dans les événements Firebase (identique à `level_end`).
+    private var analyticsModeName: String {
+        switch mode {
+        case .normal: return "normal"
+        case .daily:  return "daily"
+        case .rush:   return "rush"
+        case .puzzle: return "puzzle"
+        case .duel:   return "duel"
+        case .demo:   return "demo"
+        }
     }
 
     /// Publie le résultat du duel : création du duel pour le challenger,
@@ -2284,6 +2305,10 @@ class GameScene: SKScene {
     private func maybeRequestReview() {
         guard mode != .demo else { return }
         guard UserDefaults.standard.bool(forKey: AppConfig.UserDefaultsKey.hasSeenTutorial) else { return }
+        // Première partie : c'est la demande ATT qui occupe ce temps mort.
+        // Deux boîtes système d'affilée sur la toute première victoire, c'est
+        // le pire moment pour solliciter un avis.
+        guard !wasFirstGame else { return }
         guard let scene = view?.window?.windowScene else { return }
         if #available(iOS 14.0, *) {
             SKStoreReviewController.requestReview(in: scene)
