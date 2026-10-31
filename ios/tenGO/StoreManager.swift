@@ -64,9 +64,14 @@ final class StoreManager {
     /// Prix localisé du mod « sans pub », nil tant que StoreKit n'a pas répondu.
     /// Seule source de prix affichable : jamais de valeur en dur.
     var adFreeDisplayPrice: String? { adFreeProduct?.displayPrice }
-    /// L'offre « sans pub » de fin de partie a déjà été montrée : elle ne
-    /// revient pas avant le prochain lancement.
-    var adFreeOfferShownThisSession = false
+    /// Offres « sans pub » de fin de partie montrées depuis le lancement
+    /// (plafonnées par `adFreeOffersPerSession`).
+    var adFreeOffersShownThisSession = 0
+    /// L'offre de fin de partie suit une série d'au moins autant
+    /// d'interstitielles (comptées d'une session à l'autre).
+    static let adFreeOfferAfterAds = 2
+    /// Au plus autant d'offres par session, pour ne pas harceler.
+    static let adFreeOffersPerSession = 2
     private var loadTask: Task<Void, Never>?
     private var updatesTask: Task<Void, Never>?
 
@@ -156,6 +161,8 @@ final class StoreManager {
                 }
                 credit(transaction)
                 AnalyticsService.purchase(product: product, transaction: transaction)
+                AnalyticsService.iapSucceeded(productID: product.id, source: source,
+                                              environment: Self.environment(of: transaction))
                 await transaction.finish()
                 print("[Store] Achat réussi : \(product.id)")
                 return .success
@@ -216,10 +223,21 @@ final class StoreManager {
         if amount > 0 { CoinManager.shared.add(amount) }
     }
 
+    /// `production`, `sandbox` ou `xcode` (nil avant iOS 16).
+    nonisolated private static func environment(of transaction: Transaction) -> String? {
+        guard #available(iOS 16.0, *) else { return nil }
+        return transaction.environment.rawValue.lowercased()
+    }
+
     private func listenForTransactions() -> Task<Void, Never> {
         Task.detached {
             for await result in Transaction.updates {
                 guard case .verified(let transaction) = result else { continue }
+                if transaction.revocationDate == nil {
+                    AnalyticsService.iapSucceeded(productID: transaction.productID,
+                                                  source: "transaction_update",
+                                                  environment: StoreManager.environment(of: transaction))
+                }
                 await self.credit(transaction)
                 await transaction.finish()
             }

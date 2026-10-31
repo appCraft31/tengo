@@ -64,6 +64,25 @@ enum AnalyticsService {
         Analytics.setUserProperty(enabled ? "on" : "off", forName: "sound_on")
     }
 
+    /// Propriété utilisateur `store_env` : `production` (App Store), `sandbox`
+    /// (TestFlight, vérification Apple), `xcode` / `debug` (tests du développeur).
+    /// Les essais d'achat en bac à sable — presque toujours annulés — se
+    /// mêlaient jusqu'ici aux vrais joueurs dans l'entonnoir d'achat (TEN-2) :
+    /// filtrer les rapports `iap_*` sur `store_env = production`.
+    static func setStoreEnvironmentProperty() {
+        #if DEBUG
+        Analytics.setUserProperty("debug", forName: "store_env")
+        #else
+        guard #available(iOS 16.0, *) else { return }
+        Task.detached(priority: .utility) {
+            // `AppTransaction.shared` ne sollicite jamais l'utilisateur
+            // (contrairement à `refresh()`).
+            guard case .verified(let appTransaction)? = try? await AppTransaction.shared else { return }
+            Analytics.setUserProperty(appTransaction.environment.rawValue.lowercased(), forName: "store_env")
+        }
+        #endif
+    }
+
     // MARK: - Boosters
     //
     // Funnel visé :
@@ -125,8 +144,32 @@ enum AnalyticsService {
 
     /// Offre « sans pub » vue. `source` : game_over (pastille après une
     /// interstitielle) | shop (carte en tête de boutique).
-    static func noAdsOfferView(source: String) {
-        logFunnel("noads_offer_view", parameters: ["source": source])
+    /// `adsSeen` : interstitielles vues depuis la précédente offre (série qui
+    /// a déclenché celle-ci), `adsToday` : interstitielles vues aujourd'hui.
+    static func noAdsOfferView(source: String, adsSeen: Int? = nil, adsToday: Int? = nil) {
+        var parameters: [String: Any] = ["source": source]
+        if let adsSeen { parameters["ads_seen"] = adsSeen }
+        if let adsToday { parameters["ads_today"] = adsToday }
+        logFunnel("noads_offer_view", parameters: parameters)
+    }
+
+    /// Offre « sans pub » refusée (« Non merci »).
+    static func noAdsOfferDeclined(source: String) {
+        logFunnel("noads_offer_decline", parameters: ["source": source])
+    }
+
+    /// Achat en vraie monnaie abouti (transaction vérifiée). Complète
+    /// l'entonnoir `iap_tapped` → `iap_success | iap_cancelled | iap_failed |
+    /// iap_pending`, avec l'écran d'origine que `purchase` ne porte pas.
+    /// `source = transaction_update` : achat approuvé hors de la feuille
+    /// (« Demander l'autorisation », SCA, autre appareil).
+    static func iapSucceeded(productID: String, source: String, environment: String?) {
+        var parameters: [String: Any] = [
+            AnalyticsParameterItemID: productID,
+            "source": source,
+        ]
+        if let environment { parameters["store_env"] = environment }
+        logFunnel("iap_success", parameters: parameters)
     }
 
     /// Le joueur a lancé un achat en vraie monnaie.

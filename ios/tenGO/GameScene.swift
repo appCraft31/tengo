@@ -2972,20 +2972,34 @@ class GameScene: SKScene {
 
     private var noAdsOffer: SKNode? { gameOverPanel?.childNode(withName: "noAdsOffer") }
 
+    /// Délai pendant lequel un appui sur l'offre fraîchement apparue est
+    /// ignoré : il visait la pub qui vient de se fermer ou le panneau, pas
+    /// l'achat (la feuille de paiement s'ouvrait alors pour rien).
+    private static let noAdsOfferTapGuard: TimeInterval = 0.7
+    private var noAdsOfferShownAt = Date.distantPast
+
     /// Pastille « Sans pub + 500 pièces — prix » sous le panneau de fin, juste
-    /// après une interstitielle réellement affichée. Au plus une fois par
-    /// session, jamais si le mod est acquis ou si le prix StoreKit est inconnu.
+    /// après une SÉRIE d'interstitielles (au moins `adFreeOfferAfterAds` depuis
+    /// la précédente offre, toutes sessions confondues), avec le nombre de pubs
+    /// vues aujourd'hui. Au plus `adFreeOffersPerSession` fois par session,
+    /// jamais si le mod est acquis ou si le prix StoreKit est inconnu.
     /// Le refus (« Non merci ») est un bouton à part entière, pas une croix.
     /// - Returns: true si l'offre est affichée.
     @discardableResult
     private func presentNoAdsOffer(resumesReplay: Bool) -> Bool {
+        let ads = InterstitialAdManager.shared
         guard let panel = gameOverPanel, noAdsOffer == nil,
               !AdFreeManager.shared.isPurchased,
-              !StoreManager.shared.adFreeOfferShownThisSession,
+              ads.shownSinceNoAdsOffer >= StoreManager.adFreeOfferAfterAds,
+              StoreManager.shared.adFreeOffersShownThisSession < StoreManager.adFreeOffersPerSession,
               let price = StoreManager.shared.adFreeDisplayPrice else { return false }
-        StoreManager.shared.adFreeOfferShownThisSession = true
+        let adsSeen = ads.shownSinceNoAdsOffer
+        let adsToday = max(ads.shownToday, 1)
+        StoreManager.shared.adFreeOffersShownThisSession += 1
+        ads.resetNoAdsSeries()
         noAdsOfferResumesReplay = resumesReplay
-        AnalyticsService.noAdsOfferView(source: "game_over")
+        noAdsOfferShownAt = Date()
+        AnalyticsService.noAdsOfferView(source: "game_over", adsSeen: adsSeen, adsToday: adsToday)
 
         let theme = ThemeManager.shared.active
         let ink = theme.accent.readableInk()
@@ -3055,11 +3069,25 @@ class GameScene: SKScene {
         title.fontColor = ink
         title.verticalAlignmentMode = .center
         title.horizontalAlignmentMode = .left
-        title.position = CGPoint(x: titleX, y: 0)
+        title.position = CGPoint(x: titleX, y: 11)
         // Les libellés longs (de, nl, pt-BR) se réduisent plutôt que de passer sous le prix.
         let titleMaxW = cardSize.width / 2 - 16 - pillW - 12 - titleX
         if title.frame.width > titleMaxW { title.setScale(titleMaxW / title.frame.width) }
         offer.addChild(title)
+
+        // Rappel factuel de la série qui vient de passer : c'est elle qui
+        // donne envie de payer, pas la promesse abstraite.
+        let seen = SKLabelNode(text: String(format: String(localized: "offer.noads_ads_today",
+                                                           defaultValue: "Pubs vues aujourd'hui : %lld"),
+                                            adsToday))
+        seen.fontName = "AvenirNext-DemiBold"
+        seen.fontSize = 14
+        seen.fontColor = ink.withAlphaComponent(0.78)
+        seen.verticalAlignmentMode = .center
+        seen.horizontalAlignmentMode = .left
+        seen.position = CGPoint(x: titleX, y: -16)
+        if seen.frame.width > titleMaxW { seen.setScale(titleMaxW / seen.frame.width) }
+        offer.addChild(seen)
 
         let declineRect = Self.noAdsOfferDeclineRect
         let declineBg = SKShapeNode(rectOf: declineRect.size, cornerRadius: declineRect.height / 2)
@@ -3090,11 +3118,15 @@ class GameScene: SKScene {
         let cardRect = CGRect(x: -cardSize.width / 2, y: -cardSize.height / 2,
                               width: cardSize.width, height: cardSize.height)
         if cardRect.contains(local) {
-            purchaseNoAdsFromOffer()
+            // Appui trop tôt : consommé, sans ouvrir la feuille de paiement.
+            if Date().timeIntervalSince(noAdsOfferShownAt) >= Self.noAdsOfferTapGuard {
+                purchaseNoAdsFromOffer()
+            }
             return true
         }
         if Self.noAdsOfferDeclineRect.contains(local) {
             HapticManager.light()
+            AnalyticsService.noAdsOfferDeclined(source: "game_over")
             dismissNoAdsOffer()
             if noAdsOfferResumesReplay { resetGame() }
             return true

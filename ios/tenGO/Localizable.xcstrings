@@ -9036,6 +9036,72 @@
         }
       }
     },
+    "offer.noads_ads_today": {
+      "comment": "Sous-titre de l'offre « sans pub » de fin de partie : nombre d'interstitielles vues aujourd'hui.",
+      "extractionState": "manual",
+      "localizations": {
+        "fr": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pubs vues aujourd'hui : %lld"
+          }
+        },
+        "en": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Ads seen today: %lld"
+          }
+        },
+        "es": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anuncios vistos hoy: %lld"
+          }
+        },
+        "de": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Heute gesehene Werbung: %lld"
+          }
+        },
+        "it": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Pubblicità viste oggi: %lld"
+          }
+        },
+        "pt-BR": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Anúncios vistos hoje: %lld"
+          }
+        },
+        "ja": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今日見た広告：%lld件"
+          }
+        },
+        "zh-Hans": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "今天看过的广告：%lld 次"
+          }
+        },
+        "ko": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "오늘 본 광고: %lld개"
+          }
+        },
+        "nl": {
+          "stringUnit": {
+            "state": "translated",
+            "value": "Advertenties vandaag gezien: %lld"
+          }
+        }
+      }
+    },
     "offer.noads_title": {
       "extractionState": "manual",
       "localizations": {
