@@ -1,7 +1,7 @@
-More playing, fewer interruptions.
+See what your games say about you.
 
-- Second chance: stuck in a classic game? Watch a short video to reshuffle the bubbles and keep going.
-- A helping hand: when you're stuck, you can get a hint for a video.
-- Fewer full-screen ads, more spaced out, and none during your first games.
-- Faster first launch: you're playing within seconds.
-- The tutorial's close button now stays visible on every iPhone.
+- New: "Your brain". Your progress measured as you play (quick eye, vision, foresight) and a notebook of every way you've made 10.
+- New: seeds of ten. Grow your seed: once it blooms, it places a ×N flower on the grid that multiplies your chains.
+- Redesigned end screen: continue, replay and see your new way to make 10 at a glance.
+- Diagonal chains are easier to draw.
+- New tab bar and haptic feedback in the menus.

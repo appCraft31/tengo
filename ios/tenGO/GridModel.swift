@@ -122,6 +122,39 @@ struct GridModel {
         }
     }
 
+    // MARK: - Fleur de dix
+
+    /// Pose une fleur de dix sur une bulle ordinaire, de préférence au cœur
+    /// de la grille : en bordure, elle serait trop facile à oublier. Renvoie
+    /// sa position, ou `nil` si aucune bulle ne convient.
+    @discardableResult
+    mutating func plantFlower(power: Int) -> (row: Int, col: Int)? {
+        let candidates = bubblePositions().filter { pos in
+            guard let b = cells[pos.row][pos.col] else { return false }
+            return !b.isAnchored && !b.isFrozen && b.bloom == 0
+        }
+        // Petit chiffre (1 à 4) de préférence : il entre dans une longue chaîne,
+        // là où un 8 ou un 9 ne se combine presque qu'en paire.
+        let central = candidates.filter { (2...6).contains($0.row) && (1...5).contains($0.col) }
+        func small(_ list: [GridPos]) -> [GridPos] {
+            list.filter { (cells[$0.row][$0.col]?.value ?? 10) <= 4 }
+        }
+        let pool = [small(central), small(candidates), central, candidates].first { !$0.isEmpty } ?? []
+        guard let pick = pool.randomElement() else { return nil }
+        cells[pick.row][pick.col]?.bloom = power
+        return (pick.row, pick.col)
+    }
+
+    /// Capture de fiche : pose une fleur ×N sur une case précise.
+    mutating func setBloom(_ power: Int, at pos: (row: Int, col: Int)) {
+        cells[pos.row][pos.col]?.bloom = power
+    }
+
+    /// Multiplicateur porté par le chemin (le plus fort s'il y a plusieurs fleurs).
+    func bloomMultiplier(of path: [(row: Int, col: Int)]) -> Int {
+        path.compactMap { cells[$0.row][$0.col]?.bloom }.filter { $0 > 1 }.max() ?? 1
+    }
+
     // MARK: - Queries
 
     func isAdjacent(_ a: (row: Int, col: Int), _ b: (row: Int, col: Int)) -> Bool {
@@ -275,6 +308,7 @@ struct GridModel {
             var b = BubbleModel(value: value, row: pos.row, col: pos.col)
             b.isAnchored = old.isAnchored
             b.isFrozen = old.isFrozen
+            b.bloom = old.bloom
             cells[pos.row][pos.col] = b
         }
 

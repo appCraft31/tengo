@@ -230,6 +230,7 @@ class AchievementsScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
+        tapFeedback(at: point)
         for node in nodes(at: point) {
             guard let name = node.parent?.name ?? node.name else { continue }
             if name == "back" {

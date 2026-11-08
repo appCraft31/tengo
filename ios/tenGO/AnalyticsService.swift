@@ -263,4 +263,35 @@ enum AnalyticsService {
     static func rewardedCompleted(placement: String) {
         logFunnel("rewarded_completed", parameters: ["placement": placement])
     }
+
+    // MARK: - Miroir cognitif et graines de dix
+    //
+    // Mesurent si les deux leviers de retour sont vus et utilisés. Noms
+    // identiques sur Android.
+
+    /// Phrase du miroir affichée en fin de partie (`kind` : discovered, look,
+    /// vision, anticipation, target).
+    static func mirrorInsightShown(kind: String) {
+        Analytics.logEvent("mirror_insight_shown", parameters: ["kind": kind])
+    }
+
+    /// Écran « Ton cerveau » ouvert.
+    static func mirrorOpened(gamesMeasured: Int, repertoire: Int) {
+        Analytics.logEvent("mirror_opened", parameters: ["games": gamesMeasured, "repertoire": repertoire])
+    }
+
+    /// Graine plantée (ou renforcée par une chaîne plus longue).
+    static func seedPlanted(power: Int, strengthened: Bool) {
+        Analytics.logEvent("seed_planted", parameters: ["power": power, "strengthened": strengthened ? 1 : 0])
+    }
+
+    /// Fleur éclose posée dans une nouvelle partie.
+    static func flowerPlaced(power: Int) {
+        Analytics.logEvent("flower_placed", parameters: ["power": power])
+    }
+
+    /// Fleur cueillie : la chaîne qui la contenait a été validée.
+    static func flowerUsed(power: Int, chainLength: Int) {
+        Analytics.logEvent("flower_used", parameters: ["power": power, "length": chainLength])
+    }
 }

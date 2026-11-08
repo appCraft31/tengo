@@ -1,7 +1,7 @@
-Mais jogo, menos interrupções.
+Descobre o que os teus jogos dizem sobre ti.
 
-- Segunda oportunidade: ficou sem jogadas numa partida clássica? Veja um vídeo curto para baralhar as bolhas e continuar.
-- Uma ajuda: se ficar preso, pode obter uma pista em troca de um vídeo.
-- Menos anúncios em ecrã inteiro, mais espaçados e nenhum nas primeiras partidas.
-- Primeira abertura mais rápida: começa a jogar em poucos segundos.
-- O botão para fechar o tutorial está agora visível em todos os iPhone.
+- Novo: "O teu cérebro". O teu progresso medido enquanto jogas (rapidez, visão, antecipação) e um caderno com todas as tuas formas de fazer 10.
+- Novo: as sementes do dez. Faz crescer a tua semente: quando floresce, coloca uma flor ×N na grelha que multiplica as tuas cadeias.
+- Ecrã final renovado: continua, joga de novo e vê num relance a tua nova forma de fazer 10.
+- As cadeias na diagonal traçam-se com mais facilidade.
+- Nova barra de separadores e resposta tátil nos menus.

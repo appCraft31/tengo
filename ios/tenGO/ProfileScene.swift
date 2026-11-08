@@ -61,12 +61,12 @@ class ProfileScene: SKScene {
         // Hauteurs nominales des blocs ; `squeeze` les tasse sur un écran court.
         let headerH: CGFloat = 150, tileH: CGFloat = 92, tileGap: CGFloat = 12
         let sectionH: CGFloat = 34, missionH: CGFloat = 88, missionGap: CGFloat = 12
-        let badgesH: CGFloat = 84, navH: CGFloat = 58
+        let badgesH: CGFloat = 84, navH: CGFloat = 58, mirrorH: CGFloat = 96
         let missions = featuredMissions()
         let missionsBlock = missions.isEmpty
             ? 0
             : sectionH + CGFloat(missions.count) * missionH + CGFloat(missions.count - 1) * missionGap + 22
-        let nominal = headerH + 18 + tileH * 3 + tileGap * 2 + 22
+        let nominal = headerH + 18 + mirrorH + 18 + tileH * 3 + tileGap * 2 + 22
             + missionsBlock + sectionH + badgesH + 16 + navH
 
         let top = titleY - 48
@@ -81,6 +81,8 @@ class ProfileScene: SKScene {
         func gap(_ height: CGFloat) { cursor -= height * squeeze }
 
         addLevelCard(atY: place(headerH), height: headerH * squeeze)
+        gap(18)
+        addMirrorCard(atY: place(mirrorH), height: mirrorH * squeeze)
         gap(18)
 
         let stats: [(value: String, label: String, tint: UIColor)] = [
@@ -435,6 +437,62 @@ class ProfileScene: SKScene {
         }
     }
 
+    /// Accès à « Ton cerveau » : le résumé donne envie d'ouvrir l'écran.
+    private func addMirrorCard(atY y: CGFloat, height: CGFloat) {
+        let node = SKNode()
+        node.name = "mirror"
+        node.position = CGPoint(x: 0, y: y)
+        addChild(node)
+
+        let fill = theme.accent.mixedWithWhite(0.30)
+        let ink = fill.readableInk()
+        let bg = SKShapeNode(rectOf: CGSize(width: cardWidth, height: height), cornerRadius: 28)
+        bg.fillColor = fill
+        bg.strokeColor = .clear
+        bg.name = "mirror"
+        node.addChild(bg)
+        Relief.raise(bg, depth: 5)
+
+        let icon = VectorIcon.progress.node(size: 34, color: ink)
+        icon.position = CGPoint(x: -cardWidth / 2 + 44, y: 0)
+        node.addChild(icon)
+
+        let mirror = CognitiveMirror.shared
+        let title = SKLabelNode(text: String(localized: "mirror.title"))
+        title.fontName = "AvenirNext-Bold"
+        title.fontSize = 22
+        title.fontColor = ink
+        title.horizontalAlignmentMode = .left
+        title.verticalAlignmentMode = .center
+        title.position = CGPoint(x: -cardWidth / 2 + 84, y: height * 0.17)
+        node.addChild(title)
+
+        let look = mirror.weeklyReading(.look).value
+        let summary = SKLabelNode(text: mirror.gamesMeasured == 0
+            ? String(localized: "mirror.card_hint")
+            : String(format: String(localized: "mirror.card_summary"),
+                     CognitiveMirror.displayValue(.look, look),
+                     mirror.repertoireCount, CognitiveMirror.repertoireTotal))
+        summary.fontName = "AvenirNext-Medium"
+        summary.fontSize = 15
+        summary.fontColor = ink.withAlphaComponent(0.8)
+        summary.horizontalAlignmentMode = .left
+        summary.verticalAlignmentMode = .center
+        summary.position = CGPoint(x: -cardWidth / 2 + 84, y: -height * 0.2)
+        let maxW = cardWidth - 84 - 50
+        if summary.frame.width > maxW { summary.setScale(maxW / summary.frame.width) }
+        node.addChild(summary)
+
+        let chevron = SKLabelNode(text: "›")
+        chevron.fontName = "AvenirNext-Medium"
+        chevron.fontSize = 30
+        chevron.fontColor = ink.withAlphaComponent(0.7)
+        chevron.horizontalAlignmentMode = .right
+        chevron.verticalAlignmentMode = .center
+        chevron.position = CGPoint(x: cardWidth / 2 - 24, y: 2)
+        node.addChild(chevron)
+    }
+
     /// Rangée cliquable vers un autre écran ; le chevron dit qu'elle l'est.
     private func addNavRow(label: String, name: String, atY y: CGFloat, height: CGFloat) {
         let row = SKNode()
@@ -473,6 +531,7 @@ class ProfileScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
+        tapFeedback(at: point)
         let names = nodes(at: point).compactMap { $0.name ?? $0.parent?.name }
 
         // « Réclamer » d'abord : le bouton est posé sur une rangée elle-même
@@ -491,6 +550,7 @@ class ProfileScene: SKScene {
             case "achievements": destination = AchievementsScene(size: size)
             case "missions":     destination = MissionsScene(size: size)
             case "classement":   destination = LeaderboardScene(size: size)
+            case "mirror":       destination = MirrorScene(size: size)
             default:             destination = nil
             }
             if let destination {

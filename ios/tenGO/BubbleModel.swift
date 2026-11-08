@@ -13,6 +13,9 @@ struct BubbleModel: Equatable, Codable {
     /// Défi du jour — twist « gelée » : inutilisable tant que le givre n'a pas
     /// fondu (un chemin validé adjacent la dégèle).
     var isFrozen: Bool = false
+    /// Fleur de dix (graine éclose) : multiplicateur des points de la chaîne
+    /// qui la contient. 0 = bulle ordinaire. La valeur, elle, ne change pas.
+    var bloom: Int = 0
 
     init(value: Int, row: Int, col: Int, isAnchored: Bool = false, isFrozen: Bool = false) {
         self.value = value
@@ -31,6 +34,7 @@ struct BubbleModel: Equatable, Codable {
         col = try c.decode(Int.self, forKey: .col)
         isAnchored = try c.decodeIfPresent(Bool.self, forKey: .isAnchored) ?? false
         isFrozen = try c.decodeIfPresent(Bool.self, forKey: .isFrozen) ?? false
+        bloom = try c.decodeIfPresent(Int.self, forKey: .bloom) ?? 0
     }
 
     static func == (lhs: BubbleModel, rhs: BubbleModel) -> Bool {

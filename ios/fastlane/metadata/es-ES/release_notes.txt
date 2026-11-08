@@ -1,7 +1,7 @@
-Más juego, menos interrupciones.
+Descubre lo que tus partidas dicen de ti.
 
-- Segunda oportunidad: ¿bloqueado en una partida clásica? Mira un vídeo corto para mezclar las burbujas y seguir jugando.
-- Una ayudita: si te atascas, puedes conseguir una pista a cambio de un vídeo.
-- Menos anuncios a pantalla completa, más espaciados y ninguno en tus primeras partidas.
-- Primer inicio más rápido: juegas en pocos segundos.
-- El botón para cerrar el tutorial ahora se ve en todos los iPhone.
+- Nuevo: «Tu cerebro». Tu progreso medido mientras juegas (rapidez, visión, anticipación) y un cuaderno con todas tus formas de sumar 10.
+- Nuevo: las semillas del diez. Haz crecer tu semilla: cuando florece, coloca una flor ×N en la cuadrícula que multiplica tus cadenas.
+- Pantalla final renovada: continúa, vuelve a jugar y ve de un vistazo tu nueva forma de sumar 10.
+- Las cadenas en diagonal se trazan más fácilmente.
+- Nueva barra de pestañas y respuesta háptica en los menús.

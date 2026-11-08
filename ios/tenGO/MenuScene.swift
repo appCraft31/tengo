@@ -140,6 +140,7 @@ class MenuScene: SKScene {
         // laisser un trou.
         let hasSave = GameState.exists
         let heroH: CGFloat = 140, resumeH: CGFloat = 80, dailyH: CGFloat = 206, tilesH: CGFloat = 190
+        let seedStatus = SeedGarden.shared.status()
         var blocks: [CGFloat] = [heroH]
         if hasSave { blocks.append(resumeH) }
         blocks.append(contentsOf: [dailyH, tilesH])
@@ -156,7 +157,10 @@ class MenuScene: SKScene {
             return center
         }
 
-        addHeroButton(atY: place(heroH), height: heroH, accent: theme.color(forValue: 4))
+        let heroY = place(heroH)
+        addHeroButton(atY: heroY, height: heroH, accent: theme.color(forValue: 4))
+        // Graine : badge sur le coin du héros, sans rangée en plus (parité Android).
+        addSeedBadge(seedStatus, heroY: heroY, heroH: heroH)
         if hasSave { addResumeButton(atY: place(resumeH), height: resumeH) }
         addDailyCard(atY: place(dailyH), height: dailyH)
         addModeTiles(atY: place(tilesH), height: tilesH)
@@ -209,6 +213,52 @@ class MenuScene: SKScene {
         node.addChild(chip)
         node.addChild(icon)
         node.addChild(label)
+    }
+
+    /// Graine de dix : badge en haut à droite du bouton « Jouer ». Fleur éclose
+    /// ×N qui pulse, ou pousse + temps restant. « Jouer » lance la partie où
+    /// la fleur est posée.
+    private func addSeedBadge(_ status: SeedGarden.Status, heroY: CGFloat, heroH: CGFloat) {
+        let bloomed: Bool, text: String
+        switch status {
+        case .bloomed(let seed):
+            bloomed = true
+            text = "×\(seed.power)"
+        case .growing(let seed):
+            bloomed = false
+            text = SeedGarden.remainingText(until: seed.bloomAt)
+        case .empty:
+            return
+        }
+        let badge = SKNode()
+        badge.name = "newGame"
+        badge.zPosition = 5
+
+        let label = SKLabelNode(text: text)
+        label.fontName = "AvenirNext-Heavy"
+        label.fontSize = 18
+        label.fontColor = bloomed ? UIColor(red: 0.36, green: 0.22, blue: 0, alpha: 1)
+                                  : UIColor(red: 0.25, green: 0.36, blue: 0.15, alpha: 1)
+        label.verticalAlignmentMode = .center
+        label.horizontalAlignmentMode = .left
+        let iconW: CGFloat = 32, h: CGFloat = 42
+        let w = 8 + iconW + 4 + label.frame.width + 14
+        let bg = SKShapeNode(rectOf: CGSize(width: w, height: h), cornerRadius: h / 2)
+        bg.fillColor = bloomed ? SeedArt.gold : UIColor(red: 0.90, green: 0.96, blue: 0.84, alpha: 1)
+        bg.strokeColor = .clear
+        bg.name = "newGame"
+        badge.addChild(bg)
+
+        let icon = bloomed ? SeedArt.flower(size: iconW, petal: UIColor(red: 0.85, green: 0.45, blue: 0.10, alpha: 1))
+                           : SeedArt.sprout(size: iconW)
+        icon.position = CGPoint(x: -w / 2 + 8 + iconW / 2, y: 0)
+        badge.addChild(icon)
+        label.position = CGPoint(x: -w / 2 + 8 + iconW + 4, y: 0)
+        badge.addChild(label)
+
+        badge.position = CGPoint(x: cardWidth / 2 - w / 2 + 6, y: heroY + heroH / 2 - 6)
+        addChild(badge)
+        if bloomed { SeedArt.pulse(badge, to: 1.1) }
     }
 
     /// Reprise de partie : présente seulement quand elle a un sens, et
@@ -665,6 +715,7 @@ class MenuScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
+        tapFeedback(at: point)
 
         // Guide d'achat : la cible ouvre la boutique en mode guidé, ailleurs on
         // ferme et on compte le refus (au 3e, on cesse de proposer).

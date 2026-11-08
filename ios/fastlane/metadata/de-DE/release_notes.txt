@@ -1,7 +1,7 @@
-Mehr Spiel, weniger Unterbrechungen.
+Entdecke, was deine Partien über dich verraten.
 
-- Zweite Chance: Im klassischen Spiel festgefahren? Schau ein kurzes Video, um die Blasen neu zu mischen, und spiel weiter.
-- Kleine Hilfe: Wenn du nicht weiterkommst, gibt es einen Tipp gegen ein Video.
-- Weniger Vollbild-Werbung, mit mehr Abstand – und keine in deinen ersten Partien.
-- Schnellerer erster Start: Du spielst in wenigen Sekunden.
-- Der Schließen-Button im Tutorial bleibt jetzt auf jedem iPhone sichtbar.
+- Neu: „Dein Gehirn“. Deine Fortschritte, gemessen beim Spielen (Blick, Weitsicht, Vorausdenken), und ein Heft mit all deinen Wegen zur 10.
+- Neu: Zehner-Samen. Lass deinen Samen wachsen: Sobald er blüht, setzt er eine ×N-Blume aufs Raster, die deine Ketten vervielfacht.
+- Neuer Endbildschirm: weiterspielen, neu starten und deinen neuen Weg zur 10 auf einen Blick sehen.
+- Diagonale Ketten lassen sich leichter ziehen.
+- Neue Tab-Leiste und haptisches Feedback in den Menüs.

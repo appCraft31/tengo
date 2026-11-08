@@ -49,6 +49,15 @@ struct GameState: Codable {
         UserDefaults.standard.set(Array(scores.prefix(10)), forKey: highScoresKey)
     }
 
+    /// Partie continuée : son premier score est remplacé par le score final.
+    static func replaceScore(_ previous: Int, with score: Int) {
+        var scores = highScores()
+        if let i = scores.firstIndex(of: previous) { scores.remove(at: i) }
+        scores.append(score)
+        scores.sort(by: >)
+        UserDefaults.standard.set(Array(scores.prefix(10)), forKey: highScoresKey)
+    }
+
     static func highScores() -> [Int] {
         UserDefaults.standard.array(forKey: highScoresKey) as? [Int] ?? []
     }

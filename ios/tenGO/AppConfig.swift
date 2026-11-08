@@ -119,5 +119,11 @@ enum AppConfig {
         static let puzzleStarsPrefix = "tenGO_puzzleStars_"
         /// Codes des duels auxquels ce joueur a pris part (cf. DuelHistory).
         static let duelHistory = "tenGO_duelHistory"
+        /// Miroir cognitif : parties mesurées et décompositions de 10 trouvées.
+        static let mirrorRecords = "tenGO_mirrorRecords"
+        static let mirrorPartitions = "tenGO_mirrorPartitions"
+        /// Graine de dix en cours (JSON), cf. SeedGarden.
+        static let seedGarden = "tenGO_seedGarden"
+        static let seedFlowerExplained = "tenGO_seedFlowerExplained"
     }
 }

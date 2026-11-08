@@ -508,6 +508,7 @@ class TutorialScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
+        tapFeedback(at: point)
 
         for node in nodes(at: point) {
             let name = node.name ?? node.parent?.name

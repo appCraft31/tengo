@@ -156,6 +156,7 @@ class GameScene: SKScene {
         didSet {
             if oldValue && !isAnimating {
                 lastPlayerActionAt = Date()
+                boardReadyAt = Date()
                 resumePendingTouchIfNeeded()
             }
         }
@@ -247,10 +248,12 @@ class GameScene: SKScene {
     /// Modale « seconde chance » (grille bloquée) et la grille mélangée
     /// pré-calculée qu'elle promet : on ne propose la vidéo que si le mélange
     /// débloque vraiment la partie.
-    private var secondChancePrompt: SKNode?
     private var secondChanceGrid: GridModel?
     /// Une seule seconde chance par partie.
     private var secondChanceUsed = false
+    /// Bilan déjà enregistré quand le joueur a choisi « Continuer » : la fin
+    /// de la suite ne compte que les points en plus.
+    private var continuedFrom: (score: Int, coins: Int, longestChain: Int)?
     /// Pastille « indice gratuit » proposée quand le joueur sèche.
     private var hintOfferNode: SKNode?
     /// Indices offerts par vidéo dans la partie en cours (plafonnés).
@@ -262,6 +265,21 @@ class GameScene: SKScene {
     private var lastPlayerActionAt = Date()
     /// Une vidéo est à l'écran : rien d'autre ne doit réagir.
     private var rewardedInFlight = false
+
+    // MARK: - Miroir cognitif et graines de dix
+
+    /// Mesures de la partie en cours pour le miroir cognitif.
+    private var mirrorTally = MirrorGameTally()
+    /// Instant où la grille est redevenue jouable (base du « coup d'œil »).
+    private var boardReadyAt = Date()
+    /// Début du tracé en cours.
+    private var pathStartedAt: Date?
+    /// Cases où une bulle vient d'atterrir (row * cols + col).
+    private var lastFallen = Set<Int>()
+    private var lastMoveHadFalls = false
+    /// Phrase du miroir et sort de la graine, calculés à la fin de partie.
+    private var mirrorInsight: CognitiveMirror.Insight?
+    private var seedOutcome: SeedGarden.PlantOutcome?
 
     // MARK: - Haptics
     // Haptics via HapticManager (toggle dans les paramètres)
@@ -327,6 +345,8 @@ class GameScene: SKScene {
             score = state.score
             displayedScore = state.score
             scoreLabel.text = "\(score)"
+        } else {
+            plantBloomedFlowerIfAny()
         }
         setupGrid()
 
@@ -405,6 +425,24 @@ class GameScene: SKScene {
     /// pour atteindre le panneau de fin (interstitielle, offre « sans pub »)
     /// sans jouer une grille entière au simulateur. Vaut aussi après « Rejouer ».
     private func forceGameOverForQA() {
+        // Capture de fiche (`SCREENSHOT_END=1`) : fin de partie avec un score de
+        // vitrine, sans seconde chance.
+        if mode == .normal, ProcessInfo.processInfo.environment["SCREENSHOT_END"] != nil {
+            run(SKAction.sequence([
+                SKAction.wait(forDuration: 1.5),
+                SKAction.run { [weak self] in
+                    guard let self, self.gameOverPanel == nil else { return }
+                    self.score = 1840
+                    self.displayedScore = 1840
+                    self.scoreLabel.text = "1840"
+                    self.longestChain = 7
+                    self.combosCreated = 34
+                    self.isAnimating = true
+                    self.triggerLose()
+                }
+            ]))
+            return
+        }
         guard mode == .normal,
               let delay = Double(ProcessInfo.processInfo.environment["QA_GAME_OVER"] ?? "") else { return }
         run(SKAction.repeatForever(SKAction.sequence([
@@ -414,7 +452,10 @@ class GameScene: SKScene {
                 self.isAnimating = true
                 // Même chemin qu'une grille bloquée : la seconde chance passe
                 // d'abord (si une vidéo est prête, cf. QA_FAKE_REWARDED).
-                if !self.presentSecondChanceIfPossible() { self.triggerLose() }
+                // QA_SKIP_SECOND_CHANCE=1 : va droit au panneau de fin.
+                let skip = ProcessInfo.processInfo.environment["QA_SKIP_SECOND_CHANCE"] != nil
+                if !skip { self.prepareSecondChance() }
+                self.triggerLose()
             }
         ])))
     }
@@ -429,6 +470,16 @@ class GameScene: SKScene {
             SKAction.wait(forDuration: 1.2),
             SKAction.run { [weak self] in
                 guard let self, let path = self.gridModel.showcasePath(maxLen: n), path.count >= 2 else { return }
+                // Score de vitrine : une partie déjà bien entamée.
+                self.score = 1240
+                self.displayedScore = 1240
+                self.scoreLabel.text = "1240"
+                // SCREENSHOT_FLOWER=N : une fleur ×N au milieu du tracé.
+                if let power = Int(ProcessInfo.processInfo.environment["SCREENSHOT_FLOWER"] ?? "") {
+                    let mid = path[path.count / 2]
+                    self.gridModel.setBloom(power, at: mid)
+                    self.bubbleNodes[mid.row][mid.col]?.setBloom(power)
+                }
                 self.demoBeginPath(at: path[0])
                 for coord in path.dropFirst() { self.tryAppendCell(coord) }
             }
@@ -825,6 +876,7 @@ class GameScene: SKScene {
                 node.position = scenePos(row: row, col: col)
                 if model.isAnchored { node.setAnchored(true) }
                 if model.isFrozen { node.setFrozen(true) }
+                if model.bloom > 1 { node.setBloom(model.bloom) }
                 addChild(node)
                 bubbleNodes[row][col] = node
             }
@@ -863,6 +915,17 @@ class GameScene: SKScene {
         return (row, col)
     }
 
+    /// Pendant le glissé : la case n'est prise que près de son centre. Les coins
+    /// (où se croisent 4 cases) restent neutres, sinon une diagonale passe
+    /// d'abord par la voisine horizontale ou verticale.
+    private func dragCoord(for point: CGPoint) -> (row: Int, col: Int)? {
+        guard let coord = gridCoord(for: point) else { return nil }
+        let cx = gridOriginX + CGFloat(coord.col) * GameScene.cellSize
+        let cy = gridOriginY + CGFloat(coord.row) * GameScene.cellSize
+        let r = GameScene.cellSize * 0.42
+        return hypot(point.x - cx, point.y - cy) <= r ? coord : nil
+    }
+
     // MARK: - Touch handling
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -880,21 +943,6 @@ class GameScene: SKScene {
         guard !rewardedInFlight else { return }
         lastPlayerActionAt = Date()
 
-        // Modale « seconde chance » : bloque le reste du touch.
-        if let prompt = secondChancePrompt, prompt.parent != nil {
-            for node in nodes(at: point) {
-                switch node.name ?? "" {
-                case "secondChanceWatch":
-                    watchSecondChanceVideo()
-                    return
-                case "secondChanceDecline":
-                    declineSecondChance()
-                    return
-                default: continue
-                }
-            }
-            return
-        }
 
         // Pastille « indice gratuit » : un tap dessus lance la vidéo, tout
         // autre tap la retire et poursuit normalement.
@@ -948,12 +996,17 @@ class GameScene: SKScene {
 
         // Bouton home — retour au menu
         if hypot(point.x - homeBubbleNode.position.x, point.y - homeBubbleNode.position.y) < 34 {
+            HapticManager.light()
             goBackToMenu()
             return
         }
 
         // Boutons dans le panel game over
         if gameOverPanel != nil {
+            // Boutons du panneau de fin : léger retour haptique.
+            if nodes(at: point).contains(where: { ($0.name ?? $0.parent?.name)?.hasSuffix("Btn") == true }) {
+                HapticManager.light()
+            }
             for node in nodes(at: point) {
                 let name = node.name ?? node.parent?.name
                 if name == "replayBtn" {
@@ -972,6 +1025,28 @@ class GameScene: SKScene {
                             if adShown, self.presentNoAdsOffer(resumesReplay: true) { return }
                             self.resetGame()
                         }
+                    }
+                    return
+                }
+                if name == "continueBtn" {
+                    node.parent?.run(SKAction.sequence([
+                        SKAction.scale(to: 0.93, duration: 0.07),
+                        SKAction.scale(to: 1.0, duration: 0.1)
+                    ]))
+                    watchSecondChanceVideo()
+                    return
+                }
+                if name == "nextPuzzleBtn" {
+                    node.parent?.run(SKAction.sequence([
+                        SKAction.scale(to: 0.93, duration: 0.07),
+                        SKAction.scale(to: 1.0, duration: 0.1)
+                    ]))
+                    run(SKAction.wait(forDuration: 0.12)) { [weak self] in
+                        guard let self, let current = self.puzzleLevel,
+                              let next = PuzzleWorld.level(world: current.world, index: current.index + 1) else { return }
+                        let scene = GameScene(size: self.size, puzzle: next)
+                        scene.scaleMode = .aspectFill
+                        self.view?.presentScene(scene, transition: SceneTransition.fade(0.3))
                     }
                     return
                 }
@@ -1096,6 +1171,7 @@ class GameScene: SKScene {
         if gridModel.cells[coord.row][coord.col]?.isFrozen == true { return }
 
         currentPath = [coord]
+        pathStartedAt = Date()
         let selectValue = gridModel.cells[coord.row][coord.col]?.value ?? 1
         bubbleNodes[coord.row][coord.col]?.setSelected(true, tension: pathTension)
         SoundManager.shared.playSelect(bubbleValue: selectValue)
@@ -1127,7 +1203,7 @@ class GameScene: SKScene {
             return
         }
         guard !rushCountdownActive, !currentPath.isEmpty else { return }
-        guard let target = gridCoord(for: point) else { return }
+        guard let target = dragCoord(for: point) else { return }
         let last = currentPath.last!
 
         // Même cellule — ne rien faire
@@ -1274,7 +1350,7 @@ class GameScene: SKScene {
             return
         }
 
-        let points = scoreForPath(length: currentPath.count)
+        let points = scoreForPath(length: currentPath.count) * gridModel.bloomMultiplier(of: currentPath)
         let label: SKLabelNode
         if let existing = pathGainLabel {
             label = existing
@@ -1498,7 +1574,8 @@ class GameScene: SKScene {
         isAnimating = true
         clearTrail()
 
-        let points = scoreForPath(length: currentPath.count)
+        let bloom = gridModel.bloomMultiplier(of: currentPath)
+        let points = scoreForPath(length: currentPath.count) * bloom
         let lastCoord = currentPath.last!
         let popupOrigin = scenePos(row: lastCoord.row, col: lastCoord.col)
         let pathCopy = currentPath
@@ -1511,7 +1588,18 @@ class GameScene: SKScene {
             MissionManager.shared.reportChain(length: length)
             PlayerStatsManager.shared.reportChain(length: length)
             checkAchievements()
+            let values = pathCopy.compactMap { gridModel.cells[$0.row][$0.col]?.value }
+            let usedFallen = pathCopy.contains { lastFallen.contains($0.row * GridModel.cols + $0.col) }
+            mirrorTally.record(values: values,
+                               lookSeconds: pathStartedAt.map { $0.timeIntervalSince(boardReadyAt) },
+                               usedFallenBubble: usedFallen,
+                               previousMoveHadFalls: lastMoveHadFalls)
+            if bloom > 1 {
+                AnalyticsService.flowerUsed(power: bloom, chainLength: length)
+                flashMessage(String(format: String(localized: "game.flower_picked"), bloom), duration: 1.8)
+            }
         }
+        pathStartedAt = nil
         if mode == .rush && length >= GameScene.rushBonusChainLength {
             awardRushTimeBonus()
         }
@@ -1523,6 +1611,7 @@ class GameScene: SKScene {
             celebratedChain = length
             tier = tier.boosted
         }
+        if bloom > 1 { tier = tier.boosted }
 
         // Le score réel est crédité tout de suite (sauvegarde, records) ; le
         // compteur affiché, lui, attend l'arrivée de la bulle « +N ».
@@ -1605,6 +1694,8 @@ class GameScene: SKScene {
         }
 
         let falls = gridModel.applyGravity()
+        lastFallen = Set(falls.map { $0.toRow * GridModel.cols + $0.col })
+        lastMoveHadFalls = !falls.isEmpty
 
         // Collect node references before mutating bubbleNodes
         var movements: [(node: BubbleNode, fromRow: Int, toRow: Int, col: Int)] = []
@@ -1647,7 +1738,8 @@ class GameScene: SKScene {
                 // l'expiration du chrono.
                 performShuffle()
                 if !gridModel.hasValidMove() { rushReseed() }
-            } else if !presentSecondChanceIfPossible() {
+            } else {
+                prepareSecondChance()
                 triggerLose()
             }
         } else {
@@ -1933,6 +2025,11 @@ class GameScene: SKScene {
     /// Message éphémère dans la zone de consigne (réutilise `messageLabel`).
     private func flashMessage(_ text: String, duration: TimeInterval = 1.6) {
         messageLabel.text = text
+        // Les messages longs (fleur de dix, langues verbeuses) se réduisent
+        // plutôt que de déborder des bords de l'écran.
+        messageLabel.setScale(1)
+        let maxWidth: CGFloat = 640
+        if messageLabel.frame.width > maxWidth { messageLabel.setScale(maxWidth / messageLabel.frame.width) }
         messageLabel.isHidden = false
         messageLabel.removeAction(forKey: "flashMessage")
         messageLabel.run(SKAction.sequence([
@@ -2056,107 +2153,49 @@ class GameScene: SKScene {
 
     // MARK: - Vidéo récompensée : seconde chance
 
-    /// Grille bloquée en mode normal : propose une vidéo pour mélanger la
-    /// grille et continuer, au lieu de perdre. Renvoie `false` si l'offre n'a
-    /// pas lieu d'être (déjà utilisée, pas de vidéo prête, mélange inutile) —
-    /// l'appelant déclenche alors la défaite.
-    ///
-    /// Défi du jour, puzzles et duels sont exclus : leur grille est la même
-    /// pour tous, une vidéo y fausserait le classement ou les étoiles.
-    private func presentSecondChanceIfPossible() -> Bool {
-        guard mode == .normal, !secondChanceUsed, secondChancePrompt == nil,
-              RewardedAdManager.shared.canOffer(.secondChance) else { return false }
-
-        // Le mélange est tiré maintenant : la promesse « tu pourras continuer »
-        // doit être tenue. Sans bulles adjacentes, aucun mélange n'y peut rien.
+    /// Grille bloquée en mode normal : tire le mélange promis par « Continuer »
+    /// (vidéo) sur le panneau de fin. Sans vidéo prête, déjà utilisée ou mélange
+    /// inutile, pas d'offre. Défi du jour, puzzles et duels sont exclus : leur
+    /// grille est la même pour tous, une vidéo y fausserait le classement.
+    private func prepareSecondChance() {
+        secondChanceGrid = nil
+        guard mode == .normal, !secondChanceUsed,
+              RewardedAdManager.shared.canOffer(.secondChance) else { return }
         var shuffled = gridModel
         shuffled.reshuffleValues()
-        guard shuffled.hasValidMove() else { return false }
+        guard shuffled.hasValidMove() else { return }
         secondChanceGrid = shuffled
         dismissHintOffer()
-
-        let panel = SKNode()
-        panel.zPosition = 15
-        panel.name = "secondChancePrompt"
-
-        let dim = SKSpriteNode(color: UIColor(white: 0, alpha: 0.45),
-                               size: CGSize(width: size.width * 2, height: size.height * 2))
-        panel.addChild(dim)
-
-        let w: CGFloat = 470, h: CGFloat = 300
-        let card = SKShapeNode(rectOf: CGSize(width: w, height: h), cornerRadius: 32)
-        card.fillColor = UIColor(red: 0.98, green: 0.96, blue: 0.93, alpha: 1)
-        card.strokeColor = UIColor(white: 0.70, alpha: 0.25)
-        card.lineWidth = 1
-        panel.addChild(card)
-
-        let title = SKLabelNode(text: String(localized: "game.second_chance_title",
-                                             defaultValue: "Plus aucun coup !"))
-        title.fontName = "AvenirNext-Heavy"
-        title.fontSize = 28
-        title.fontColor = UIColor(white: 0.25, alpha: 1)
-        title.verticalAlignmentMode = .center
-        title.position = CGPoint(x: 0, y: h / 2 - 58)
-        panel.addChild(title)
-
-        let body = SKLabelNode(text: String(localized: "game.second_chance_body",
-                                            defaultValue: "Regarde une courte vidéo : la grille est mélangée et tu continues avec ton score."))
-        body.fontName = "AvenirNext-Medium"
-        body.fontSize = 17
-        body.fontColor = UIColor(white: 0.38, alpha: 1)
-        body.verticalAlignmentMode = .center
-        body.numberOfLines = 3
-        body.lineBreakMode = .byWordWrapping
-        body.preferredMaxLayoutWidth = w - 72
-        body.position = CGPoint(x: 0, y: 12)
-        panel.addChild(body)
-
-        addPromptButton(to: panel, name: "secondChanceWatch",
-                        title: String(localized: "game.second_chance_watch", defaultValue: "Voir la vidéo"),
-                        fill: ThemeManager.shared.active.accent,
-                        ink: UIColor(white: 0.20, alpha: 1),
-                        at: CGPoint(x: -w / 4 - 6, y: -h / 2 + 58))
-        addPromptButton(to: panel, name: "secondChanceDecline",
-                        title: String(localized: "game.second_chance_decline", defaultValue: "Non merci"),
-                        fill: UIColor(white: 0.90, alpha: 1),
-                        ink: UIColor(white: 0.35, alpha: 1),
-                        at: CGPoint(x: w / 4 + 6, y: -h / 2 + 58))
-
-        addChild(panel)
-        secondChancePrompt = panel
-        panel.alpha = 0
-        panel.run(SKAction.fadeIn(withDuration: 0.18))
         AnalyticsService.rewardedOfferView(placement: RewardedPlacement.secondChance.rawValue)
-        return true
-    }
-
-    private func dismissSecondChancePrompt() {
-        secondChancePrompt?.removeFromParent()
-        secondChancePrompt = nil
     }
 
     private func watchSecondChanceVideo() {
-        guard let vc = view?.window?.rootViewController else { return declineSecondChance() }
+        guard let vc = view?.window?.rootViewController else { return dropSecondChance() }
         rewardedInFlight = true
         RewardedAdManager.shared.show(placement: .secondChance, from: vc, onReward: { [weak self] in
             self?.applySecondChance()
         }, onDismiss: { [weak self] rewarded in
             guard let self else { return }
             self.rewardedInFlight = false
-            // Vidéo coupée avant la fin : la partie se termine normalement.
-            if !rewarded { self.declineSecondChance() }
+            if !rewarded { self.dropSecondChance() }
         }, onUnavailable: { [weak self] in
             self?.rewardedInFlight = false
-            self?.declineSecondChance()
+            self?.dropSecondChance()
         })
     }
 
-    /// Vidéo regardée : on joue le mélange promis et la main revient au joueur.
+    /// Vidéo regardée : la partie (déjà comptée) reprend sur le mélange promis,
+    /// score gardé.
     private func applySecondChance() {
-        guard let shuffled = secondChanceGrid else { return declineSecondChance() }
-        dismissSecondChancePrompt()
+        guard let shuffled = secondChanceGrid else { return dropSecondChance() }
         secondChanceGrid = nil
         secondChanceUsed = true
+        continuedFrom = (score, coinsEarnedThisGame, longestChain)
+        children.filter { $0.zPosition == 14 }.forEach { $0.removeFromParent() }
+        gameOverPanel?.removeFromParent()
+        gameOverPanel = nil
+        messageLabel.isHidden = true
+        isWinState = false
         cancelPath()
         gridModel = shuffled
         rebuildGridNodes()
@@ -2167,11 +2206,11 @@ class GameScene: SKScene {
         ]))
     }
 
-    private func declineSecondChance() {
-        guard secondChancePrompt != nil else { return }
-        dismissSecondChancePrompt()
+    /// Vidéo coupée ou indisponible : le bouton « Continuer » disparaît.
+    private func dropSecondChance() {
         secondChanceGrid = nil
-        triggerLose()
+        gameOverPanel?.childNode(withName: "continueBtn")?.run(.fadeOut(withDuration: 0.2))
+        gameOverPanel?.childNode(withName: "continueBtn")?.name = nil
     }
 
     // MARK: - Vidéo récompensée : indice gratuit
@@ -2185,7 +2224,7 @@ class GameScene: SKScene {
               hintVideosThisGame < GameScene.maxHintVideosPerGame,
               Date().timeIntervalSince(lastPlayerActionAt) >= GameScene.hintOfferIdleDelay,
               !isAnimating, !hammerArmed, currentPath.isEmpty,
-              gameOverPanel == nil, secondChancePrompt == nil, boosterShopPrompt == nil,
+              gameOverPanel == nil, boosterShopPrompt == nil,
               boosterCoach == nil, settingsOverlay?.parent == nil,
               BoosterManager.shared.count(.hint) == 0,
               RewardedAdManager.shared.canOffer(.hint)
@@ -2311,6 +2350,8 @@ class GameScene: SKScene {
         isAnimating = true
         gridModel.reshuffleValues()
         rebuildGridNodes()
+        lastFallen = []
+        lastMoveHadFalls = false
         HapticManager.medium()
         run(SKAction.sequence([
             SKAction.wait(forDuration: 0.25),
@@ -2333,6 +2374,7 @@ class GameScene: SKScene {
                 node.position = scenePos(row: row, col: col)
                 if model.isAnchored { node.setAnchored(true) }
                 if model.isFrozen { node.setFrozen(true) }
+                if model.bloom > 1 { node.setBloom(model.bloom) }
                 node.setScale(0.2)
                 addChild(node)
                 node.run(SKAction.scale(to: 1.0, duration: 0.2))
@@ -2360,11 +2402,221 @@ class GameScene: SKScene {
         ]))
     }
 
+    // MARK: - Miroir cognitif et graines de dix
+
+    private func resetMirrorTracking() {
+        mirrorTally = MirrorGameTally()
+        boardReadyAt = Date()
+        pathStartedAt = nil
+        lastFallen = []
+        lastMoveHadFalls = false
+        mirrorInsight = nil
+        seedOutcome = nil
+    }
+
+    /// Nouvelle partie Zen : la fleur éclose, s'il y en a une, est posée dans
+    /// la grille. Jamais en Défi, Duel ou Rush, où toutes les grilles doivent
+    /// rester comparables.
+    private func plantBloomedFlowerIfAny() {
+        guard mode == .normal, let power = SeedGarden.shared.takeFlower(),
+              gridModel.plantFlower(power: power) != nil else { return }
+        AnalyticsService.flowerPlaced(power: power)
+        let firstTime = !SeedGarden.shared.flowerExplained
+        SeedGarden.shared.flowerExplained = true
+        run(SKAction.wait(forDuration: 0.9)) { [weak self] in
+            self?.flashMessage(String(format: String(localized: firstTime ? "game.flower_intro" : "game.flower_ready"), power),
+                               duration: firstTime ? 3.6 : 2.4)
+        }
+    }
+
+    /// Bas de l'écran de fin : deux tuiles visuelles (parité Android).
+    /// À gauche le miroir (décomposition en vraies bulles + jauge du carnet, ou
+    /// un chiffre de progrès), à droite la graine (pousse/fleur, ×N, temps).
+    private func addMirrorCard(to panel: SKNode, width: CGFloat, centerY: CGFloat) {
+        #if DEBUG
+        // QA : forcer une phrase du miroir (QA_INSIGHT=discovered|faster|target).
+        switch ProcessInfo.processInfo.environment["QA_INSIGHT"] {
+        case "discovered": mirrorInsight = .discovered(key: "1+1+1+2+5", total: 9)
+        case "faster": mirrorInsight = .faster(seconds: 2.1, gain: 0.4)
+        case "target": mirrorInsight = .nextTarget(length: 3, found: 9, total: 41)
+        default: break
+        }
+        #endif
+        guard mirrorInsight != nil || seedOutcome != nil else { return }
+        let h: CGFloat = 108, gap: CGFloat = 10
+        let both = mirrorInsight != nil && seedOutcome != nil
+        let mirrorW = both ? (width - gap) * 0.59 : width
+        let seedW = both ? width - gap - mirrorW : width
+        let ink = UIColor(red: 0.2, green: 0.19, blue: 0.26, alpha: 1)
+
+        func tile(_ w: CGFloat, x: CGFloat, color: UIColor) -> SKNode {
+            let node = SKNode()
+            node.position = CGPoint(x: x, y: centerY)
+            let bg = SKShapeNode(rectOf: CGSize(width: w, height: h), cornerRadius: 20)
+            bg.fillColor = color
+            bg.strokeColor = .clear
+            node.addChild(bg)
+            panel.addChild(node)
+            return node
+        }
+        func text(_ string: String, size: CGFloat, font: String, color: UIColor, maxW: CGFloat) -> SKLabelNode {
+            let l = SKLabelNode(text: string)
+            l.fontName = font
+            l.fontSize = size
+            l.fontColor = color
+            l.verticalAlignmentMode = .center
+            if l.frame.width > maxW { l.setScale(maxW / l.frame.width) }
+            return l
+        }
+
+        if let insight = mirrorInsight {
+            let x = both ? -width / 2 + mirrorW / 2 : 0
+            let t = tile(mirrorW, x: x, color: UIColor(red: 0.94, green: 0.92, blue: 1, alpha: 1))
+            let inner = mirrorW - 24
+            func caption(_ s: String) {
+                let c = text(s, size: 13, font: "AvenirNext-DemiBold", color: ink.withAlphaComponent(0.55), maxW: inner)
+                c.position = CGPoint(x: 0, y: 38)
+                t.addChild(c)
+            }
+            func equation(_ values: [Int?]) {
+                let theme = ThemeManager.shared.active
+                let d: CGFloat = values.count <= 4 ? 30 : values.count <= 6 ? 24 : 18
+                let eq = text("= 10", size: d * 0.55, font: "AvenirNext-Heavy", color: ink, maxW: 60)
+                let total = CGFloat(values.count) * (d + 3) + eq.frame.width + 3
+                // Rangée réduite d'un bloc si elle dépasse la tuile (9 bulles max).
+                let row = SKNode()
+                row.position = CGPoint(x: 0, y: 4)
+                row.setScale(min(1, inner / total))
+                t.addChild(row)
+                var cx = -total / 2 + d / 2
+                for v in values {
+                    let b = SKShapeNode(circleOfRadius: d / 2)
+                    b.fillColor = v.map { theme.color(forValue: $0) } ?? SeedArt.gaugeEmpty
+                    b.strokeColor = .clear
+                    b.position = CGPoint(x: cx, y: 0)
+                    row.addChild(b)
+                    let n = text(v.map(String.init) ?? "?", size: d * 0.5, font: "AvenirNext-Bold",
+                                 color: v == nil ? ink.withAlphaComponent(0.35) : UIColor(white: 0.25, alpha: 1), maxW: d)
+                    n.position = b.position
+                    row.addChild(n)
+                    cx += d + 3
+                }
+                eq.horizontalAlignmentMode = .left
+                eq.position = CGPoint(x: cx - d / 2 + 3, y: 0)
+                row.addChild(eq)
+            }
+            func gauge(found: Int, total: Int) {
+                let theme = ThemeManager.shared.active
+                let count = text("\(found)/\(total)", size: 13, font: "AvenirNext-Heavy", color: ink.withAlphaComponent(0.7), maxW: 60)
+                count.horizontalAlignmentMode = .right
+                count.position = CGPoint(x: inner / 2, y: -34)
+                t.addChild(count)
+                let barW = inner - count.frame.width - 8
+                let step = barW / CGFloat(total)
+                for i in 0..<total {
+                    let seg = SKShapeNode(rectOf: CGSize(width: step * 0.76, height: 8), cornerRadius: step * 0.38)
+                    seg.fillColor = i < found ? theme.color(forValue: i % 9 + 1) : SeedArt.gaugeEmpty
+                    seg.strokeColor = .clear
+                    seg.position = CGPoint(x: -inner / 2 + step * (CGFloat(i) + 0.5), y: -34)
+                    t.addChild(seg)
+                }
+            }
+            func metric(_ title: String, _ value: String, _ delta: String) {
+                caption(title)
+                let v = text(value, size: 30, font: "AvenirNext-Heavy", color: ink, maxW: inner)
+                v.position = CGPoint(x: 0, y: 4)
+                t.addChild(v)
+                let d = text(delta, size: 14, font: "AvenirNext-Bold",
+                             color: UIColor(red: 0.24, green: 0.58, blue: 0.34, alpha: 1), maxW: inner)
+                d.position = CGPoint(x: 0, y: -34)
+                t.addChild(d)
+            }
+            let f = CognitiveMirror.formatDecimal
+            switch insight {
+            case let .discovered(key, total):
+                caption(String(localized: "mirror.end.new_way"))
+                equation(key.split(separator: "+").compactMap { Int($0) })
+                gauge(found: total, total: Partition.all.count)
+            case let .nextTarget(length, found, total):
+                caption(String(format: String(localized: "mirror.end.to_find"), length))
+                equation(Array(repeating: nil, count: length))
+                gauge(found: found, total: total)
+            case let .faster(seconds, gain):
+                metric(String(localized: "mirror.skill.look"),
+                       String(format: String(localized: "mirror.unit.seconds"), f(seconds)),
+                       "↑ " + String(format: String(localized: "mirror.trend.faster"), f(gain)))
+            case let .longer(average, usual):
+                metric(String(localized: "mirror.skill.vision"), f(average),
+                       "↑ " + String(format: String(localized: "mirror.trend.more"), f(average - usual)))
+            case let .anticipation(percent, usual):
+                metric(String(localized: "mirror.skill.anticipation"), "\(percent) %",
+                       "↑ " + String(format: String(localized: "mirror.trend.points_up"), percent - usual))
+            }
+        }
+
+        if let outcome = seedOutcome {
+            let x = both ? width / 2 - seedW / 2 : 0
+            let t = tile(seedW, x: x, color: UIColor(red: 1, green: 0.96, blue: 0.86, alpha: 1))
+            var power: Int?
+            var bloomed = false, faded = false, pulse = false
+            var bottom: String?
+            var showClock = false
+            switch outcome {
+            case let .planted(p, bloomAt):
+                power = p; bottom = SeedGarden.remainingText(until: bloomAt); showClock = true
+            case let .strengthened(p, bloomAt):
+                power = p; pulse = true; bottom = SeedGarden.remainingText(until: bloomAt); showClock = true
+            case let .stillGrowing(bloomAt):
+                bottom = SeedGarden.remainingText(until: bloomAt); showClock = true
+            case let .flowerWaiting(p):
+                power = p; bloomed = true; pulse = true
+            case let .tooShort(minimum):
+                faded = true
+                bottom = "→ " + String(format: String(localized: "mirror.notebook.group"), minimum)
+            }
+            let art = SKNode()
+            art.position = CGPoint(x: 0, y: bottom == nil ? 0 : 14)
+            t.addChild(art)
+            art.addChild(bloomed ? SeedArt.flower(size: 58) : SeedArt.sprout(size: 56, alpha: faded ? 0.3 : 1))
+            if let power {
+                let badge = SeedArt.powerBadge(power)
+                badge.position = CGPoint(x: 30, y: 24)
+                art.addChild(badge)
+            }
+            if pulse { SeedArt.pulse(art) }
+            if let bottom {
+                let l = text(bottom, size: 15, font: "AvenirNext-Heavy",
+                             color: ink.withAlphaComponent(showClock ? 0.75 : 0.6), maxW: seedW - 40)
+                if showClock {
+                    let clock = SeedArt.clock(size: 14, color: ink.withAlphaComponent(0.55))
+                    let total = 14 + 5 + l.frame.width
+                    clock.position = CGPoint(x: -total / 2 + 7, y: -36)
+                    l.horizontalAlignmentMode = .left
+                    l.position = CGPoint(x: -total / 2 + 19, y: -36)
+                    t.addChild(clock)
+                } else {
+                    l.position = CGPoint(x: 0, y: -36)
+                }
+                t.addChild(l)
+            }
+        }
+    }
+
     // MARK: - Win / Lose
 
     /// Enregistre le score de fin de partie selon le mode.
     private func recordScore() {
         switch mode {
+        case .normal where continuedFrom != nil:
+            // Partie continuée : déjà comptée. Seuls les points en plus comptent
+            // (record, pièces) — ni partie jouée, ni XP, ni missions en double.
+            let previous = continuedFrom!
+            GameState.replaceScore(previous.score, with: score)
+            GameCenterManager.shared.submitScore(score)
+            GameState.clear()
+            coinsEarnedThisGame = CoinManager.shared.topUpForScore(score, alreadyGiven: previous.coins)
+            lastXPResult = nil
+            AnalyticsService.levelEnd(mode: "normal", score: score, won: isWinState)
         case .normal:
             GameState.addScore(score)
             GameCenterManager.shared.submitScore(score)
@@ -2420,7 +2672,15 @@ class GameScene: SKScene {
                 puzzleStarsEarned = puzzle.stars(forScore: score)
             }
         }
-        if mode != .demo {
+        if let previous = continuedFrom {
+            // Le miroir a déjà mesuré cette partie ; la graine ne bouge que si
+            // la plus longue chaîne a grandi.
+            if longestChain > previous.longestChain { seedOutcome = SeedGarden.shared.offer(chain: longestChain) }
+            checkAchievements()
+        } else if mode != .demo {
+            mirrorInsight = CognitiveMirror.shared.finishGame(mirrorTally)
+            if let insight = mirrorInsight { AnalyticsService.mirrorInsightShown(kind: insight.analyticsName) }
+            seedOutcome = SeedGarden.shared.offer(chain: longestChain)
             checkAchievements()
             // Toute première partie terminée de l'installation (TEN-4).
             if FirstRun.gameCompleted(mode: analyticsModeName, score: score, won: isWinState) {
@@ -2494,7 +2754,7 @@ class GameScene: SKScene {
 
         let button = SKNode()
         button.name = "duelShareBtn"
-        button.position = CGPoint(x: 0, y: -152)
+        button.position = CGPoint(x: 0, y: -184)
         panel.addChild(button)
 
         let bg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
@@ -2677,6 +2937,7 @@ class GameScene: SKScene {
 
     private func startRushTimer() {
         rushCountdownActive = false
+        boardReadyAt = Date()
         rushTimeRemaining = GameScene.rushDuration
         rushLastUpdate = 0
         rushTimerRunning = true
@@ -2864,7 +3125,8 @@ class GameScene: SKScene {
         let panelW: CGFloat = 500
         // 560 et non 480 : le GDD (§36-38) proscrit une fin de partie sèche,
         // il faut la place d'une ligne d'encouragement sous le titre.
-        let panelH: CGFloat = 560
+        // 680 : la carte du miroir et de la graine s'ajoute sous les tuiles.
+        let panelH: CGFloat = 680
         let cornerR: CGFloat = 36
 
         // Overlay plein écran pour noyer la grille
@@ -2919,7 +3181,7 @@ class GameScene: SKScene {
         title.fontSize = 44
         title.fontColor = UIColor(white: 0.24, alpha: 1)
         title.verticalAlignmentMode = .center
-        title.position = CGPoint(x: 0, y: 218)
+        title.position = CGPoint(x: 0, y: 278)
         panel.addChild(title)
 
         // Score animé (count-up)
@@ -2929,7 +3191,7 @@ class GameScene: SKScene {
         scoreDisplay.fontSize = 64
         scoreDisplay.fontColor = UIColor(white: 0.26, alpha: 1)
         scoreDisplay.verticalAlignmentMode = .center
-        scoreDisplay.position = CGPoint(x: 0, y: 70)
+        scoreDisplay.position = CGPoint(x: 0, y: 130)
         panel.addChild(scoreDisplay)
         animateScoreCountUp(label: scoreDisplay, target: score)
 
@@ -2938,7 +3200,7 @@ class GameScene: SKScene {
         let xpGainedThisGame = lastXPResult?.xpGained ?? 0
         if coinsEarnedThisGame > 0 || xpGainedThisGame > 0 {
             let rewardLine = SKNode()
-            rewardLine.position = CGPoint(x: 0, y: 138)
+            rewardLine.position = CGPoint(x: 0, y: 198)
 
             var pieces: [(node: SKNode, width: CGFloat)] = []
 
@@ -2998,7 +3260,7 @@ class GameScene: SKScene {
         // entre le titre et le séparateur (événement rare, pas de mise en page dédiée).
         if let xpResult = lastXPResult, xpResult.leveledUp {
             let burst = PopEffects.makeBurst(color: ThemeManager.shared.active.accent, tier: .small)
-            burst.position = CGPoint(x: 0, y: 180)
+            burst.position = CGPoint(x: 0, y: 240)
             burst.zPosition = 16
             panel.addChild(burst)
 
@@ -3009,7 +3271,7 @@ class GameScene: SKScene {
             levelUpLabel.fontSize = 16
             levelUpLabel.fontColor = UIColor(red: 0.31, green: 0.52, blue: 0.85, alpha: 1)
             levelUpLabel.verticalAlignmentMode = .center
-            levelUpLabel.position = CGPoint(x: 0, y: 180)
+            levelUpLabel.position = CGPoint(x: 0, y: 240)
             levelUpLabel.zPosition = 17
             panel.addChild(levelUpLabel)
         }
@@ -3024,7 +3286,7 @@ class GameScene: SKScene {
             status.verticalAlignmentMode = .center
             status.numberOfLines = 2
             status.preferredMaxLayoutWidth = panelW - 60
-            status.position = CGPoint(x: 0, y: 26)
+            status.position = CGPoint(x: 0, y: 86)
             panel.addChild(status)
             duelStatusLabel = status
         }
@@ -3040,7 +3302,7 @@ class GameScene: SKScene {
                 ? UIColor(red: 0.95, green: 0.72, blue: 0.20, alpha: 1)
                 : UIColor(white: 0.60, alpha: 1)
             stars.verticalAlignmentMode = .center
-            stars.position = CGPoint(x: 0, y: 30)
+            stars.position = CGPoint(x: 0, y: 90)
             panel.addChild(stars)
         }
 
@@ -3055,7 +3317,7 @@ class GameScene: SKScene {
             // Record battu : l'événement le plus fort de l'écran, il se voit.
             let burst = PopEffects.makeBurst(color: UIColor(red: 0.96, green: 0.78, blue: 0.28, alpha: 1),
                                              tier: .medium)
-            burst.position = CGPoint(x: 0, y: 24)
+            burst.position = CGPoint(x: 0, y: 84)
             burst.zPosition = 16
             panel.addChild(burst)
 
@@ -3064,7 +3326,7 @@ class GameScene: SKScene {
             record.fontSize = 27
             record.fontColor = UIColor(red: 0.88, green: 0.60, blue: 0.14, alpha: 1)
             record.verticalAlignmentMode = .center
-            record.position = CGPoint(x: 0, y: 24)
+            record.position = CGPoint(x: 0, y: 84)
             record.zPosition = 17
             record.setScale(0.6)
             record.alpha = 0
@@ -3082,7 +3344,7 @@ class GameScene: SKScene {
             miss.fontSize = 21
             miss.fontColor = UIColor(red: 0.88, green: 0.45, blue: 0.24, alpha: 1)
             miss.verticalAlignmentMode = .center
-            miss.position = CGPoint(x: 0, y: 24)
+            miss.position = CGPoint(x: 0, y: 84)
             panel.addChild(miss)
         } else if let best = scores.first {
             let bestLabel = SKLabelNode(text: String(format: String(localized: "game_over.best_score"), best))
@@ -3090,7 +3352,7 @@ class GameScene: SKScene {
             bestLabel.fontSize = 19
             bestLabel.fontColor = UIColor(white: 0.38, alpha: 1)
             bestLabel.verticalAlignmentMode = .center
-            bestLabel.position = CGPoint(x: 0, y: 24)
+            bestLabel.position = CGPoint(x: 0, y: 84)
             panel.addChild(bestLabel)
         }
 
@@ -3106,7 +3368,7 @@ class GameScene: SKScene {
             encouragement.verticalAlignmentMode = .center
             encouragement.numberOfLines = 2
             encouragement.preferredMaxLayoutWidth = panelW - 70
-            encouragement.position = CGPoint(x: 0, y: 180)
+            encouragement.position = CGPoint(x: 0, y: 240)
             panel.addChild(encouragement)
         }
 
@@ -3121,7 +3383,7 @@ class GameScene: SKScene {
             let tile = SKShapeNode(rectOf: CGSize(width: statW, height: statH), cornerRadius: 20)
             tile.fillColor = stat.tint.mixedWithWhite(0.62)
             tile.strokeColor = .clear
-            tile.position = CGPoint(x: (index == 0 ? -1 : 1) * (statW / 2 + 6), y: -50)
+            tile.position = CGPoint(x: (index == 0 ? -1 : 1) * (statW / 2 + 6), y: 10)
             panel.addChild(tile)
 
             let label = SKLabelNode(text: stat.text)
@@ -3135,12 +3397,55 @@ class GameScene: SKScene {
             panel.addChild(label)
         }
 
+        addMirrorCard(to: panel, width: panelW - 56, centerY: -84)
+
         // Bouton Rejouer — masqué en mode Défi (une seule partie par jour) ;
         // en Rush, "Rejouer" EST le CTA principal (courtes sessions répétées).
-        if mode == .normal || mode == .rush || mode == .puzzle || demoPuzzle != nil {
+        // Puzzle réussi : « Suivant › » remplace « Rejouer » (parité Android).
+        let nextPuzzle: PuzzleLevel? = {
+            guard mode == .puzzle, isWinState, demoPuzzle == nil, let current = puzzleLevel else { return nil }
+            return PuzzleWorld.level(world: current.world, index: current.index + 1)
+        }()
+        // « Continuer » (vidéo) : la seconde chance vit dans ce panneau ; Rejouer
+        // passe sur la rangée basse, à côté d'Accueil (parité Android).
+        let offerContinue = mode == .normal && secondChanceGrid != nil
+        if offerContinue {
+            let btn = SKNode()
+            btn.name = "continueBtn"
+            btn.position = CGPoint(x: 0, y: -184)
+            panel.addChild(btn)
+            let accent = ThemeManager.shared.active.accent
+            let bg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
+            bg.fillColor = accent
+            bg.strokeColor = UIColor(white: 0.68, alpha: 0.30)
+            bg.lineWidth = 1
+            btn.addChild(bg)
+            Relief.raise(bg, depth: 6)
+            let ink = accent.readableInk()
+            let title = SKLabelNode(text: String(localized: "game_over.continue"))
+            title.fontName = "AvenirNext-Bold"
+            title.fontSize = 22
+            title.fontColor = ink
+            title.verticalAlignmentMode = .center
+            title.horizontalAlignmentMode = .left
+            let icon = VectorIcon.play.node(size: 22, color: ink)
+            let rowW = 22 + 8 + title.frame.width
+            icon.position = CGPoint(x: -rowW / 2 + 11, y: 9)
+            title.position = CGPoint(x: -rowW / 2 + 30, y: 9)
+            btn.addChild(icon)
+            btn.addChild(title)
+            let hint = SKLabelNode(text: String(localized: "game_over.continue_hint"))
+            hint.fontName = "AvenirNext-DemiBold"
+            hint.fontSize = 12
+            hint.fontColor = ink.withAlphaComponent(0.75)
+            hint.verticalAlignmentMode = .center
+            hint.position = CGPoint(x: 0, y: -16)
+            if hint.frame.width > 290 { hint.setScale(290 / hint.frame.width) }
+            btn.addChild(hint)
+        } else if mode == .normal || mode == .rush || mode == .puzzle || demoPuzzle != nil {
             let replayBtn = SKNode()
-            replayBtn.name = "replayBtn"
-            replayBtn.position = CGPoint(x: 0, y: -144)
+            replayBtn.name = nextPuzzle == nil ? "replayBtn" : "nextPuzzleBtn"
+            replayBtn.position = CGPoint(x: 0, y: -184)
             panel.addChild(replayBtn)
 
             let replayBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
@@ -3150,24 +3455,27 @@ class GameScene: SKScene {
             replayBtn.addChild(replayBg)
             Relief.raise(replayBg, depth: 6)
 
-            let replayLabel = SKLabelNode(text: String(localized: nearMissGap != nil
-                                                        ? "game_over.beat_record"
-                                                        : "game_over.replay"))
+            let replayLabel = SKLabelNode(text: nextPuzzle != nil
+                                          ? String(localized: "tutorial.next_button")
+                                          : String(localized: nearMissGap != nil
+                                                    ? "game_over.beat_record"
+                                                    : "game_over.replay"))
             replayLabel.fontName = "AvenirNext-Bold"
             replayLabel.fontSize = 24
             replayLabel.fontColor = UIColor(white: 0.22, alpha: 1)
             replayLabel.verticalAlignmentMode = .center
             // Flèche « rejouer » et libellé centrés comme un seul bloc.
             replayLabel.horizontalAlignmentMode = .left
-            let replayIcon = SKLabelNode(text: "↺")
+            let replayIcon = SKLabelNode(text: nextPuzzle == nil ? "↺" : "")
             replayIcon.fontName = "AvenirNext-Bold"
             replayIcon.fontSize = 28
             replayIcon.fontColor = replayLabel.fontColor
             replayIcon.verticalAlignmentMode = .center
             replayIcon.horizontalAlignmentMode = .left
-            let replayContentW = replayIcon.frame.width + 12 + replayLabel.frame.width
+            let iconGap: CGFloat = nextPuzzle == nil ? 12 : 0
+            let replayContentW = replayIcon.frame.width + iconGap + replayLabel.frame.width
             replayIcon.position = CGPoint(x: -replayContentW / 2, y: 1)
-            replayLabel.position = CGPoint(x: -replayContentW / 2 + replayIcon.frame.width + 12, y: 0)
+            replayLabel.position = CGPoint(x: -replayContentW / 2 + replayIcon.frame.width + iconGap, y: 0)
             replayBtn.addChild(replayIcon)
             replayBtn.addChild(replayLabel)
         } else if mode == .duel {
@@ -3179,7 +3487,7 @@ class GameScene: SKScene {
             // Mode Défi : à la place du rejeu, accès au classement du jour.
             let lbBtn = SKNode()
             lbBtn.name = "dailyLeaderboardBtn"
-            lbBtn.position = CGPoint(x: 0, y: -144)
+            lbBtn.position = CGPoint(x: 0, y: -184)
             panel.addChild(lbBtn)
 
             let lbBg = SKShapeNode(rectOf: CGSize(width: 320, height: 68), cornerRadius: 34)
@@ -3200,13 +3508,16 @@ class GameScene: SKScene {
         // Ligne du bas : Accueil, et la relance contextuelle du jour quand il y
         // en a une. Elles partagent la ligne — la sortie ne doit pas être
         // reléguée sous un troisième bouton.
-        let nextUp = contextualNextStep()
+        let nextUp = offerContinue
+            ? (nodeName: "replayBtn", title: "↺  " + String(localized: "game_over.replay"),
+               color: UIColor(red: 0.82, green: 0.95, blue: 0.88, alpha: 1))
+            : contextualNextStep()
         let homeW: CGFloat = nextUp == nil ? 200 : 152
         let homeX: CGFloat = nextUp == nil ? 0 : -84
 
         let homeBtn = SKNode()
         homeBtn.name = "homePanelBtn"
-        homeBtn.position = CGPoint(x: homeX, y: -220)
+        homeBtn.position = CGPoint(x: homeX, y: -262)
         panel.addChild(homeBtn)
 
         let homeBg = SKShapeNode(rectOf: CGSize(width: homeW, height: 52), cornerRadius: 26)
@@ -3226,7 +3537,7 @@ class GameScene: SKScene {
         if let nextUp {
             let nextBtn = SKNode()
             nextBtn.name = nextUp.nodeName
-            nextBtn.position = CGPoint(x: 84, y: -220)
+            nextBtn.position = CGPoint(x: 84, y: -262)
             panel.addChild(nextBtn)
 
             let nextBg = SKShapeNode(rectOf: CGSize(width: 152, height: 52), cornerRadius: 26)
@@ -3312,8 +3623,8 @@ class GameScene: SKScene {
 
         let offer = SKNode()
         offer.name = "noAdsOffer"
-        // Sous le panneau (demi-hauteur 280), qui est déjà plein.
-        offer.position = CGPoint(x: 0, y: -334)
+        // Sous le panneau (demi-hauteur 340), qui est déjà plein.
+        offer.position = CGPoint(x: 0, y: -394)
         offer.zPosition = 2
         offer.alpha = 0
 
@@ -3575,6 +3886,7 @@ class GameScene: SKScene {
                     self.gridModel = GridModel(puzzleLayout: puzzle.layout)
                 } else {
                     self.gridModel = GridModel()
+                    self.plantBloomedFlowerIfAny()
                 }
                 self.bubbleNodes = [[BubbleNode?]](
                     repeating: [BubbleNode?](repeating: nil, count: GridModel.cols),
@@ -3589,7 +3901,10 @@ class GameScene: SKScene {
                 // aucun XP n'est recrédité.
                 self.lastXPResult = nil
                 self.secondChanceUsed = false
+                self.secondChanceGrid = nil
+                self.continuedFrom = nil
                 self.hintVideosThisGame = 0
+                self.resetMirrorTracking()
                 self.lastPlayerActionAt = Date()
                 self.hammerArmed = false
                 self.boosterBar?.isHidden = false
@@ -3618,6 +3933,7 @@ class GameScene: SKScene {
                 node.position = scenePos(row: row, col: col)
                 if model.isAnchored { node.setAnchored(true) }
                 if model.isFrozen { node.setFrozen(true) }
+                if model.bloom > 1 { node.setBloom(model.bloom) }
                 node.setScale(0)
                 node.alpha = 0
                 addChild(node)

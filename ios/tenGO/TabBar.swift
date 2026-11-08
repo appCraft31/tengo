@@ -30,13 +30,14 @@ enum TabBar {
 
     /// Hauteur totale réservée par les scènes hôtes : la capsule, plus la
     /// marge qui la fait flotter au-dessus du bord bas.
-    static let height: CGFloat = 106
+    /// Capsule 72 + marges : icônes seules (parité Android).
+    static let height: CGFloat = 86
 
     /// Nom du nœud racine : il sert aussi à retrouver la barre pour le
     /// hit-test géométrique (cf. `tab(at:in:)`).
     static let nodeName = "tabBar"
 
-    private static let capsuleHeight: CGFloat = 92
+    private static let capsuleHeight: CGFloat = 72
     /// Retrait latéral : la capsule ne touche pas les bords de l'écran.
     private static let sideInset: CGFloat = 22
     /// Marge intérieure entre le bord de la capsule et la pilule active.
@@ -123,17 +124,13 @@ enum TabBar {
                 tint = theme.logo.withAlphaComponent(0.55)
             }
 
-            let icon = tab.icon.node(size: 34, color: tint)
-            icon.position = CGPoint(x: 0, y: 12)
+            // Icône seule ; le nom de l'onglet reste annoncé par VoiceOver.
+            let icon = tab.icon.node(size: 32, color: tint)
+            icon.position = .zero
             item.addChild(icon)
-
-            let label = SKLabelNode(text: String(localized: String.LocalizationValue(tab.titleKey)))
-            label.fontName = isSelected ? "AvenirNext-Bold" : "AvenirNext-Medium"
-            label.fontSize = 13
-            label.fontColor = tint
-            label.verticalAlignmentMode = .center
-            label.position = CGPoint(x: 0, y: -20)
-            item.addChild(label)
+            item.isAccessibilityElement = true
+            item.accessibilityLabel = String(localized: String.LocalizationValue(tab.titleKey))
+            item.accessibilityTraits = isSelected ? [.button, .selected] : .button
         }
         return bar
     }

@@ -57,6 +57,13 @@ final class CoinManager {
         return gained
     }
 
+    /// Partie continuée : complète la récompense déjà versée. Renvoie le total.
+    func topUpForScore(_ score: Int, alreadyGiven: Int) -> Int {
+        let total = min(CoinManager.scoreCoinMax, CoinManager.scoreCoinBase + max(0, score) / CoinManager.scoreCoinDivisor)
+        if total > alreadyGiven { add(total - alreadyGiven) }
+        return max(total, alreadyGiven)
+    }
+
     /// Récompense de complétion du Défi du jour (à n'appeler qu'une fois par défi).
     func awardDailyChallenge() {
         add(CoinManager.dailyChallengeReward)

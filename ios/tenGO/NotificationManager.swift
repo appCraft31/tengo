@@ -24,6 +24,7 @@ final class NotificationManager {
     private let defaults = UserDefaults.standard
     private let dailyAvailableID = "tenGO.dailyAvailable"
     private let streakAtRiskID = "tenGO.streakAtRisk"
+    private let seedBloomID = "tenGO.seedBloom"
     /// Ancien rappel générique du soir (« Une pause zen ? »), supprimé du code.
     /// Un UNCalendarNotificationTrigger répétitif SURVIT à la mise à jour de
     /// l'app : sans annulation explicite, les joueurs qui avaient autorisé les
@@ -133,5 +134,39 @@ final class NotificationManager {
         let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
         let trigger = UNCalendarNotificationTrigger(dateMatching: components, repeats: false)
         center.add(UNNotificationRequest(identifier: streakAtRiskID, content: content, trigger: trigger))
+    }
+
+    // MARK: - Graine éclose (tir unique, posé quand la graine est plantée)
+
+    /// Heures entre lesquelles la fleur peut être annoncée : une graine
+    /// plantée à 23 h éclot pendant la nuit, on le dit au réveil.
+    private let seedNotifyWindow = 9...21
+
+    /// Programme l'annonce de l'éclosion, si les notifications sont autorisées.
+    func scheduleSeedBloom(at bloomAt: Date) {
+        center.removePendingNotificationRequests(withIdentifiers: [seedBloomID])
+        let calendar = Calendar.current
+        var fireDate = bloomAt
+        let hour = calendar.component(.hour, from: fireDate)
+        if !seedNotifyWindow.contains(hour) {
+            let morning = calendar.date(bySettingHour: seedNotifyWindow.lowerBound, minute: 0, second: 0, of: fireDate) ?? fireDate
+            fireDate = morning > fireDate ? morning : calendar.date(byAdding: .day, value: 1, to: morning) ?? fireDate
+        }
+
+        let content = UNMutableNotificationContent()
+        content.title = String(localized: "notif.seed_bloom_title")
+        content.body = String(localized: "notif.seed_bloom_body")
+        content.sound = .default
+        let components = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: fireDate)
+        let request = UNNotificationRequest(identifier: seedBloomID, content: content,
+                                            trigger: UNCalendarNotificationTrigger(dateMatching: components, repeats: false))
+        center.getNotificationSettings { [weak self] settings in
+            guard settings.authorizationStatus == .authorized else { return }
+            self?.center.add(request)
+        }
+    }
+
+    func cancelSeedBloom() {
+        center.removePendingNotificationRequests(withIdentifiers: [seedBloomID])
     }
 }

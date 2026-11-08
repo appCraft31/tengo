@@ -157,6 +157,68 @@ class BubbleNode: SKNode {
         frostOverlay = nil
     }
 
+    // MARK: - Fleur de dix (graine éclose)
+
+    private(set) var bloom = 0
+
+    /// Couleur des pétales : un or chaud, lisible sur les dix thèmes.
+    static let bloomColor = UIColor(red: 0.98, green: 0.76, blue: 0.28, alpha: 1)
+
+    /// Corolle de pétales autour de la bulle et pastille « ×N ». Le chiffre
+    /// reste au centre, intact : la fleur compte dans la somme comme les autres.
+    func setBloom(_ power: Int) {
+        guard power > 1 else { return }
+        bloom = power
+        // Au-dessus des voisines : sinon leurs disques mangent les pétales.
+        zPosition += 1
+
+        let corolla = SKNode()
+        corolla.zPosition = -1
+        let petals = 10
+        for i in 0..<petals {
+            let angle = CGFloat(i) / CGFloat(petals) * .pi * 2
+            let petal = SKShapeNode(ellipseOf: CGSize(width: 15, height: 24))
+            petal.fillColor = BubbleNode.bloomColor.withAlphaComponent(0.9)
+            petal.strokeColor = BubbleNode.bloomColor.darkened(by: 0.18)
+            petal.lineWidth = 1
+            let r = BubbleNode.bubbleRadius + 3
+            petal.position = CGPoint(x: cos(angle) * r, y: sin(angle) * r)
+            petal.zRotation = angle - .pi / 2
+            corolla.addChild(petal)
+        }
+        addChild(corolla)
+        if JuiceSettings.motionEnabled {
+            corolla.run(.repeatForever(.rotate(byAngle: .pi * 2, duration: 24)))
+        }
+
+        let badge = SKNode()
+        badge.position = CGPoint(x: BubbleNode.bubbleRadius * 0.72, y: BubbleNode.bubbleRadius * 0.72)
+        badge.zPosition = 3
+        let disc = SKShapeNode(circleOfRadius: 15)
+        disc.fillColor = UIColor(red: 0.52, green: 0.34, blue: 0.06, alpha: 1)
+        disc.strokeColor = UIColor(white: 1, alpha: 0.95)
+        disc.lineWidth = 2
+        badge.addChild(disc)
+        let label = SKLabelNode(text: "×\(power)")
+        label.fontName = "AvenirNext-Heavy"
+        label.fontSize = 14
+        label.fontColor = .white
+        label.verticalAlignmentMode = .center
+        badge.addChild(label)
+        addChild(badge)
+    }
+
+    /// Visuel autonome de fleur (accueil, aperçus).
+    static func makeFlowerVisual(power: Int, value: Int = 7, radius: CGFloat = 26) -> SKNode {
+        let node = BubbleNode(value: value)
+        node.setBloom(power)
+        node.setScale(radius / bubbleRadius)
+        // Au-dessus de la carte qui l'accueille : la corolle, en z négatif,
+        // passerait sinon sous le fond.
+        node.zPosition = 2
+        return node
+    }
+
     /// Bloc-obstacle inerte (case bloquée). Pierre pastel sans chiffre.
     static func makeObstacle(cellSize: CGFloat) -> SKNode {
         let side = cellSize * 0.66

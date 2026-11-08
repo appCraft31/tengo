@@ -279,6 +279,7 @@ class LeaderboardScene: SKScene {
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         guard let touch = touches.first else { return }
         let point = touch.location(in: self)
+        tapFeedback(at: point)
         for node in nodes(at: point) {
             if node.name == "back" || node.parent?.name == "back" {
                 let menu = MenuScene(size: size)

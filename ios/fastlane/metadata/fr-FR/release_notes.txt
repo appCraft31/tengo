@@ -1,7 +1,7 @@
-Plus de jeu, moins d'interruptions.
+Découvrez ce que vos parties disent de vous.
 
-- Seconde chance : grille bloquée en partie classique ? Regardez une courte vidéo pour mélanger les bulles et continuer.
-- Coup de pouce : si vous séchez, un indice vous est proposé contre une vidéo.
-- Moins de publicités plein écran, plus espacées, et aucune pendant vos premières parties.
-- Premier lancement plus rapide : vous jouez en quelques secondes.
-- Le bouton de fermeture du tutoriel reste visible sur tous les iPhone.
+- Nouveau : « Ton cerveau ». Vos progrès mesurés en jouant (coup d'œil, vision, anticipation) et le carnet de toutes vos façons de faire 10.
+- Nouveau : les graines de dix. Faites pousser votre graine : une fois éclose, elle place une fleur ×N sur la grille qui multiplie vos chaînes.
+- Écran de fin repensé : continuer, rejouer et voir votre nouvelle façon de faire 10 en un coup d'œil.
+- Les chaînes en diagonale se tracent plus facilement.
+- Nouvelle barre d'onglets et retours haptiques dans les menus.

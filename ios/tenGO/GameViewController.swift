@@ -110,6 +110,7 @@ class GameViewController: UIViewController {
             case "profile": scene = ProfileScene(size: size)
             case "duel":    scene = DuelScene(size: size)
             case "puzzles": scene = PuzzleLevelsScene(size: size, world: 1)
+            case "mirror":  scene = MirrorScene(size: size)
             default:        scene = MenuScene(size: size)
             }
         } else if FirstRun.isPending
@@ -357,8 +358,23 @@ class GameViewController: UIViewController {
     ///   QA_FAKE_INTERSTITIAL=1          interstitielle simulée (cf. InterstitialAdManager)
     ///   QA_FAKE_REWARDED=1              vidéo récompensée simulée, toujours prête (cf. RewardedAdManager)
     ///   QA_STORE_FAIL=2                 les 2 premiers chargements StoreKit échouent (cf. StoreManager)
+    ///   QA_SEED=bloom:6 | grow:5 | clear  graine éclose (chaîne 6), en pousse, ou aucune
+    ///   QA_MIRROR=1                     historique crédible du miroir cognitif
     private func applyQAOverrides(_ env: [String: String]) {
         let defaults = UserDefaults.standard
+
+        if let seed = env["QA_SEED"] {
+            let parts = seed.split(separator: ":")
+            let chain = parts.count > 1 ? (Int(parts[1]) ?? 6) : 6
+            switch parts.first {
+            case "bloom": SeedGarden.shared.forceBloomForQA(chain: chain)
+            case "grow":
+                SeedGarden.shared.clearForQA()
+                _ = SeedGarden.shared.offer(chain: chain)
+            default: SeedGarden.shared.clearForQA()
+            }
+        }
+        if env["QA_MIRROR"] == "1" { CognitiveMirror.shared.seedForQA() }
 
         if env["BOOSTER_RESET"] == "1" {
             for booster in Booster.allCases {
