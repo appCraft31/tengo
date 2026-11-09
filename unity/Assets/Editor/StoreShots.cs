@@ -11,10 +11,11 @@ using UnityEngine;
 namespace TenGo.Editor
 {
     /// Captures de fiche store en haute définition, dans les 10 langues du jeu,
-    /// sur téléphone (iPhone 17 Pro Max, 1320 × 2868) et tablette (Android 10",
-    /// 1600 × 2560), thème par défaut, sans pub ni fenêtre : Logs/store/<langue>/<appareil>/<id>.png
-    /// et Logs/store/index.json.
-    ///   Tools/unity.sh TenGo.Editor.StoreShots.Run [-langs fr,en] [-devices phone,tablet] [-only 01_chain,07_shop]
+    /// sur téléphone (iPhone 17 Pro Max, 1320 × 2868), tablette (Android 10",
+    /// 1600 × 2560) et iPad (iPad Pro 13", 2064 × 2752), thème par défaut, sans pub ni fenêtre :
+    /// Logs/store/<langue>/<appareil>/<id>.png et Logs/store/index.json (qui garde les entrées
+    /// des appareils et langues non relancés).
+    ///   Tools/unity.sh TenGo.Editor.StoreShots.Run [-langs fr,en] [-devices phone,tablet,ipad] [-only 01_chain,07_shop]
     /// Réutilise la vitrine de `Captures.Screens` (`BootShowcase`, `SeedShowcase`, `SeedMirror`).
     public static class StoreShots
     {
@@ -33,6 +34,7 @@ namespace TenGo.Editor
         {
             new() { Id = "phone", Geometry = SceneGeometry.IPhone17ProMax },
             new() { Id = "tablet", Geometry = SceneGeometry.AndroidTablet10 },
+            new() { Id = "ipad", Geometry = SceneGeometry.IPad13 },
         };
 
         sealed class Shot
@@ -206,17 +208,26 @@ namespace TenGo.Editor
 
         static void WriteIndex(List<(string lang, string device, string id, string path, int w, int h)> index)
         {
+            // Entrées d'un passage précédent (une par ligne) que ce passage n'a pas refaites.
+            var file = Path.Combine(Dir, "index.json");
+            var fresh = new HashSet<string>(index.Select(e => e.path));
+            var lines = new List<string>();
+            if (File.Exists(file))
+                foreach (var line in File.ReadAllLines(file))
+                {
+                    var m = System.Text.RegularExpressions.Regex.Match(line, "\"path\": \"([^\"]+)\"");
+                    if (m.Success && !fresh.Contains(m.Groups[1].Value)) lines.Add(line.Trim().TrimEnd(','));
+                }
+            lines.AddRange(index.Select(e =>
+                $"{{ \"lang\": \"{e.lang}\", \"device\": \"{e.device}\", \"id\": \"{e.id}\", \"path\": \"{e.path}\", \"width\": {e.w}, \"height\": {e.h} }}"));
+            lines.Sort(StringComparer.Ordinal);
             var sb = new StringBuilder();
             sb.Append("{\n  \"generated\": \"").Append(DateTime.UtcNow.ToString("yyyy-MM-ddTHH:mm:ssZ")).Append("\",\n  \"shots\": [\n");
-            for (int i = 0; i < index.Count; i++)
-            {
-                var e = index[i];
-                sb.Append($"    {{ \"lang\": \"{e.lang}\", \"device\": \"{e.device}\", \"id\": \"{e.id}\", \"path\": \"{e.path}\", \"width\": {e.w}, \"height\": {e.h} }}");
-                sb.Append(i + 1 < index.Count ? ",\n" : "\n");
-            }
+            for (int i = 0; i < lines.Count; i++)
+                sb.Append("    ").Append(lines[i]).Append(i + 1 < lines.Count ? ",\n" : "\n");
             sb.Append("  ]\n}\n");
             Directory.CreateDirectory(Dir);
-            File.WriteAllText(Path.Combine(Dir, "index.json"), sb.ToString());
+            File.WriteAllText(file, sb.ToString());
         }
     }
 }

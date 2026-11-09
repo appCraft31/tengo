@@ -73,6 +73,12 @@ namespace TenGo.App
         /// barre de navigation par gestes 24 dp) : format des captures de tablette de Google Play.
         public static SceneGeometry AndroidTablet10 => new(1600, 2560, 2f, 24f * 2f, 24f * 2f);
 
+        /// iPad Pro 13 pouces en portrait (2064 × 2752 px, 2 px/pt, barre d'état 24 pt, indicateur
+        /// d'accueil 20 pt) : format des captures iPad 13" de l'App Store. Le lecteur iOS rend à la
+        /// définition native (pas de mise à l'échelle de résolution) et `Current()` y lit 2 px/pt
+        /// (`round(264 dpi / 163)`), d'où la géométrie qu'a un joueur sur cet iPad.
+        public static SceneGeometry IPad13 => new(2064, 2752, 2f, 24f * 2f, 20f * 2f);
+
         public bool SameAs(SceneGeometry o) =>
             PixelWidth == o.PixelWidth && PixelHeight == o.PixelHeight &&
             Mathf.Abs(SafeTopPx - o.SafeTopPx) < 0.5f && Mathf.Abs(SafeBottomPx - o.SafeBottomPx) < 0.5f;
