@@ -1,0 +1,153 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Refonte — Profil, Ton cerveau, Missions, Succès</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="systeme.css">
+<style>
+  .nav { display: flex; align-items: center; gap: 12px; min-height: 52px; }
+  .nav .t-title { flex: 1; }
+  .nav .meta { font-size: 13px; font-weight: 800; color: var(--ink-3); }
+  .body { flex: 1; overflow: hidden; padding-top: 10px; display: flex; flex-direction: column; gap: 12px; }
+  .lvlcard { padding: 16px; display: flex; align-items: center; gap: 14px; }
+  .ring { width: 64px; height: 64px; position: relative; display: grid; place-items: center; font-weight: 900; font-size: 22px; flex: none; }
+  .ring svg { position: absolute; inset: 0; }
+  .lvlcard .tx { flex: 1; }
+  .lvlcard b { font-size: 20px; font-weight: 900; display: block; }
+  .lvlcard span { font-size: 13px; font-weight: 700; color: var(--ink-2); }
+  .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-top: 8px; }
+  .bar i { display: block; height: 100%; border-radius: 4px; }
+  .link { display: flex; align-items: center; gap: 12px; padding: 14px; }
+  .link .tx { flex: 1; font-size: 16px; font-weight: 900; }
+  .link .tx span { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); margin-top: 1px; }
+  .link > svg { width: 18px; height: 18px; flex: none; }
+  .ic { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; flex: none; }
+  .ic svg { width: 21px; height: 21px; }
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); }
+  .stat { padding: 12px 8px; text-align: center; }
+  .stat b { display: block; font-size: 22px; font-weight: 900; letter-spacing: -.3px; }
+  .stat span { font-size: 11px; font-weight: 800; color: var(--ink-2); line-height: 1.2; display: block; }
+  .stat:nth-child(-n+3) { border-bottom: 1px solid var(--line); }
+  .stat:not(:nth-child(3n)) { border-right: 1px solid var(--line); }
+  h3 { font-size: 17px; font-weight: 900; display: flex; justify-content: space-between; align-items: center; margin-top: 2px; }
+  h3 span { font-size: 13px; font-weight: 800; color: var(--ink-3); display: flex; align-items: center; gap: 2px; }
+  h3 span svg { width: 14px; height: 14px; }
+  .badges { display: flex; gap: 8px; }
+  .badge { width: 46px; height: 46px; border-radius: 23px; display: grid; place-items: center; }
+  .badge svg { width: 22px; height: 22px; }
+  .badge.off { background: var(--sunk); }
+  .mission { padding: 14px; }
+  .mission .row { display: flex; align-items: center; gap: 10px; }
+  .mission .row .tx { flex: 1; font-size: 15px; font-weight: 800; }
+  .mission .row .rw { display: flex; align-items: center; gap: 5px; font-weight: 900; font-size: 15px; }
+  .mission .sub { display: flex; justify-content: space-between; font-size: 12px; font-weight: 800; color: var(--ink-3); margin-top: 8px; }
+  .mission .bar { margin-top: 6px; }
+  .super { box-shadow: 0 0 0 2px var(--ink); }
+  .kick { font-size: 11px; font-weight: 900; letter-spacing: .6px; color: var(--ink-2); margin-bottom: 6px; display: flex; gap: 6px; align-items: center; }
+  .kick svg { width: 14px; height: 14px; }
+  .claim { margin-top: 10px; height: 40px; border-radius: 14px; background: var(--accent); color: var(--accent-ink); font-weight: 900; display: flex; align-items: center; justify-content: center; gap: 6px; font-size: 15px; }
+  .claim svg { width: 18px; height: 18px; }
+  .done { opacity: .55; }
+  .metrics { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .metric { padding: 14px; }
+  .metric .h { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 800; color: var(--ink-2); }
+  .metric .h i { width: 10px; height: 10px; border-radius: 5px; }
+  .metric b { display: block; font-size: 30px; font-weight: 900; letter-spacing: -.5px; margin-top: 4px; }
+  .metric .d { font-size: 12px; font-weight: 900; color: #2F7A52; }
+  .metric .x { font-size: 11px; font-weight: 700; color: var(--ink-3); margin-top: 2px; }
+  .lines { padding: 6px 14px; }
+  .line { display: flex; align-items: center; gap: 10px; padding: 8px 0; }
+  .line + .line { border-top: 1px solid var(--line); }
+  .line .n { width: 64px; font-size: 12px; font-weight: 800; color: var(--ink-2); flex: none; }
+  .dots { flex: 1; display: flex; gap: 4px; flex-wrap: wrap; }
+  .dots i { width: 12px; height: 12px; border-radius: 6px; background: var(--sunk); }
+  .dots i.on { background: var(--accent); }
+  .line .c { font-size: 12px; font-weight: 900; width: 34px; text-align: right; }
+  .chips { display: flex; gap: 6px; flex-wrap: wrap; }
+  .chip { height: 30px; padding: 0 10px; border-radius: 15px; background: #E3F2EA; font-size: 13px; font-weight: 900; display: grid; place-items: center; }
+  .seg { display: flex; background: var(--sunk); border-radius: 14px; padding: 3px; }
+  .seg div { flex: 1; height: 34px; border-radius: 11px; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: var(--ink-2); }
+  .seg .on { background: var(--card); color: var(--ink); box-shadow: var(--hair); }
+  .ach { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  .ach + .ach { border-top: 1px solid var(--line); }
+  .ach .tx { flex: 1; font-size: 15px; font-weight: 900; }
+  .ach .tx span { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+  .ach .bar { width: 120px; height: 6px; margin-top: 6px; }
+  .ach .v { font-size: 12px; font-weight: 900; color: var(--ink-3); }
+</style>
+</head>
+<body>
+<div id="board">
+  <div class="col"><div class="label">Actuel<small>Six tuiles de couleurs différentes sans raison, liens et sections au même poids.</small></div><div class="phone"><img src="ref/profil_actuel.png" alt=""></div></div>
+  <div class="col"><div class="label">Profil<small>Niveau en tête, statistiques regroupées dans une seule carte, puis les accès (cerveau, missions, succès, classement) en lignes.</small></div><div class="phone A" id="p1"></div></div>
+  <div class="col"><div class="label">Ton cerveau<small>4 mesures en cartes blanches (la couleur = un repère), carnet des 10 en points de progression par longueur au lieu de 41 pastilles « ?+?+? ».</small></div><div class="phone A" id="p2"></div></div>
+  <div class="col"><div class="label">Missions<small>Retour en haut à gauche (fini le bouton flottant en bas). Super mission cerclée d'encre ; mission terminée → bouton « Récupérer ».</small></div><div class="phone A" id="p3"></div></div>
+  <div class="col"><div class="label">Succès<small>Onglets en contrôle segmenté, liste compacte avec barre de progression ; débloqué = pastille colorée + coche.</small></div><div class="phone A" id="p4"></div></div>
+</div>
+<script src="systeme.js"></script>
+<script>
+const tint = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, '0');
+const tabbar = (on) => `<div class="tabbar">${[['play','Jouer'],['profile','Profil'],['duel','Duel'],['shop','Boutique']].map(([k,t]) => `<div class="tab${t===on?' on':''}"><div class="pill">${icon(k, t===on?'#34312C':'#8C8376')}</div>${t}</div>`).join('')}</div>`;
+const nav = (title, meta = '') => `<div class="nav"><div class="iconbtn">${icon('back')}</div><div class="t-title">${title}</div>${meta ? `<div class="meta">${meta}</div>` : ''}</div>`;
+const ring = (p, col) => `<svg viewBox="0 0 64 64"><circle cx="32" cy="32" r="28" fill="var(--card)" stroke="var(--line)" stroke-width="5"/><circle cx="32" cy="32" r="28" fill="none" stroke="${col}" stroke-width="5" stroke-linecap="round" stroke-dasharray="${p*176} 176" transform="rotate(-90 32 32)"/></svg>`;
+const link = (k, col, t, s) => `<div class="card link"><div class="ic" style="background:${tint(col,.45)}">${icon(k)}</div><div class="tx">${t}<span>${s}</span></div>${icon('chevron','#8C8376')}</div>`;
+
+document.getElementById('p1').innerHTML = `<div class="scr"><div class="nav"><div class="t-title">Profil</div><div class="iconbtn">${icon('gear')}</div></div>
+<div class="body">
+  <div class="card lvlcard"><div class="ring">${ring(.2, PAL[7])}<span style="position:relative">25</span></div><div class="tx"><b>Stratège</b><span>68 / 348 XP · prochain titre au niveau 30</span><div class="bar"><i style="width:20%;background:${PAL[7]}"></i></div></div></div>
+  <div class="card stats">
+    <div class="stat"><b>4 820</b><span>Meilleur score</span></div>
+    <div class="stat"><b>2 140</b><span>Meilleur Rush</span></div>
+    <div class="stat"><b>12</b><span>Série actuelle</span></div>
+    <div class="stat"><b>9</b><span>Meilleure chaîne</span></div>
+    <div class="stat"><b>7</b><span>Grilles parfaites</span></div>
+    <div class="stat"><b>1 463</b><span>Chaînes</span></div>
+  </div>
+  ${link('brain', PAL[7], 'Ton cerveau', 'Coup d\'œil 2,1 s · 17 / 41 façons de faire 10')}
+  ${link('check', PAL[4], 'Missions du jour', '1 sur 4 terminée · +45 à gagner')}
+  <h3>Succès <span>9 / 26 ${icon('chevron','#8C8376')}</span></h3>
+  <div class="badges">${[[PAL[2],'bolt'],[PAL[1],'star'],[PAL[6],'star'],[PAL[8],'trophy'],[PAL[3],'flame']].map(([c,k])=>`<div class="badge" style="background:${tint(c,.55)}">${icon(k)}</div>`).join('')}<div class="badge off">${icon('lock','#8C8376')}</div><div class="badge off">${icon('lock','#8C8376')}</div></div>
+  ${link('trophy', PAL[2], 'Classement', 'Game Center · 1 284ᵉ cette semaine')}
+</div>${tabbar('Profil')}</div>`;
+
+const metric = (col, t, v, d, x) => `<div class="card metric"><div class="h"><i style="background:${col}"></i>${t}</div><b>${v}</b><div class="d">${d}</div><div class="x">${x}</div></div>`;
+const LENS = [[2,5,5],[3,8,8],[4,4,9],[5,0,7],[6,0,5],[7,0,3],[8,0,2],[9,0,1],[10,0,1]];
+document.getElementById('p2').innerHTML = `<div class="scr">${nav('Ton cerveau')}
+<div class="body">
+  <div class="t-small">Mesuré sur tes 12 dernières parties, cette semaine comparée à avant.</div>
+  <div class="metrics">
+    ${metric(PAL[2], 'Coup d\'œil', '2,1 s', '↑ 0,7 s plus rapide', 'Temps pour repérer un 10')}
+    ${metric(PAL[6], 'Vision', '3,1', '↑ +0,4 par chaîne', 'Bulles par chaîne')}
+    ${metric(PAL[8], 'Anticipation', '48 %', '↑ +17 points', 'Chaînes nées d\'une chute')}
+    ${metric(PAL[7], 'Répertoire', '17 / 41', '↑ +4 cette semaine', 'Façons de faire 10')}
+  </div>
+  <h3>Carnet des 10 <span>17 / 41</span></h3>
+  <div class="card lines">${LENS.map(([n,on,tot]) => `<div class="line"><div class="n">${n} bulles</div><div class="dots">${Array.from({length:tot},(_,i)=>`<i class="${i<on?'on':''}"></i>`).join('')}</div><div class="c">${on} / ${tot}</div></div>`).join('')}</div>
+</div></div>`;
+
+const mission = (t, now, tot, rw, opts = {}) => `<div class="card mission${opts.super ? ' super' : ''}${opts.done ? ' done' : ''}">${opts.super ? `<div class="kick">${icon('star','#6F675B')}SUPER MISSION</div>` : ''}<div class="row"><div class="tx">${t}</div><div class="rw">${coin(18)}+${rw}</div></div><div class="sub"><span>${now.toLocaleString('fr-FR')} / ${tot.toLocaleString('fr-FR')}</span><span>${opts.done ? 'Récupérée' : ''}</span></div><div class="bar"><i style="width:${Math.min(100, now/tot*100)}%;background:${opts.claim ? 'var(--accent)' : 'var(--ink)'}"></i></div>${opts.claim ? `<div class="claim">${icon('check','#1F3D2E')}Récupérer ${coin(16)} +${rw}</div>` : ''}</div>`;
+document.getElementById('p3').innerHTML = `<div class="scr">${nav('Missions', 'Nouvelles dans 7 h')}
+<div class="body">
+  ${mission('Valide 35 chaînes', 35, 35, 18, {claim: true})}
+  ${mission('Marque 3 000 points aujourd\'hui', 1840, 3000, 10)}
+  ${mission('Marque 6 000 points aujourd\'hui', 1840, 6000, 18)}
+  ${mission('Réalise une chaîne de 15 bulles', 0, 1, 45, {super: true})}
+  ${mission('Joue le défi du jour', 1, 1, 10, {done: true})}
+</div></div>`;
+
+const ach = (k, col, t, s, now, tot) => { const ok = now >= tot; return `<div class="ach"><div class="ic" style="background:${ok ? tint(col,.55) : 'var(--sunk)'}">${icon(ok ? k : 'lock', ok ? '#34312C' : '#8C8376')}</div><div class="tx">${t}<span>${s}</span>${ok ? '' : `<div class="bar"><i style="width:${now/tot*100}%;background:var(--ink)"></i></div>`}</div>${ok ? icon('check','#3E8A5F').replace('<svg','<svg width="20" height="20"') : `<div class="v">${now} / ${tot}</div>`}</div>`; };
+document.getElementById('p4').innerHTML = `<div class="scr">${nav('Succès', '9 / 26')}
+<div class="body">
+  <div class="seg"><div class="on">Chaînes</div><div>Parfait</div><div>Score</div><div>Série</div></div>
+  <div class="card">
+    ${ach('bolt', PAL[2], 'Chaîne de 5+', 'Une chaîne d\'au moins 5 bulles', 5, 5)}
+    ${ach('bolt', PAL[2], 'Chaîne de 10+', 'Au moins 10 bulles', 9, 10)}
+    ${ach('bolt', PAL[2], 'Chaîne de 15+', 'Au moins 15 bulles', 9, 15)}
+    ${ach('bolt', PAL[2], 'Chaîne de 20+', 'Au moins 20 bulles', 9, 20)}
+    ${ach('bolt', PAL[2], 'Chaîne de 25+', 'Au moins 25 bulles', 9, 25)}
+  </div>
+</div></div>`;
+</script>
+</body>
+</html>
