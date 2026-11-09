@@ -13,7 +13,7 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
 | 5 | Partie (`GameScene` : 6 modes, boosters, sauvegarde, fin de partie) | ✅ fait (services simulés jusqu'à l'étape 7, écrans hors partie livrés à l'étape 6) |
 | 6 | Écrans (menu, boutique, profil, missions, succès, miroir, duel, puzzles, classement, réglages, tutoriel) | ✅ fait (achats, pubs, consentement et Game Center simulés jusqu'à l'étape 7) |
 | 7 | Services : AdMob + UMP/ATT + médiation, Unity IAP, Firebase (Analytics, Auth, Firestore), Game Center / Play Games, notifications, avis, partage, haptique, liens profonds | ✅ fait (intégration locale ; vérifications sur appareil et en console listées ci-dessous) |
-| R | Refonte visuelle 4.0 (direction A « plat crème ») | en cours : système, partie, accueil et barre d'onglets faits ; autres écrans à refaire (voir « Refonte visuelle (4.0) ») |
+| R | Refonte visuelle 4.0 (direction A « plat crème ») | faite : tous les écrans, thèmes payants recalculés, tutoriel jouable et cadeau de bienvenue (voir « Refonte visuelle (4.0) ») |
 | 8 | Builds signés (AAB, projet Xcode), fastlane iOS, `.play-deploy.json` | à faire |
 | 9 | Recette (mise à jour par-dessus la 3.3.0) puis publication simultanée, sur accord de l'utilisateur | à faire |
 | 10 | Gel des apps natives `ios/` et `android/` | à faire |
@@ -398,7 +398,58 @@ Décision de l'utilisateur (9 nov. 2026) : la 4.0 sort avec la nouvelle interfac
 - accueil, d'après `02_accueil` : niveau et XP, pièces, réglages, logo, Jouer ou Reprendre + Nouvelle partie (graines), carte Défi du jour, Rush / Duel / Puzzles, vidéo ;
 - barre d'onglets.
 
-**Écrans à refaire** (ils marchent, aplatis par `Relief`, mais gardent leur ancienne mise en page) : fin de partie, boutique, profil, ton cerveau (miroir), missions, succès, duel, puzzles, classement, réglages, tutoriel. Leurs maquettes sont dans `design/refonte/`.
+**Écrans refaits ensuite** (même système, comportements et cibles de test conservés) :
+- **fin de partie** (`03_fin_de_partie`) : feuille du bas, score géant à compteur, pastille or « Nouveau record », cartes de gains (pièces ; XP avec barre et passage de niveau), faits marquants en liste (chaîne max, nouveau 10 du carnet, graine). Action principale : **Seconde chance** (vidéo) tant qu'elle est proposée, avec Accueil et Rejouer dessous ; sinon **Rejouer** (ou niveau suivant, classement du jour, partage du duel), Accueil en lien ou à côté de « Défi du jour » / « Rush ». L'offre sans pub devient une carte blanche au-dessus de la feuille.
+- **boutique** (`04_boutique`) : en-tête fixe (titre, solde), pastilles de rubrique qui font défiler jusqu'à la section (la pastille de la section visible passe à l'encre), bandeau « Sans pub », thèmes en grille avec un **vrai aperçu 4 × 2** (fond et bulles 1 à 8 du thème, chiffre du thème) et thème équipé cerclé d'encre, matières / tracés / boosters en listes compactes (prix grisé si les pièces manquent ; boosters : lot ×5 puis unité), packs de pièces en grille. Ouverte depuis une partie : retour en haut à gauche au lieu des onglets.
+- **profil** (`05_profil`) : anneau de niveau (`Design.LevelRing`, partagé avec l'accueil), six stats dans une carte 3 × 2, lignes Ton cerveau / Missions du jour (pastille s'il y a une récompense) / Classement, médaillons de succès, réglages en haut à droite. Les missions ne sont plus listées sur le profil ; `ProfileScreen.Claim` reste.
+- **ton cerveau** : 4 mesures en cartes blanches (pastille colorée comme repère), carnet des 10 en rangées de points par longueur.
+- **missions** : retour en haut à gauche, cartes empilées, « Réclamer » en bouton plein sous une mission terminée, super mission cerclée d'encre, missions réclamées estompées.
+- **succès** : complétion en haut à droite, contrôle segmenté, liste compacte (débloqué = pastille colorée + coche, sinon cadenas, barre et compteur).
+- **duel**, **puzzles**, **classement** (`06_autres`) : carte « moi VS ? » blanche, code + « Jouer » sur une ligne, duels en liste avec état et partage ; tuiles carrées blanches, étoiles d'or, prochain niveau cerclé d'encre, « Niveau N » en bas ; contrôle segmenté Mondial / Défi du jour / Rush, carte « ton meilleur », meilleures parties locales, « Voir dans Game Center / Google Play Games » en bouton secondaire.
+- **réglages** : plein écran (toujours un `IGameOverlay`, accueil, profil et partie), retour en haut à gauche, groupes Jeu / Compte / Aide, interrupteurs aux couleurs du système, version en bas. Un tap hors d'une ligne ne ferme plus.
+- Sous-écrans : retour rond en haut à gauche (`ScreenBase.AddBackHeader`), plus aucun bouton flottant en bas.
+- Nouvelles briques `Design` : `IconChip`, `Bar`, `MiniBubble`, `Button`, `BackHeader`, `Segmented`, `LevelRing`, `Chevron`, `Number` (« 4 820 »). `ScreenBase` : `ContentW`, `HeaderRowY`, `HeaderBottom`, `AddTabTitle`.
+
+**Tutoriel jouable** (`07_tutoriel`, `TutorialScreen` + `Core/Game/TutorialLevel`) : un mini niveau sans aléa, au premier lancement comme depuis « Revoir le tutoriel ».
+1. « Fais 10 » : grille 3 × 3, seules 4 et 6 sont vives, une main fantôme refait le geste en boucle ; le joueur relie 4 → 6.
+2. « Va plus loin » : grille 4 × 4, le joueur trace un 10 d'au moins trois bulles (le geste attendu est 4 + 2 + 1 + 3 en diagonale) ; la pastille de somme suit le tracé et passe au vert avec une coche à 10. Un 10 à deux bulles est refusé avec « Essaie avec au moins 3 bulles ».
+3. « Ça tombe ! » : la chaîne disparaît (« +40 »), les bulles tombent, de nouvelles arrivent d'en haut ; le joueur trouve un 10 seul.
+4. Fin « Tu as compris ! » avec le cadeau, puis « Première partie » (ou « Jouer ! » en rejeu) lance directement une partie normale.
+« Passer » (en haut à droite, à chaque étape) mène à la fin.
+
+**Cadeau de bienvenue** (`Core/Economy/WelcomeGift`, clé `tenGO_welcomeGiftPaid`, propre à la 4.0) : **+50 pièces et 2 indices, une seule fois par installation**.
+- Versé au premier passage du tutoriel jouable, qu'il soit **mené au bout ou passé** (personne n'est pénalisé).
+- Un joueur repris d'une app native n'a pas la clé (aucune règle d'import ne la pose) : il le reçoit au premier tutoriel jouable qu'il ouvre (« Revoir le tutoriel »). Le tutoriel ne lui est pas imposé.
+- Ensuite le tutoriel se rejoue sans rien redonner. La clé est posée avant le crédit : un double appel ne paie jamais deux fois.
+- Analytics : `tutorial_complete` reste envoyé quand le mini niveau est mené au bout (TEN-4 inchangé : `first_game_start` / `first_game_complete` suivent la partie qui démarre) ; ajouts **`tutorial_skip`** (`step` 0 à 2) et **`welcome_gift`** (`via` = complete | skip, `coins`, `hints`).
+- Tests : `WelcomeGiftTests` (paiement unique, persistance JSON, reprise native), `TutorialLevelTests` (étapes, refus, gravité), `ScreenFlowTests` (vrai geste 4 → 6, parcours complet, « Passer » paie aussi, rejeu sans cadeau).
+
+**Thèmes payants recalculés** (`ThemeCatalog`, outil `themes_opt.py` hors dépôt) : neuf bulles distinctes en vision normale et sous les trois daltonismes (simulation de Machado 2009, sévérité 1), chiffre ≥ 4,5:1 sur chaque bulle, teintes bornées à l'identité de chaque thème, l'accent étant l'une des bulles. Pire écart ΔE OKLab × 100 entre deux bulles :
+
+| Thème | avant (toutes visions) | normal | deutéranopie | protanopie | tritanopie | **pire** | contraste chiffre min. |
+|---|---|---|---|---|---|---|---|
+| forest | 0.7 | 8.6 | 8.1 | 8.1 | 8.0 | **8.0** | 4.61:1 |
+| ocean | 1.4 | 9.0 | 8.7 | 8.8 | 8.7 | **8.7** | 4.56:1 |
+| desert | 2.4 | 8.3 | 7.1 | 7.1 | 7.1 | **7.1** | 4.54:1 |
+| candy | 0.8 | 10.6 | 9.8 | 10.1 | 10.1 | **9.8** | 5.11:1 |
+| space | 0.5 | 9.7 | 9.0 | 9.3 | 9.0 | **9.0** | 5.02:1 |
+| night | 0.2 | 9.4 | 8.6 | 8.6 | 8.5 | **8.5** | 5.23:1 |
+
+(Référence : le thème par défaut est à 5.1.) `ThemePaletteTests` garde ces bornes (≥ 7 en normal, ≥ 5 sous daltonisme, ≥ 4,5:1).
+- Encre sur l'accent des thèmes payants : le chiffre du thème (`Design.OnAccent`), le blanc tombait à 2,9:1 sur Bonbon.
+- Fonds unis de la couleur du thème pour tous : les ambiances animées (vagues, étoiles, feuilles, sable, lune, bonbons) et `WaveView` sont supprimées.
+- Matières gardées, en aplat : mate (teinte adoucie, filet ton sur ton), brillante (reflet plat), verre (aplat éclairci, double liseré blanc), néon (liseré clair, anneau extérieur).
+- Tracés non classiques en aplat et **sans comète** : néon (âme et liseré), ruban, pointillé encre, encre fine.
+
+**Traductions de compromis** (glyphes absents des polices de repli CJK, liste complète dans le rapport de la refonte) : par exemple zh 再来一次 pour « Seconde chance », ko 생략 et zh 略过 pour « Passer », ko 지원 / zh 支持 pour « Aide ». À faire relire, ou à régénérer avec les polices.
+
+**Captures** : `Captures.Screens` ajoute `tutorial_1`, `tutorial_1_drag`, `tutorial_2`, `tutorial_2_trace`, `tutorial_3`, `tutorial_end`, `tutorial_replay_end` ; l'autopilote ajoute `end_1_plain` (sans seconde chance) et `end_2_record` (nouveau record), `normal_8_continue` montrant la seconde chance.
+
+**Écarts restants avec les maquettes** :
+- Classement : ni rang mondial ni date des parties (inconnus localement) ; le segment « Défi du jour » montre la série, faute de score du jour stocké.
+- Boutique : pas de pastille « Meilleure offre » sur les packs.
+- Missions : pas de « Nouvelles dans 7 h ».
+- La saisie du code de duel (`DuelCodeEntryOverlay`) garde son ancienne carte, aplatie par `Relief`.
 
 **À revoir avec la Boutique** :
 - Les 6 autres thèmes gardent leurs couleurs de bulles et leurs fonds animés.
