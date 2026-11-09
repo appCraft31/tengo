@@ -142,21 +142,29 @@ namespace TenGo.Screens
             var label = Label(node, Loc.T(primary ? "menu.play" : "menu.new_game"), primary ? NunitoWeight.Black : NunitoWeight.ExtraBold,
                 Pt(primary ? 22 : 17), ink, Vector2.zero, Z + 3, HorizontalAlignmentOptions.Left);
             float iconW = Pt(primary ? 24 : 22), gap = Pt(10);
-            float labelW = Mathf.Min(label.WidthPt(), _w - iconW - gap - Pt(130));
+            // La pastille de graine (« ×3 » ou « 1h 13min ») occupe le bord droit :
+            // le contenu se centre dans la place restante et le libellé rétrécit
+            // plutôt que de passer sous la pastille.
+            float badgeW = AddSeedBadge(node, _w / 2 - Pt(14), primary);
+            float left = -_w / 2 + Pt(16);
+            float right = badgeW > 0 ? _w / 2 - Pt(14) - badgeW - Pt(10) : _w / 2 - Pt(16);
+            float labelW = Mathf.Min(label.WidthPt(), right - left - iconW - gap);
             label.ShrinkToFit(labelW);
+            labelW = Mathf.Min(labelW, label.WidthPt());
             float contentW = iconW + gap + labelW;
-            var iconPos = new Vector2(-contentW / 2 + iconW / 2, 0);
+            float cx = badgeW > 0 ? Mathf.Min(0, (left + right) / 2) : 0;
+            var iconPos = new Vector2(cx - contentW / 2 + iconW / 2, 0);
             if (primary) FilledPlay(node, iconPos, iconW, ink, Z + 2);
             else VectorIcon.Create(node, VectorIconName.LinePlay, Units.P(iconPos.x, iconPos.y), iconW, ink, Z + 2);
-            label.transform.localPosition = Units.P(-contentW / 2 + iconW + gap, 0);
-            AddSeedBadge(node, _w / 2 - Pt(14), primary);
+            label.transform.localPosition = Units.P(cx - contentW / 2 + iconW + gap, 0);
             AddTarget("newGame", node, size, OnNewGame);
         }
 
         /// Graine de dix : pastille au bord droit du bouton (pousse et temps restant, ou « ×N » fleurie).
-        void AddSeedBadge(Transform button, float rightX, bool onAccent)
+        /// Rend la largeur de la pastille (0 sans graine).
+        float AddSeedBadge(Transform button, float rightX, bool onAccent)
         {
-            if (!(S.Seeds.Current is Seed seed)) return;
+            if (!(S.Seeds.Current is Seed seed)) return 0;
             bool bloomed = S.Seeds.IsBloomed;
             string text = bloomed ? "×" + seed.Power : RemainingText(seed.BloomAtMs);
             var badge = RenderShared.Node("seedBadge", button);
@@ -169,6 +177,7 @@ namespace TenGo.Screens
             label.transform.localPosition = Units.P(-w / 2 + Pt(10) + iconW + Pt(4), 0);
             badge.localPosition = Units.P(rightX - w / 2, 0);
             if (bloomed) SeedArt.Pulse(badge, 1.06f);
+            return w;
         }
 
         /// `SeedGarden.remainingText` : « 3h 20min », « 45min » sous l'heure.

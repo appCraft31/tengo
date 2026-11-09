@@ -36,6 +36,7 @@ namespace TenGo.Editor
         {
             new() { Name = "menu", Make = a => a.Screens.Menu(a) },
             new() { Name = "menu_resume_seed", Make = a => a.Screens.Menu(a), Seed = SeedResumeAndBloom },
+            new() { Name = "menu_resume_seed_growing", Make = a => a.Screens.Menu(a), Seed = SeedResumeAndGrowing },
             new() { Name = "settings", Make = a => a.Screens.Menu(a), After = a => (a.Current as MenuScreen)?.OpenSettings() },
             new() { Name = "shop", Make = a => a.Screens.Shop(a, false) },
             new() { Name = "shop_bubbles", Make = a => a.Screens.Shop(a, false), After = a => (a.Current as ShopScreen)?.ScrollToSection("bubbles") },
@@ -224,6 +225,15 @@ namespace TenGo.Editor
             new SeedRepository(s, clock).ForceBloomForQa(6);
             var grid = GridModel.Generate(new SeededGenerator(42));
             new GameStateRepository(s).Save(grid, 1240);
+        }
+
+        /// Graine qui pousse encore : la pastille affiche un temps (« 1h 13min »), plus large que « ×3 ».
+        static void SeedResumeAndGrowing(ISaveStore s)
+        {
+            var clock = new FixedClock(DateTimeOffset.Now, TimeZoneInfo.Utc);
+            new SeedRepository(s, clock).Offer(6);
+            var grid = GridModel.Generate(new SeededGenerator(42));
+            new GameStateRepository(s).Save(grid, 40);
         }
 
         static void SeedMirror(ISaveStore s)
