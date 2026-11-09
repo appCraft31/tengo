@@ -108,12 +108,15 @@ namespace TenGo.App
             return asset != null ? PuzzleCatalog.FromJson(asset.text) : new PuzzleCatalog(new PuzzleLevel[0]);
         }
 
-        /// Table des textes (`Resources/Localization/strings.json`), langue `language`.
+        /// Table des textes (`Resources/Localization/strings.json`, généré depuis
+        /// le catalogue iOS, puis `strings_unity.json`, textes propres à Unity), langue `language`.
         public static void LoadStrings(string language)
         {
             var asset = Resources.Load<TextAsset>("Localization/strings");
             if (asset == null) { Debug.LogError("[App] Resources/Localization/strings.json introuvable"); return; }
             Loc.Load(asset.text, language);
+            var extra = Resources.Load<TextAsset>("Localization/strings_unity");
+            if (extra != null) Loc.Merge(extra.text);
             Rendering.Fonts.ApplyLanguage(Loc.Language);
         }
 

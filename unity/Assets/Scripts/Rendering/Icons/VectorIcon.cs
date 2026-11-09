@@ -53,7 +53,7 @@ namespace TenGo.Rendering
             _block ??= new MaterialPropertyBlock();
             _block.SetTexture(MainTexId, IconLibrary.Field(_name));
             _block.SetVector(ColorId, _color.ToVector());
-            _block.SetVector(SdfId, new Vector4(IconLibrary.Range, IconLibrary.HalfStroke, half, FxAlpha.Inherited(transform)));
+            _block.SetVector(SdfId, new Vector4(IconLibrary.Range, IconLibrary.HalfStrokeOf(_name), half, FxAlpha.Inherited(transform)));
             _block.SetVector(ClipRectId, _clipRect);
             r.SetPropertyBlock(_block);
             r.localBounds = new Bounds(Vector3.zero, new Vector3(half * 2f, half * 2f, 0.01f));

@@ -28,7 +28,8 @@ namespace TenGo.Rendering
 
             switch (style)
             {
-                case TrailKind.Classic: Stroke(Colors.White(1, 0.6f), 6); break;
+                // Refonte 4.0 : trait encre à 55 %, 7 pt, bouts ronds.
+                case TrailKind.Classic: Stroke(Ui.Design.Ink.WithAlpha(0.55f), Ui.Design.Pt(7)); break;
                 case TrailKind.Neon:
                     Stroke(accent.WithAlpha(0.25f), 16);   // halo
                     Stroke(accent, 5);
@@ -47,6 +48,8 @@ namespace TenGo.Rendering
             int order = Layers.Comet)
         {
             if (!JuiceSettings.MotionEnabled) return comet;
+            // Refonte 4.0 : le trait encre classique se lit seul, sans halo en tête.
+            if (Look.Trail == TrailKind.Classic) return comet;
             if (comet == null)
             {
                 comet = ShapeView.Dot("Comet", parent, position, 26, Color.white, additive: true, order);

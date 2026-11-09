@@ -61,10 +61,14 @@ namespace TenGo.Tests
             b.SetSelected(true, 1f);
             yield return Seconds(0.25f);
             Assert.That(b.transform.localScale.x, Is.GreaterThan(1.10f));
-            Assert.AreEqual(Color.white.WithAlpha(0.9f), b.Circle.Stroke);
+            // Refonte 4.0 : anneaux crème et encre autour du disque, sans contour sur la bulle.
+            Assert.IsNotNull(b.SelectionRing);
+            Assert.IsTrue(b.SelectionRing.gameObject.activeSelf);
+            Assert.AreEqual(Color.clear, b.Circle.Stroke);
             b.SetSelected(false);
             yield return Seconds(0.25f);
             Assert.AreEqual(1f, b.transform.localScale.x, 0.01f);
+            Assert.IsFalse(b.SelectionRing.gameObject.activeSelf);
         }
 
         [UnityTest]

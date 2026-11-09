@@ -204,7 +204,7 @@ namespace TenGo.Game
                 float iconW = nextPuzzle == null ? 20 : 0, iconGap = nextPuzzle == null ? 12 : 0;
                 float contentW = iconW + iconGap + label.WidthPt();
                 if (contentW > 290) { label.ShrinkToFit(290 - iconW - iconGap); contentW = 290; }
-                if (nextPuzzle == null) Glyphs.Restart(btn, P(-contentW / 2 + iconW / 2, 1), 28, ink, PanelZ + 5, 1.25f);
+                if (nextPuzzle == null) VectorIcon.Create(btn, VectorIconName.LineRestart, P(-contentW / 2 + iconW / 2, 1), 28, ink, PanelZ + 5);
                 label.transform.localPosition = P(-contentW / 2 + iconW + iconGap, 0);
             }
             else if (Kind == GameModeKind.Duel)
@@ -238,7 +238,7 @@ namespace TenGo.Game
                 {
                     l.ShrinkToFit(100);
                     float w = 16 + 10 + l.WidthPt() * l.transform.localScale.x;
-                    Glyphs.Restart(next, P(-w / 2 + 8, 0), 19, ink, PanelZ + 5);
+                    VectorIcon.Create(next, VectorIconName.LineRestart, P(-w / 2 + 8, 0), 20, ink, PanelZ + 5);
                     l.transform.localPosition = P(-w / 2 + 26, 0);
                 }
                 else l.ShrinkToFit(136);

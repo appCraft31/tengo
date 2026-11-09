@@ -32,10 +32,23 @@ namespace TenGo.Rendering
         public static List<List<Vector2>> Paths(VectorIconName name)
         {
             if (_paths.TryGetValue(name, out var p)) return p;
-            p = SvgPath.ParseElements(Svg[name.ToString()]);
+            p = SvgPath.ParseElements(SvgOf(name));
             _paths[name] = p;
             return p;
         }
+
+        /// Source SVG de l'icône (catalogue iOS ou famille au trait de la refonte).
+        public static string SvgOf(VectorIconName name)
+        {
+            var key = name.ToString();
+            return Svg.TryGetValue(key, out var s) ? s : LineSvg[key];
+        }
+
+        /// Famille au trait de la refonte (trait 2,1 au lieu de 2).
+        public static bool IsLine(VectorIconName name) => LineSvg.ContainsKey(name.ToString());
+
+        /// Demi-épaisseur du trait de l'icône, en unités SVG.
+        public static float HalfStrokeOf(VectorIconName name) => IsLine(name) ? 1.05f : HalfStroke;
 
         /// Distance du point `q` (unités SVG) au trait central de l'icône.
         public static float Distance(List<List<Vector2>> paths, Vector2 q)

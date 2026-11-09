@@ -15,7 +15,7 @@ namespace TenGo.Tests
         [Test]
         public void EmbeddedSvgMatchIosCatalog()
         {
-            var names = System.Enum.GetNames(typeof(VectorIconName));
+            var names = IconLibrary.Svg.Keys.ToArray();
             Assert.AreEqual(13, names.Length);
             if (!Directory.Exists(IosAssets)) Assert.Ignore("Dossier iOS absent");
             foreach (var name in names)
@@ -24,6 +24,42 @@ namespace TenGo.Tests
                 var inner = string.Join("\n", File.ReadAllLines(svg).Where(l => !l.StartsWith("<svg") && !l.StartsWith("</svg")).Select(l => l.Trim()));
                 Assert.AreEqual(inner, IconLibrary.Svg[name], name);
             }
+        }
+
+        static string DesignJs => Path.GetFullPath(Path.Combine(Application.dataPath, "../../design/refonte/systeme.js"));
+
+        /// La famille au trait de la refonte est recopiée de `design/refonte/systeme.js`, sans écart.
+        [Test]
+        public void LineIconsMatchDesignSystem()
+        {
+            var lineNames = System.Enum.GetNames(typeof(VectorIconName)).Where(n => n.StartsWith("Line")).ToArray();
+            Assert.AreEqual(27, lineNames.Length);
+            CollectionAssert.AreEquivalent(lineNames, IconLibrary.LineSvg.Keys);
+            if (!File.Exists(DesignJs)) Assert.Ignore("Maquette absente");
+            var js = File.ReadAllText(DesignJs);
+            var block = js.Substring(js.IndexOf("const ICONS = {"));
+            block = block.Substring(0, block.IndexOf("};"));
+            var found = Regex.Matches(block, @"^\s*(\w+): '(.*)',\s*$", RegexOptions.Multiline);
+            Assert.AreEqual(27, found.Count);
+            foreach (Match m in found)
+            {
+                var key = "Line" + char.ToUpperInvariant(m.Groups[1].Value[0]) + m.Groups[1].Value.Substring(1);
+                Assert.AreEqual(m.Groups[2].Value, IconLibrary.LineSvg[key], key);
+            }
+        }
+
+        [Test]
+        public void CircleAndRoundedRectBecomeClosedPaths()
+        {
+            var circle = SvgPath.ParseElements(@"<circle cx=""12"" cy=""8"" r=""4""/>").Single();
+            Assert.AreEqual(4f, circle.Max(p => p.x) - 12f, 0.02f);
+            Assert.AreEqual(4f, 8f - circle.Min(p => p.y), 0.02f);
+            Assert.AreEqual(circle[0].x, circle[^1].x, 1e-3f);
+            var rect = SvgPath.ParseElements(@"<rect x=""4"" y=""5"" width=""16"" height=""15"" rx=""2.5""/>").Single();
+            Assert.AreEqual(4f, rect.Min(p => p.x), 1e-3f);
+            Assert.AreEqual(20f, rect.Max(p => p.x), 1e-3f);
+            Assert.AreEqual(5f, rect.Min(p => p.y), 1e-3f);
+            Assert.AreEqual(20f, rect.Max(p => p.y), 1e-3f);
         }
 
         [Test]

@@ -7,7 +7,8 @@ using UnityEngine;
 namespace TenGo.Rendering
 {
     /// Lecture des icônes SVG du catalogue iOS (traits seuls) : éléments
-    /// `path` (M L H V C S Q A Z, absolus et relatifs), `polyline`, `line`.
+    /// `path` (M L H V C S Q A Z, absolus et relatifs), `polyline`, `line`,
+    /// `circle` et `rect` (coins arrondis `rx`), ces deux derniers convertis en chemins.
     /// Les courbes et arcs sont aplatis en polylignes, dans le repère du
     /// `viewBox` (y vers le bas, comme le SVG).
     public static class SvgPath
@@ -18,7 +19,7 @@ namespace TenGo.Rendering
         public static List<List<Vector2>> ParseElements(string svg)
         {
             var result = new List<List<Vector2>>();
-            foreach (Match m in Regex.Matches(svg, @"<(path|polyline|line)\b([^>]*)/?>"))
+            foreach (Match m in Regex.Matches(svg, @"<(path|polyline|line|circle|rect)\b([^>]*)/?>"))
             {
                 var attrs = m.Groups[2].Value;
                 switch (m.Groups[1].Value)
@@ -32,6 +33,30 @@ namespace TenGo.Rendering
                         for (int i = 0; i + 1 < nums.Count; i += 2) pl.Add(new Vector2(nums[i], nums[i + 1]));
                         result.Add(pl);
                         break;
+                    case "circle":
+                    {
+                        float cx = F(Attr(attrs, "cx")), cy = F(Attr(attrs, "cy")), r = F(Attr(attrs, "r"));
+                        string Fmt(float v) => v.ToString(CultureInfo.InvariantCulture);
+                        result.AddRange(ParsePath($"M{Fmt(cx - r)} {Fmt(cy)}a{Fmt(r)} {Fmt(r)} 0 1 0 {Fmt(2 * r)} 0a{Fmt(r)} {Fmt(r)} 0 1 0 {Fmt(-2 * r)} 0Z"));
+                        break;
+                    }
+                    case "rect":
+                    {
+                        float x = F(Attr(attrs, "x")), y = F(Attr(attrs, "y")), w = F(Attr(attrs, "width")), h = F(Attr(attrs, "height"));
+                        string rxs = Attr(attrs, "rx");
+                        float rx = Mathf.Min(rxs.Length > 0 ? F(rxs) : 0f, Mathf.Min(w, h) / 2f);
+                        string Fmt(float v) => v.ToString(CultureInfo.InvariantCulture);
+                        if (rx <= 0f)
+                        {
+                            result.AddRange(ParsePath($"M{Fmt(x)} {Fmt(y)}H{Fmt(x + w)}V{Fmt(y + h)}H{Fmt(x)}Z"));
+                            break;
+                        }
+                        string a = $"a{Fmt(rx)} {Fmt(rx)} 0 0 1 ";
+                        result.AddRange(ParsePath(
+                            $"M{Fmt(x + rx)} {Fmt(y)}H{Fmt(x + w - rx)}{a}{Fmt(rx)} {Fmt(rx)}V{Fmt(y + h - rx)}{a}{Fmt(-rx)} {Fmt(rx)}" +
+                            $"H{Fmt(x + rx)}{a}{Fmt(-rx)} {Fmt(-rx)}V{Fmt(y + rx)}{a}{Fmt(rx)} {Fmt(-rx)}Z"));
+                        break;
+                    }
                     case "line":
                         result.Add(new List<Vector2>
                         {

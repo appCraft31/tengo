@@ -7,7 +7,8 @@ namespace TenGo.Rendering
     /// Ambiance animée de chaque thème (ThemeBackground.swift).
     public enum ThemeEffect { Bubbles, Waves, Stars, Leaves, Sand, Moon, Candy }
 
-    /// Fond animé du thème : bulles pastel (défaut), vagues (océan), étoiles et
+    /// Fond animé du thème : uni pour le thème par défaut depuis la refonte 4.0
+    /// (les bulles pastel floues restent pour un thème sans effet propre), vagues (océan), étoiles et
     /// planètes (espace), feuilles (forêt), soleil et poussières (désert),
     /// étoiles et lune (nuit), bulles et étincelles (bonbon). 100 % vectoriel,
     /// derrière le jeu (z −1). La surface est celle de la scène (750 × 1334).
@@ -32,7 +33,8 @@ namespace TenGo.Rendering
             var ctx = new Ctx { Node = node, Theme = theme, W = sizePt.x, H = sizePt.y, Rng = rng, Order = order };
             switch (EffectOf(theme))
             {
-                case ThemeEffect.Bubbles: Bubbles(ctx); break;
+                // Refonte 4.0 : le thème par défaut garde un fond crème uni.
+                case ThemeEffect.Bubbles: if (!theme.IsDefault) Bubbles(ctx); break;
                 case ThemeEffect.Waves: Waves(ctx); break;
                 case ThemeEffect.Stars: Stars(ctx, 70, false); Planets(ctx); break;
                 case ThemeEffect.Leaves: Leaves(ctx); break;

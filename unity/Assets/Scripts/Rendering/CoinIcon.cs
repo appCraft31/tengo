@@ -2,20 +2,19 @@ using UnityEngine;
 
 namespace TenGo.Rendering
 {
-    /// Pièce vectorielle (CoinIcon.swift) pour le solde et les prix : disque or
-    /// cerclé d'ambre, liseré intérieur, reflet.
+    /// Pièce vectorielle (CoinIcon.swift) pour le solde et les prix. Refonte 4.0
+    /// (`coin()` de design/refonte/systeme.js) : disque or cerclé d'un filet plus
+    /// foncé, sans liseré ni reflet.
     public static class CoinIcon
     {
-        public static readonly Color Gold = new(0.98f, 0.84f, 0.46f);
-        public static readonly Color Amber = new(0.84f, 0.64f, 0.28f);
+        public static readonly Color Gold = Ui.Design.Gold;
+        public static readonly Color Amber = Ui.Design.GoldRim;
 
         public static Transform Make(Transform parent, Vector2 pos, float radiusPt, int order)
         {
             var coin = RenderShared.Node("Coin", parent, pos);
-            float r = radiusPt;
-            ShapeView.Circle("Disc", coin, Vector2.zero, r, Gold, Amber, Mathf.Max(1, r * 0.14f), order);
-            ShapeView.Circle("Rim", coin, Vector2.zero, r - Mathf.Max(2, r * 0.3f), Color.clear, Amber.WithAlpha(0.5f), 1, order + 1);
-            ShapeView.Circle("Glint", coin, Units.P(-r * 0.32f, r * 0.32f), r * 0.28f, Colors.White(1, 0.55f), default, 0, order + 2);
+            float rim = Mathf.Max(1f, radiusPt * 0.2f);
+            ShapeView.Circle("Disc", coin, Vector2.zero, radiusPt - rim / 2f, Gold, Amber, rim, order);
             return coin;
         }
     }

@@ -99,11 +99,11 @@ namespace TenGo.Tests
 
         void Drag(IReadOnlyList<Cell> path, bool release = true)
         {
-            var from = GameController.CellCenter(path[0]);
+            var from = Game.CellCenter(path[0]);
             _app.Input.InjectDown(from); Step();
             for (int i = 1; i < path.Count; i++)
             {
-                var to = GameController.CellCenter(path[i]);
+                var to = Game.CellCenter(path[i]);
                 for (int k = 1; k <= 4; k++) { _app.Input.InjectMove(Vector2.Lerp(from, to, k / 4f)); Step(); }
                 from = to;
             }
@@ -169,7 +169,7 @@ namespace TenGo.Tests
             int before = CountBubbles(g);
             Drag(new[] { a, b }, release: false);
             Assert.AreEqual(2, Game.CurrentPath.Count);
-            _app.Input.InjectUp(GameController.CellCenter(b)); Step();
+            _app.Input.InjectUp(Game.CellCenter(b)); Step();
             Advance(0.5f);
             Assert.AreEqual(0, Game.Score);
             Assert.AreEqual(before, CountBubbles(Game.Grid));
@@ -194,7 +194,7 @@ namespace TenGo.Tests
             Assume.That(path.Count >= 3);
             Drag(path.Take(3).ToList(), release: false);
             Assert.AreEqual(3, Game.CurrentPath.Count);
-            _app.Input.InjectMove(GameController.CellCenter(path[0])); Step();
+            _app.Input.InjectMove(Game.CellCenter(path[0])); Step();
             Assert.AreEqual(1, Game.CurrentPath.Count);
             _app.Input.InjectCancel(); Step();
         }
@@ -219,7 +219,7 @@ namespace TenGo.Tests
                     if (node != null)
                     {
                         Assert.AreEqual(g.Cells[r][c].Value, node.Value);
-                        Assert.AreEqual(GameController.CellCenter(new Cell(r, c)).y, node.transform.localPosition.y * 100f, 0.5f);
+                        Assert.AreEqual(Game.CellCenter(new Cell(r, c)).y, node.transform.localPosition.y * 100f, 0.5f);
                     }
                 }
             }
@@ -247,7 +247,7 @@ namespace TenGo.Tests
             int before = CountBubbles(Game.Grid);
             Tap(Game.BoosterPoint(Booster.Hammer).Value);
             Assert.IsTrue(Game.HammerArmed);
-            Tap(GameController.CellCenter(new Cell(0, 0)));
+            Tap(Game.CellCenter(new Cell(0, 0)));
             Advance(1f);
             Assert.AreEqual(0, S.Economy.BoosterCount(Booster.Hammer));
             Assert.AreEqual(before - 1, CountBubbles(Game.Grid));
@@ -255,7 +255,15 @@ namespace TenGo.Tests
             Tap(Game.BoosterPoint(Booster.Hint).Value);
             Advance(1.2f);
             Assert.AreEqual(0, S.Economy.BoosterCount(Booster.Hint));
-            Assert.AreEqual(0, Game.VisibleBoosters.Count, "la barre ne montre que les boosters possédés");
+            // Refonte 4.0 : les trois boosters restent affichés, stock vide signalé par « + ».
+            CollectionAssert.AreEqual(new[] { Booster.Hint, Booster.Shuffle, Booster.Hammer }, Game.VisibleBoosters);
+            Assert.AreEqual("+", Game.BoosterBadge(Booster.Hint));
+
+            // Stock vide : le tap ne consomme rien et propose la boutique (modale « à court de boosters »).
+            Advance(0.5f);
+            Tap(Game.BoosterPoint(Booster.Shuffle).Value);
+            Assert.IsTrue(Game.BoosterPromptVisible);
+            Assert.AreEqual(2, _analytics.Count("booster_used"), "aucune consommation de plus");
         }
 
         // MARK: - Sauvegarde et reprise

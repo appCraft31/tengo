@@ -32,7 +32,8 @@ namespace TenGo.Game
             _longestChain = 0;
             _celebratedChain = 0;
             _isWinState = false;
-            _scoreLabel.Text = "0";
+            SetScoreText(0);
+            RefreshBestLabel();
             _app.Shake?.ResetView();
             _juice.ResetTimeScale();
             CancelPath();
@@ -237,7 +238,7 @@ namespace TenGo.Game
             CancelPath();
             _score = score;
             _displayedScore = score;
-            _scoreLabel.Text = score.ToString();
+            SetScoreText(score);
             _longestChain = longestChain;
             _combosCreated = combos;
             IsAnimating = true;
@@ -250,7 +251,7 @@ namespace TenGo.Game
         {
             var path = _grid.ShowcasePath(maxLen);
             if (path == null || path.Count < 2) return false;
-            if (score is int s) { _score = s; _displayedScore = s; _scoreLabel.Text = s.ToString(); }
+            if (score is int s) { _score = s; _displayedScore = s; SetScoreText(s); }
             if (flowerPower is int p)
             {
                 var mid = path[path.Count / 2];
@@ -272,13 +273,15 @@ namespace TenGo.Game
         }
 
         /// Point de scène du centre d'une case (pilote automatique, tests).
-        public static Vector2 CellCenter(Cell c) => ScenePt(c.Row, c.Col);
+        public Vector2 CellCenter(Cell c) => ScenePt(c.Row, c.Col);
         /// Points de scène des boutons (pilote, tests).
         public Vector2? BoosterPoint(Booster b)
         {
             foreach (var (bb, node) in _boosterButtons) if (bb == b) return WorldPt(node);
             return null;
         }
+        /// Texte de la pastille d'un booster (« 2 », ou « + » quand le stock est vide).
+        public string BoosterBadge(Booster b) => _boosterCountLabels.TryGetValue(b, out var l) ? l.Text : null;
         public Vector2 RestartPoint => WorldPt(_restartBubbleNode);
         public Vector2 HomePoint => WorldPt(_homeBubbleNode);
         public Vector2? PanelButtonPoint(string name)

@@ -40,32 +40,52 @@ namespace TenGo.Game
             UpdatePathGainLabel();
         }
 
-        /// « +N » au-dessus du doigt, seulement à somme exactement 10 : le barème devient lisible.
+        /// « +N » au-dessus du doigt, seulement à somme exactement 10 : le barème
+        /// devient lisible. Refonte 4.0 : chiffre encre dans une pastille blanche à filet.
         void UpdatePathGainLabel()
         {
             if (_path.Count < 2 || _grid.PathSum(_path) != GameRules.TargetSum)
             {
-                if (_pathGainLabel != null) Kill(_pathGainLabel.gameObject);
-                _pathGainLabel = null;
+                KillPathGain();
                 return;
             }
             int points = Scoring.ForPath(_path.Count) * _grid.BloomMultiplier(_path);
             if (_pathGainLabel == null)
-                _pathGainLabel = Label(Root, "", Fonts.AvenirHeavy, 30, Color.white, Vector2.zero, Layers.PathGain);
+            {
+                var node = RenderShared.Node("PathGain", Root);
+                _pathGainLabel = Label(node, "", NunitoWeight.Black, 30, Ui.Design.Ink, Vector2.zero, Layers.PathGain + 2);
+            }
             var label = _pathGainLabel;
+            var holder = label.transform.parent;
             var tier = PopTiers.ForLength(_path.Count);
             string previous = label.Text;
             label.Text = "+" + points;
-            label.SizePt = tier == PopTier.Small ? 30 : tier == PopTier.Medium ? 38 : 46;
-            label.Color = points >= 200 ? GainOrange : Colors.White(0.28f, 0.92f);
-            var head = _path[_path.Count - 1];
-            var target = ScenePt(head.Row, head.Col);
-            label.transform.localPosition = P(target.x, target.y + 62);
+            float sizePt = tier == PopTier.Small ? 20 : tier == PopTier.Medium ? 24 : 28;
+            label.SizePt = Ui.Design.Pt(sizePt);
+            label.Color = points >= 200 ? GainOrange : Ui.Design.Ink;
             if (previous != label.Text)
             {
-                label.transform.localScale = Vector3.one;
-                Tw.Run(label.gameObject, Tw.Seq(Tw.Scale(label.transform, 1.18f, 0.07f), Tw.Scale(label.transform, 1f, 0.11f)), "bump");
+                var oldBg = holder.Find("Pill");
+                if (oldBg != null) Kill(oldBg);
+                var oldHair = holder.Find("PillHair");
+                if (oldHair != null) Kill(oldHair);
+                float h = Ui.Design.Pt(sizePt * 1.36f + 4), w = label.WidthPt() + Ui.Design.Pt(20);
+                Ui.Design.Surface("Pill", holder, Vector2.zero, new Vector2(w, h), Ui.Design.Pt(12), Layers.PathGain);
             }
+            var head = _path[_path.Count - 1];
+            var target = ScenePt(head.Row, head.Col);
+            holder.localPosition = P(target.x, target.y + _bubbleR * (36.5f / 23.5f) + Ui.Design.Pt(sizePt - 20) * 0.5f);
+            if (previous != label.Text)
+            {
+                holder.localScale = Vector3.one;
+                Tw.Run(holder.gameObject, Tw.Seq(Tw.Scale(holder, 1.18f, 0.07f), Tw.Scale(holder, 1f, 0.11f)), "bump");
+            }
+        }
+
+        void KillPathGain()
+        {
+            if (_pathGainLabel != null) Kill(_pathGainLabel.transform.parent);
+            _pathGainLabel = null;
         }
 
         void CancelPath()
@@ -78,8 +98,7 @@ namespace TenGo.Game
 
         void ClearTrail()
         {
-            if (_pathGainLabel != null) Kill(_pathGainLabel.gameObject);
-            _pathGainLabel = null;
+            KillPathGain();
             Kill(_strokeNode);
             _strokeNode = null;
             if (_trailComet != null) Kill(_trailComet.gameObject);
@@ -90,7 +109,7 @@ namespace TenGo.Game
 
         // MARK: - Score
 
-        void UpdateScoreLabel() => _scoreLabel.Text = _displayedScore.ToString();
+        void UpdateScoreLabel() => SetScoreText(_displayedScore);
 
         /// Aligne l'affichage sur le score réel (fin de partie : jamais un compteur en retard).
         void SyncDisplayedScore()
@@ -117,7 +136,7 @@ namespace TenGo.Game
                 var halo = ShapeView.Dot("Halo", flight, Vector2.zero, radius * 4, new Color(0.98f, 0.80f, 0.35f, 0.55f), true, 199);
                 Tw.Run(halo.gameObject, Tw.Seq(Tw.Par(Tw.Scale(halo.transform, 1.5f, 0.35f), Tw.FadeOut(halo.gameObject, 0.35f)), Tw.Remove(halo.gameObject)));
             }
-            ShapeView.Circle("Circle", flight, Vector2.zero, radius, new Color(0.96f, 0.93f, 0.90f, 0.92f), tint.WithAlpha(0.8f), 2, 200);
+            ShapeView.Circle("Circle", flight, Vector2.zero, radius, Ui.Design.Card, big ? tint.WithAlpha(0.8f) : Ui.Design.Hair, 2, 200);
             Label(flight, "+" + points, big ? Fonts.AvenirHeavy : Fonts.AvenirDemiBold, big ? 26 : 20, tint, Vector2.zero, 202);
 
             Tw.Run(flight.gameObject, Tw.Seq(

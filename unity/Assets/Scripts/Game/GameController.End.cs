@@ -234,7 +234,8 @@ namespace TenGo.Game
 
         void UpdateRushTimerLabel()
         {
-            if (_rushTimerLabel != null) _rushTimerLabel.Text = Mathf.Max(0, (int)System.Math.Ceiling(_rushTimeRemaining)).ToString();
+            if (_rushTimerLabel != null) _rushTimerLabel.Text = FormatClock(_rushTimeRemaining);
+            UpdateRushBar();
         }
 
         void AwardRushTimeBonus()
@@ -242,7 +243,7 @@ namespace TenGo.Game
             _rushTimeRemaining += RushBonusSeconds;
             UpdateRushTimerLabel();
             if (_rushTimerLabel == null) return;
-            var pos = (Vector2)_rushTimerLabel.transform.localPosition + P(46, 0);
+            var pos = (Vector2)_rushTimerLabel.transform.localPosition + P(_rushTimerLabel.WidthPt() / 2 + Ui.Design.Pt(24), 0);
             var bonus = Label(Root, "+" + (int)RushBonusSeconds + "s", Fonts.AvenirBold, 20, new Color(0.35f, 0.70f, 0.45f, 1), pos, 200);
             FxAlpha.Of(bonus.gameObject);
             Tw.Run(bonus.gameObject, Tw.Seq(Tw.Par(Tw.MoveBy(bonus.transform, P(0, 24), 0.6f), Tw.FadeOut(bonus.gameObject, 0.6f)), Tw.Remove(bonus.gameObject)));

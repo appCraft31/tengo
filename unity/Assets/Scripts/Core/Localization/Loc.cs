@@ -49,6 +49,22 @@ namespace TenGo.Core
             Language = Resolve(preferred);
         }
 
+        /// Ajoute (ou remplace) des clés venues d'une seconde table au même format :
+        /// textes propres à Unity (refonte 4.0), absents du catalogue iOS
+        /// (`Resources/Localization/strings_unity.json`).
+        public static void Merge(string json)
+        {
+            JObject root = JObject.Parse(json);
+            if (!(root["strings"] is JObject strings)) return;
+            foreach (KeyValuePair<string, JToken?> entry in strings)
+            {
+                if (!(entry.Value is JObject o)) continue;
+                if (!_strings.TryGetValue(entry.Key, out Dictionary<string, string>? per))
+                    _strings[entry.Key] = per = new Dictionary<string, string>();
+                foreach (KeyValuePair<string, JToken?> t in o) per[t.Key] = (string?)t.Value ?? "";
+            }
+        }
+
         /// Change de langue (tests, captures).
         public static void Use(string? language) => Language = Resolve(language);
 

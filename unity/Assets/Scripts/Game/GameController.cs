@@ -29,13 +29,7 @@ namespace TenGo.Game
     {
         // MARK: - Constantes de mise en page
 
-        public const float CellSize = 84f;
         public static readonly Vector2 SceneSize = new(750, 1334);
-
-        static float GridOriginX => -(GameRules.Cols * CellSize) / 2f + CellSize / 2f;
-        static float GridOriginY => -(GameRules.Rows * CellSize) / 2f + CellSize / 2f;
-        static float GridTop => GridOriginY + (GameRules.Rows - 1) * CellSize;
-        static float GridBottom => GridOriginY;
 
         static Vector2 P(float x, float y) => Units.P(x, y);
 
@@ -128,18 +122,16 @@ namespace TenGo.Game
         readonly IRng _rushRng;
 
         // Boosters
-        public const float BoosterRadius = 42f;
         static readonly Booster[] BoosterOrder = { Booster.Hint, Booster.Shuffle, Booster.Hammer };
         Transform _boosterBar;
         readonly List<(Booster booster, Transform node)> _boosterButtons = new();
         readonly Dictionary<Booster, TenGoText> _boosterCountLabels = new();
         bool _hammerArmed;
-        float _boosterHitRadius = 48f;
+        float _boosterHitRadius = 52f;
         readonly List<Booster> _boosterCoachQueue = new();
         CoachMarkOverlay _boosterCoach;
         Transform _boosterShopPrompt;
         bool _hasPendingShopSnapshot;
-        Transform _shopPillNode;
 
         // Vidéos récompensées (TEN-3)
         GridModel _secondChanceGrid;
@@ -174,7 +166,6 @@ namespace TenGo.Game
         Transform _scoreBubbleNode;
         Transform _restartBubbleNode;
         Transform _settingsBubbleNode;
-        Transform _homeGlyph;
         IGameOverlay _settingsOverlay;
         TenGoText _countdownLabel;
         bool _disposed;
@@ -248,6 +239,7 @@ namespace TenGo.Game
             _app.SetBackground(Look.Background);
             // En capture marketing, le juice reste complet quelle que soit la configuration.
             if (Kind == GameModeKind.Demo) JuiceSettings.ForceFull = true;
+            ComputeLayout();
             SetupJuice();
             SetupBackground();
             SetupUI();
@@ -277,7 +269,7 @@ namespace TenGo.Game
                 _grid = _launch.Saved.Grid;
                 _score = _launch.Saved.Score;
                 _displayedScore = _score;
-                _scoreLabel.Text = _score.ToString();
+                SetScoreText(_score);
             }
             else
             {

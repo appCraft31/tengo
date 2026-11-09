@@ -4,6 +4,7 @@ using TenGo.Fx;
 using TenGo.Haptics;
 using TenGo.Platform;
 using TenGo.Rendering;
+using TenGo.Ui;
 using UnityEngine;
 
 namespace TenGo.Game
@@ -16,10 +17,13 @@ namespace TenGo.Game
 
         static VectorIconName IconOf(Booster b) => b switch
         {
-            Booster.Hint => VectorIconName.BoosterHint,
-            Booster.Shuffle => VectorIconName.BoosterShuffle,
-            _ => VectorIconName.BoosterHammer,
+            Booster.Hint => VectorIconName.LineBulb,
+            Booster.Shuffle => VectorIconName.LineShuffle,
+            _ => VectorIconName.LineHammer,
         };
+
+        /// Libellé sous le bouton (Indice, Mélange, Marteau).
+        static string TitleOf(Booster b) => Loc.T("booster." + b.Id());
 
         void SetupBoosters()
         {
@@ -28,71 +32,46 @@ namespace TenGo.Game
             RefreshBoosterButtons();
         }
 
+        /// Booster de la barre (refonte 4.0) : carré blanc à filet, icône au trait,
+        /// libellé dessous et compteur en pastille encre ; stock vide = « + » vert
+        /// qui mène à la boutique (modale « à court de boosters »).
         Transform MakeBoosterButton(Booster booster)
         {
-            var node = RenderShared.Node("booster_" + booster.Id(), _boosterBar);
-            FxAlpha.Of(node.gameObject);
-            Relief.Raise(ShapeView.Circle("Circle", node, Vector2.zero, BoosterRadius, Color.white, default, 0, BarOrder), 4, fill: Color.white);
-            VectorIcon.Create(node, IconOf(booster), Vector2.zero, 44, IconInk, BarOrder + 2);
-            ShapeView.Circle("Badge", node, P(31, -31), 17, new Color(0.97f, 0.95f, 0.92f, 1), Colors.White(0.70f, 0.5f), 1, BarOrder + 3);
-            _boosterCountLabels[booster] = Label(node, "", Fonts.AvenirBold, 14, Colors.White(0.30f, 1), P(31, -31), BarOrder + 4);
+            var node = MakeBarButton("booster_" + booster.Id(), IconOf(booster), TitleOf(booster), small: false, _boosterBar);
+            var badge = RenderShared.Node("Badge", node, P(Design.Pt(26), Design.Pt(26)));
+            _boosterCountLabels[booster] = Design.Text(badge, "", NunitoWeight.Black, 12, Color.white, Vector2.zero, BarOrder + 6);
             return node;
         }
 
-        /// Seuls les boosters possédés sont affichés ; la barre se recompose.
+        /// Pastille du compteur : encre avec le nombre, ou accent avec « + » quand le stock est vide.
+        void SyncBoosterBadge(Booster booster, Transform node)
+        {
+            if (!_boosterCountLabels.TryGetValue(booster, out var label)) return;
+            var badge = label.transform.parent;
+            var old = badge.Find("Bg");
+            if (old != null) Kill(old);
+            int count = _s.Economy.BoosterCount(booster);
+            bool empty = count <= 0;
+            label.Text = empty ? "+" : count.ToString();
+            label.Color = empty ? Design.Ink : Color.white;
+            float h = Design.Pt(24);
+            float w = Mathf.Max(h, label.WidthPt() + Design.Pt(12));
+            var bg = ShapeView.Rect("Bg", badge, Vector2.zero, new Vector2(w, h), h / 2, empty ? Design.Accent : Design.Ink, default, 0, BarOrder + 5);
+            bg.transform.SetAsFirstSibling();
+        }
+
+        /// Les trois boosters sont toujours affichés, avec leur stock.
         void RefreshBoosterButtons()
         {
             if (Kind != GameModeKind.Normal || _boosterBar == null) return;
-            var wanted = new List<Booster>();
-            foreach (var b in BoosterOrder) if (_s.Economy.BoosterCount(b) > 0) wanted.Add(b);
-            var current = new List<Booster>();
-            foreach (var (b, _) in _boosterButtons) current.Add(b);
-
-            foreach (var (b, node) in _boosterButtons)
+            bool built = _boosterButtons.Count > 0;
+            if (!built)
             {
-                if (wanted.Contains(b)) continue;
-                _boosterCountLabels.Remove(b);
-                node.name = "removed";
-                Tw.Run(node.gameObject, Tw.Seq(Tw.Par(Tw.FadeOut(node.gameObject, 0.16f), Tw.Scale(node, 0.2f, 0.16f)), Tw.Remove(node.gameObject)));
+                foreach (var b in BoosterOrder) _boosterButtons.Add((b, MakeBoosterButton(b)));
+                RepositionBottomRow();
             }
-            _boosterButtons.RemoveAll(x => !wanted.Contains(x.booster));
-
-            foreach (var b in wanted)
-            {
-                if (current.Contains(b)) continue;
-                var node = MakeBoosterButton(b);
-                _boosterButtons.Add((b, node));
-                AnimateBoosterAppearance(node);
-            }
-            _boosterButtons.Sort((a, c) => System.Array.IndexOf(BoosterOrder, a.booster).CompareTo(System.Array.IndexOf(BoosterOrder, c.booster)));
-
-            foreach (var (b, _) in _boosterButtons)
-                if (_boosterCountLabels.TryGetValue(b, out var l)) l.Text = "×" + _s.Economy.BoosterCount(b);
-
-            SyncShopPill(wanted.Count == 0);
-
-            bool changed = wanted.Count != current.Count;
-            for (int i = 0; !changed && i < wanted.Count; i++) changed = wanted[i] != current[i];
-            if (changed) RepositionBottomRow(animated: current.Count > 0 && wanted.Count > 0);
+            foreach (var (b, node) in _boosterButtons) SyncBoosterBadge(b, node);
             QueueBoosterCoachMarks();
-        }
-
-        /// Pastille « Boutique » à la place d'une barre vide, quand elle a du sens.
-        void SyncShopPill(bool barIsEmpty)
-        {
-            bool deserved = barIsEmpty && (_s.Economy.Balance >= Booster.Hint.Price() || _s.Economy.ShopGuideCompleted);
-            if (!deserved)
-            {
-                Kill(_shopPillNode);
-                _shopPillNode = null;
-                return;
-            }
-            if (_shopPillNode != null) return;
-            var node = RenderShared.Node("boosterShopPill", _boosterBar);
-            Relief.Raise(ShapeView.Rect("Pill", node, Vector2.zero, new Vector2(196, 52), 26, Color.white, default, 0, BarOrder), 4, fill: Color.white);
-            VectorIcon.Create(node, VectorIconName.BoosterHint, P(-64, 0), 26, IconInk, BarOrder + 2);
-            Label(node, Loc.T("game.shop_button"), Fonts.AvenirDemiBold, 18, Colors.White(0.35f, 1), P(12, 0), BarOrder + 2);
-            _shopPillNode = node;
         }
 
         // MARK: Coach-marks
@@ -100,7 +79,8 @@ namespace TenGo.Game
         void QueueBoosterCoachMarks()
         {
             var pending = new List<Booster>();
-            foreach (var (b, _) in _boosterButtons) if (!_s.Economy.BoosterCoachSeen(b)) pending.Add(b);
+            foreach (var (b, _) in _boosterButtons)
+                if (_s.Economy.BoosterCount(b) > 0 && !_s.Economy.BoosterCoachSeen(b)) pending.Add(b);
             if (pending.Count == 0) return;
             _boosterCoachQueue.Clear();
             _boosterCoachQueue.AddRange(pending);
@@ -139,18 +119,6 @@ namespace TenGo.Game
             }
             _boosterCoach = null;
             After(0.25f, ShowNextBoosterCoach);
-        }
-
-        void AnimateBoosterAppearance(Transform node)
-        {
-            if (!JuiceSettings.MotionEnabled) return;
-            node.localScale = Vector3.one * 0.1f;
-            FxAlpha.Of(node.gameObject).Alpha = 0;
-            Tw.Run(node.gameObject, Tw.Par(Tw.FadeIn(node.gameObject, 0.18f),
-                Tw.Seq(Tw.Scale(node, 1.14f, 0.22f), Tw.Scale(node, 1f, 0.12f))), "appear");
-            var halo = ShapeView.Circle("Halo", node, Vector2.zero, BoosterRadius, Color.clear, Look.Accent.WithAlpha(0.75f), 3, BarOrder - 3);
-            Tw.Run(halo.gameObject, Tw.Seq(Tw.Par(Tw.Scale(halo.transform, 1.9f, 0.45f), Tw.FadeOut(halo.gameObject, 0.45f)), Tw.Remove(halo.gameObject)));
-            HapticManager.Light();
         }
 
         void HandleBoosterTap(Booster booster)
@@ -396,12 +364,12 @@ namespace TenGo.Game
 
         void PresentHintOffer()
         {
-            var node = RenderShared.Node("hintOffer", Root, P(0, GridBottom - BubbleView.RadiusPt - 50));
+            var node = RenderShared.Node("hintOffer", Root, P(0, GridEdgeBottom - Design.Pt(52)));
             FxAlpha.Of(node.gameObject);
-            ShapeView.Rect("Pill", node, Vector2.zero, new Vector2(260, 48), 24, Color.white, Look.Accent, 2, BarOrder);
-            VectorIcon.Create(node, VectorIconName.BoosterHint, P(-100, 0), 24, IconInk, BarOrder + 2);
-            Label(node, Loc.T("game.hint_video_offer"), Fonts.AvenirDemiBold, 18, Colors.White(0.30f, 1), Vector2.zero, BarOrder + 2).ShrinkToFit(160);
-            VectorIcon.Create(node, VectorIconName.IconPlay, P(100, 0), 22, IconInk, BarOrder + 2);
+            ShapeView.Rect("Pill", node, Vector2.zero, new Vector2(260, 48), 24, Design.Card, Design.Accent, 2, BarOrder);
+            VectorIcon.Create(node, VectorIconName.LineBulb, P(-100, 0), 26, Design.Ink, BarOrder + 2);
+            Label(node, Loc.T("game.hint_video_offer"), NunitoWeight.ExtraBold, 18, Design.Ink, Vector2.zero, BarOrder + 2).ShrinkToFit(160);
+            VectorIcon.Create(node, VectorIconName.LineVideo, P(100, 0), 24, Design.Ink, BarOrder + 2);
             AddZone("hintOffer", node, new Vector2(260, 48));
             _hintOfferNode = node;
             if (JuiceSettings.MotionEnabled)

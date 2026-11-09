@@ -2,67 +2,43 @@ using UnityEngine;
 
 namespace TenGo.Rendering
 {
-    /// Finition commune des boutons, cartes et pastilles (Relief.swift) : un
-    /// socle de la même teinte (plus soutenue) sous la forme, une ombre douce
-    /// et un reflet en haut. Tout dérive de la couleur de la forme et du thème actif.
+    /// Finition commune des boutons, cartes et pastilles. Refonte 4.0
+    /// (direction A « plat crème ») : plus de socle, d'ombre ni de reflet ;
+    /// une surface neutre reçoit seulement un filet de 1 pt dessous
+    /// (`--hair` de systeme.css), une surface colorée reste un aplat. Les
+    /// écrans non encore refaits passent tous par ici et s'aplatissent ainsi.
     public static class Relief
     {
-        /// Surface neutre des éléments secondaires : le fond du thème tiré vers le blanc.
-        public static Color Surface
-        {
-            get
-            {
-                var bg = Look.Background;
-                return bg.MixedWithWhite(bg.PerceivedLuminance() > 0.5f ? 0.85f : 0.16f);
-            }
-        }
+        /// Surface neutre des éléments secondaires : blanc sur fond clair (`Design.Card`).
+        public static Color Surface => Ui.Design.Card;
 
-        /// Socle, ombre et reflet d'une forme déjà créée.
+        /// Filet (et anciens socle, ombre, reflet, toujours nuls).
         public sealed class Parts
         {
             public ShapeView Ledge, Halo;
             public StrokeView Highlight;
         }
 
-        /// Donne du relief à `shape` (rectangle arrondi ou cercle). Le socle et
-        /// l'ombre sont des frères placés juste dessous (ordre − 1 et − 2).
-        /// `depthPt` : hauteur du socle ; `surface` : couleur `Relief.Surface` ;
-        /// `fill` : remplace la couleur.
+        /// Aplatit `shape` et pose son filet. `depthPt` n'est plus utilisé (relief
+        /// supprimé) ; `surface` : couleur `Relief.Surface` ; `fill` : remplace la couleur.
         public static Parts Raise(ShapeView shape, float depthPt = 6f, bool surface = false, Color? fill = null)
         {
             if (fill is { } f) shape.Fill = f;
             if (surface) shape.Fill = Surface;
-            // Un aplat translucide donnerait un socle visible au travers.
             shape.Fill = shape.Fill.Flattened(Look.Background);
             shape.Stroke = Color.clear;
             shape.LineWidthPt = 0;
 
-            var baseColor = shape.Fill;
             var parent = shape.transform.parent;
             var pos = (Vector2)shape.transform.localPosition;
-            var parts = new Parts();
-
-            parts.Ledge = Clone(shape, "Ledge", parent, pos + Units.P(0, -depthPt), baseColor.LedgeShade(), shape.SortingOrder - 1);
-            // Pas d'ombre floue sur un SKShapeNode : un second aplat plus bas, plus
-            // étroit et très transparent en tient lieu.
-            parts.Halo = Clone(shape, "Halo", parent, pos + Units.P(0, -depthPt - 6), baseColor.LedgeShade().WithAlpha(0.20f), shape.SortingOrder - 2);
-            var hs = parts.Halo.transform.localScale;
-            parts.Halo.transform.localScale = new Vector3(hs.x * 0.95f, hs.y, 1);
-            parts.Ledge.transform.SetSiblingIndex(shape.transform.GetSiblingIndex());
-            parts.Halo.transform.SetSiblingIndex(parts.Ledge.transform.GetSiblingIndex());
-
-            // Reflet : un trait clair sous le bord haut. Sans objet sur un rond
-            // ni sur une grande carte.
-            var size = shape.SizePt;
-            float inset = Mathf.Min(size.y / 2f, 26f);
-            float length = size.x - inset * 2f;
-            if (length > 12f && size.y < 150f)
+            Color.RGBToHSV(shape.Fill, out _, out var sat, out _);
+            // Filet seulement sous une surface neutre (blanc, crème) ; un aplat coloré se suffit.
+            var hair = sat < 0.12f ? Ui.Design.Hair : Color.clear;
+            var parts = new Parts
             {
-                float y = Units.FromPoints(size.y / 2f - 5f);
-                float x0 = Units.FromPoints(-size.x / 2f + inset), x1 = Units.FromPoints(size.x / 2f - inset);
-                parts.Highlight = StrokeView.Create("Highlight", shape.transform, new[] { new Vector2(x0, y), new Vector2(x1, y) },
-                    Colors.White(1, baseColor.PerceivedLuminance() > 0.5f ? 0.50f : 0.16f), 3, shape.SortingOrder + 1);
-            }
+                Ledge = Clone(shape, "Ledge", parent, pos + Units.P(0, -Ui.Design.Pt(Ui.Design.HairPt)), hair, shape.SortingOrder - 1),
+            };
+            parts.Ledge.transform.SetSiblingIndex(shape.transform.GetSiblingIndex());
             return parts;
         }
 

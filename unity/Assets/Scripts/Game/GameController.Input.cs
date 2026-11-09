@@ -94,14 +94,14 @@ namespace TenGo.Game
             // Offre « sans pub » sous le panneau de fin.
             if (HandleNoAdsOfferTouch(point)) return;
 
-            if (_settingsBubbleNode != null && Dist(point, _settingsBubbleNode) < 34)
+            if (_settingsBubbleNode != null && Dist(point, _settingsBubbleNode) < Ui.Design.Pt(26))
             {
                 Press(_settingsBubbleNode);
                 PresentSettings();
                 return;
             }
 
-            if (_homeBubbleNode.gameObject.activeSelf && Dist(point, _homeBubbleNode) < 34)
+            if (_homeBubbleNode.gameObject.activeSelf && Dist(point, _homeBubbleNode) < Ui.Design.Pt(26))
             {
                 HapticManager.Light();
                 GoBackToMenu();
@@ -115,7 +115,7 @@ namespace TenGo.Game
             }
 
             // « Recommencer » : mode normal seulement.
-            if (Kind == GameModeKind.Normal && Dist(point, _restartBubbleNode) < 55)
+            if (Kind == GameModeKind.Normal && Dist(point, _restartBubbleNode) < Ui.Design.Pt(34))
             {
                 Press(_restartBubbleNode);
                 ResetGame();
@@ -124,17 +124,6 @@ namespace TenGo.Game
 
             if (_boosterBar != null && _boosterBar.gameObject.activeInHierarchy && !_isAnimating)
             {
-                if (_shopPillNode != null)
-                {
-                    var p = WorldPt(_shopPillNode);
-                    if (Mathf.Abs(point.x - p.x) < 98 && Mathf.Abs(point.y - p.y) < 26)
-                    {
-                        Press(_shopPillNode, 0.93f, 0.07f, 0.1f);
-                        _hasPendingShopSnapshot = !_grid.IsGridEmpty();
-                        After(0.12f, () => NavigateToBoutique("empty_bar"));
-                        return;
-                    }
-                }
                 foreach (var (booster, node) in _boosterButtons)
                 {
                     if (Dist(point, node) < _boosterHitRadius)

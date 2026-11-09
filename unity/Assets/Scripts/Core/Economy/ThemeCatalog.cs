@@ -4,21 +4,28 @@ using System.Linq;
 
 namespace TenGo.Core
 {
-    /// Catalogue des thèmes, repris tel quel de ThemeManager.swift (palettes
-    /// harmonisées et contrôlées en contraste). Le défaut en premier, puis
+    /// Catalogue des thèmes, repris de ThemeManager.swift (palettes
+    /// harmonisées et contrôlées en contraste), sauf le thème par défaut, refait pour la 4.0. Le défaut en premier, puis
     /// l'ordre d'affichage de la boutique.
     public static class ThemeCatalog
     {
         private static RgbColor C(double r, double g, double b) => new RgbColor(r, g, b);
 
+        /// Couleur `#RRGGBB`.
+        private static RgbColor H(int rgb) => new RgbColor(((rgb >> 16) & 0xFF) / 255.0, ((rgb >> 8) & 0xFF) / 255.0, (rgb & 0xFF) / 255.0);
+
         public static readonly IReadOnlyList<Theme> All = new[]
         {
+            // Refonte 4.0 (direction A « plat crème », design/refonte/systeme.css) :
+            // fond crème, encre #34312C, accent #65BD90 et palette des bulles
+            // calculée pour rester distincte en deutéranopie, protanopie et
+            // tritanopie. Les autres thèmes seront revus avec la Boutique.
             new Theme("default", 0,
-                background: C(0.97, 0.95, 0.92),
-                accent: C(0.82, 0.95, 0.88),
-                digit: C(0.25, 0.25, 0.25),
-                logo: C(0.28, 0.28, 0.28),
-                bubbles: new[] { C(1.00, 0.62, 0.62), C(1.00, 0.78, 0.62), C(1.00, 0.96, 0.62), C(0.67, 0.95, 0.75), C(0.62, 0.86, 1.00), C(0.80, 0.72, 1.00), C(1.00, 0.72, 0.86), C(0.75, 0.91, 0.75), C(0.72, 0.76, 1.00) }),
+                background: H(0xF7F3EC),
+                accent: H(0x65BD90),
+                digit: H(0x34312C),
+                logo: H(0x34312C),
+                bubbles: new[] { H(0xFACFCC), H(0xDB9661), H(0xD7C06C), H(0xC6E99B), H(0x65BD90), H(0x7FEFFB), H(0x97C6F7), H(0xA99BE6), H(0xF0A5D7) }),
             new Theme("forest", 150,
                 background: C(0.93, 0.95, 0.88),
                 accent: C(0.55, 0.68, 0.48),

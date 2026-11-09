@@ -1,0 +1,113 @@
+{
+ "languages": [
+  "de",
+  "en",
+  "es",
+  "fr",
+  "it",
+  "ja",
+  "ko",
+  "nl",
+  "pt-BR",
+  "zh-Hans"
+ ],
+ "source": "fr",
+ "strings": {
+  "ui.game.best": {
+   "de": "Bestwert {0}",
+   "en": "Best {0}",
+   "es": "Mejor {0}",
+   "fr": "Meilleur {0}",
+   "it": "Record {0}",
+   "ja": "ベスト {0}",
+   "ko": "최고 {0}",
+   "nl": "Beste {0}",
+   "pt-BR": "Melhor {0}",
+   "zh-Hans": "最佳 {0}"
+  },
+  "ui.menu.resume": {
+   "de": "Fortsetzen",
+   "en": "Resume",
+   "es": "Reanudar",
+   "fr": "Reprendre",
+   "it": "Riprendi",
+   "ja": "再開",
+   "ko": "이어하기",
+   "nl": "Hervatten",
+   "pt-BR": "Retomar",
+   "zh-Hans": "继续"
+  },
+  "ui.menu.rush_sub": {
+   "de": "60 s",
+   "en": "60 s",
+   "es": "60 s",
+   "fr": "60 s",
+   "it": "60 s",
+   "ja": "60秒",
+   "ko": "60초",
+   "nl": "60 s",
+   "pt-BR": "60 s",
+   "zh-Hans": "60秒"
+  },
+  "ui.menu.video": {
+   "de": "Video: +{0}",
+   "en": "Video: +{0}",
+   "es": "Vídeo: +{0}",
+   "fr": "Vidéo : +{0}",
+   "it": "Video: +{0}",
+   "ja": "動画：+{0}",
+   "ko": "동영상: +{0}",
+   "nl": "Video: +{0}",
+   "pt-BR": "Vídeo: +{0}",
+   "zh-Hans": "视频：+{0}"
+  },
+  "ui.menu.video_left": {
+   "de": "noch {0}",
+   "en": "{0} left",
+   "es": "Quedan {0}",
+   "fr": "{0} restantes",
+   "it": "Ne restano {0}",
+   "ja": "残り{0}回",
+   "ko": "{0}회 가능",
+   "nl": "nog {0}",
+   "pt-BR": "Restam {0}",
+   "zh-Hans": "剩余{0}次"
+  },
+  "ui.twist.anchored": {
+   "de": "Anker",
+   "en": "Anchors",
+   "es": "Anclas",
+   "fr": "Ancres",
+   "it": "Ancore",
+   "ja": "アンカー",
+   "ko": "고정",
+   "nl": "Ankers",
+   "pt-BR": "Âncoras",
+   "zh-Hans": "锁定"
+  },
+  "ui.twist.frozen": {
+   "de": "Frost",
+   "en": "Frost",
+   "es": "Hielo",
+   "fr": "Gel",
+   "it": "Gelo",
+   "ja": "フリーズ",
+   "ko": "얼음",
+   "nl": "IJs",
+   "pt-BR": "Gelo",
+   "zh-Hans": "定住"
+  },
+  "ui.twist.obstacles": {
+   "de": "Steine",
+   "en": "Stones",
+   "es": "Piedras",
+   "fr": "Pierres",
+   "it": "Pietre",
+   "ja": "ブロック",
+   "ko": "돌",
+   "nl": "Stenen",
+   "pt-BR": "Pedras",
+   "zh-Hans": "关闭"
+  }
+ }
+}

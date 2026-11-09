@@ -1,7 +1,8 @@
 namespace TenGo.Rendering
 {
-    /// Icônes vectorielles du catalogue iOS (Assets.xcassets, 13 SVG) :
-    /// `VectorIcon.swift` (onglets, modes, série, partage) et `BoosterIcon.swift`.
+    /// Icônes vectorielles : les 13 SVG du catalogue iOS (Assets.xcassets,
+    /// `VectorIcon.swift` et `BoosterIcon.swift`), puis la famille au trait de
+    /// la refonte 4.0 (`Line…`, `design/refonte/systeme.js`).
     public enum VectorIconName
     {
         BoosterHammer,
@@ -17,5 +18,33 @@ namespace TenGo.Rendering
         IconShield,
         IconShop,
         IconSocial,
+
+        LineHome,
+        LinePause,
+        LineBulb,
+        LineShuffle,
+        LineHammer,
+        LineRestart,
+        LinePlay,
+        LineGear,
+        LineProfile,
+        LineDuel,
+        LineShop,
+        LineBolt,
+        LinePuzzle,
+        LineCalendar,
+        LineFlame,
+        LineChevron,
+        LineBack,
+        LineClose,
+        LineStar,
+        LineBrain,
+        LineTrophy,
+        LineVideo,
+        LineLock,
+        LineShare,
+        LineCheck,
+        LineSeed,
+        LineNoads,
     }
 }

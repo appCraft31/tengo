@@ -1,5 +1,7 @@
 using System;
+using System.Collections.Generic;
 using TenGo.Fx;
+using TenGo.Ui;
 using UnityEngine;
 
 namespace TenGo.Rendering
@@ -7,13 +9,21 @@ namespace TenGo.Rendering
     /// Bulle de la grille (BubbleNode.swift) : disque de la couleur de sa valeur
     /// selon le thème, chiffre centré, matière cosmétique, et ses états
     /// (sélection qui respire, souffle, éclatement, chute avec écrasement,
-    /// ancre, givre, fleur de graine). Rayon 39 pt ; l'ordre d'affichage `Order`
-    /// vaut la `zPosition` SpriteKit × 10.
+    /// ancre, givre, fleur de graine). L'ordre d'affichage `Order` vaut la
+    /// `zPosition` SpriteKit × 10.
+    ///
+    /// Refonte 4.0 (direction A, `design/refonte/01_partie_A`) : aplat sans
+    /// contour, chiffre encre en Nunito Bold ; sélection = agrandissement 1,08
+    /// cerclé d'un anneau crème puis d'un anneau encre de 3 pt ; gel = anneau
+    /// blanc en pointillés ; ancre = point encre. Rayon de référence 39 unités
+    /// (la partie passe le sien, calculé sur la largeur de l'écran).
     [DisallowMultipleComponent]
     public sealed class BubbleView : MonoBehaviour
     {
         public const float RadiusPt = 39f;
         public const float DigitSizePt = 36f;
+        /// Chiffre : 47 % du diamètre (22 pt pour une bulle de 47 pt dans la maquette).
+        public const float DigitRatio = 0.47f;
 
         /// Couleur des pétales : un or chaud, lisible sur tous les thèmes.
         public static readonly Color BloomColor = new(0.98f, 0.76f, 0.28f, 1f);
@@ -27,13 +37,19 @@ namespace TenGo.Rendering
         public int Order { get; private set; }
         public ShapeView Circle => _circle;
         public TenGoText Digit => _digit;
+        /// Anneaux de sélection (crème puis encre), visibles quand la bulle est choisie.
+        public Transform SelectionRing => _ring;
+        public float Radius => _radius;
 
         ShapeView _circle;
         TenGoText _digit;
         Transform _frost;
         Transform _corolla;
+        Transform _ring;
         float _radius;
         Color _color;
+        Color _baseStroke;
+        float _baseLineWidth;
         Vector3? _nudgeOrigin;
 
         // MARK: - Création
@@ -59,13 +75,18 @@ namespace TenGo.Rendering
             Material = material;
             _radius = radius;
             _color = Look.BubbleColor(value);
-            _circle = ShapeView.Circle("Circle", transform, Vector2.zero, radius, _color, _color.Darkened(0.12f), 1.5f, order);
-            _digit = TenGoText.Create(transform, value.ToString(), Fonts.AvenirMedium, DigitSizePt * (radius / RadiusPt),
+            _circle = ShapeView.Circle("Circle", transform, Vector2.zero, radius, _color, default, 0, order);
+            _digit = TenGoText.Create(transform, value.ToString(), NunitoWeight.Bold, DigitRatio * 2f * radius,
                 Look.Digit, Vector2.zero, order + 2);
             ApplyMaterial();
+            _baseStroke = _circle.Stroke;
+            _baseLineWidth = _circle.LineWidthPt;
         }
 
-        /// Matière de bulle (cosmétique, purement visuelle).
+        /// Matière de bulle (cosmétique, purement visuelle). Toutes restent des
+    /// aplats : mate = la bulle par défaut, brillante = un reflet plat, verre =
+    /// aplat translucide cerclé de blanc, néon = liseré clair et halo plat.
+    /// À revoir avec l'écran Boutique (refonte 4.0).
         void ApplyMaterial()
         {
             switch (Material)
@@ -99,12 +120,15 @@ namespace TenGo.Rendering
             g.transform.localRotation = Quaternion.Euler(0, 0, -0.5f * Mathf.Rad2Deg);
         }
 
-        /// Bloc-obstacle inerte (case bloquée) : pierre pastel sans chiffre.
-        public static ShapeView MakeObstacle(Transform parent, Vector2 localPos, float cellSizePt, int order = 0)
+        /// Bloc-obstacle inerte (case bloquée) : carré arrondi pierre en aplat,
+        /// 86 % du diamètre d'une bulle, sans chiffre.
+        public static ShapeView MakeObstacle(Transform parent, Vector2 localPos, float cellSizePt, int order = 0,
+            float bubbleDiameterPt = 0f)
         {
-            float side = cellSizePt * 0.66f;
-            return ShapeView.Rect("Stone", parent, localPos, new Vector2(side, side), 13, Colors.White(0.80f),
-                Colors.White(0.62f, 0.8f), 1.5f, order);
+            if (bubbleDiameterPt <= 0f) bubbleDiameterPt = cellSizePt * (2f * RadiusPt / 84f);
+            float side = bubbleDiameterPt * 0.86f;
+            var fill = Look.Background.PerceivedLuminance() > 0.5f ? Design.Stone : Colors.White(0.80f);
+            return ShapeView.Rect("Stone", parent, localPos, new Vector2(side, side), side * 0.35f, fill, default, 0, order);
         }
 
         /// Fleur autonome (accueil, aperçus) : bulle `value` fleurie ×`power`, au rayon `radiusPt`.
@@ -119,24 +143,35 @@ namespace TenGo.Rendering
 
         // MARK: - Twists du défi du jour
 
-        /// Bulle ancrée : ne tombe pas. Repère sobre = petit point fixe sous le chiffre.
+        /// Bulle ancrée : ne tombe pas. Repère sobre = point encre fixe sous le chiffre.
         public void SetAnchored(bool anchored)
         {
             IsAnchored = anchored;
             if (!anchored) return;
-            ShapeView.Circle("Anchor", transform, Units.P(0, -_radius + 12), 4, Colors.White(0.45f, 0.9f), default, 0, Order + 2);
+            float r = _radius * (3f / 23.5f);
+            ShapeView.Circle("Anchor", transform, Units.P(0, -_radius + _radius * (5f / 23.5f) + r), r,
+                Look.Digit.WithAlpha(0.6f), default, 0, Order + 2);
         }
 
-        /// Bulle gelée : voile glacé translucide + chiffre atténué.
+        /// Bulle gelée : anneau blanc en pointillés, rentré de 3 pt.
         public void SetFrozen(bool frozen)
         {
             if (!frozen) return;
             IsFrozen = true;
             _frost = RenderShared.Node("Frost", transform);
             FxAlpha.Of(_frost.gameObject);
-            ShapeView.Circle("Ice", _frost, Vector2.zero, _radius, new Color(0.82f, 0.90f, 0.98f, 0.55f),
-                Colors.White(1, 0.7f), 2, Order + 1);
-            _digit.Alpha = 0.45f;
+            // Mesures de la maquette rapportées au rayon (bulle de 47 pt : retrait 3, trait 2,5).
+            float k = _radius / 23.5f;
+            float width = 2.5f * k, ringR = _radius - 3f * k - width / 2f;
+            var pts = new List<Vector2>();
+            const int n = StrokeView.MaxPoints - 1;
+            for (int i = 0; i <= n; i++)
+            {
+                float a = Mathf.PI / 2f + i * Mathf.PI * 2f / n;
+                pts.Add(Units.P(Mathf.Cos(a) * ringR, Mathf.Sin(a) * ringR));
+            }
+            var ring = StrokeView.Create("Ice", _frost, pts, Colors.White(1, 0.95f), width, Order + 1);
+            ring.SetDash(2.6f * k, 3.4f * k);
         }
 
         /// Fait fondre le givre (un chemin adjacent a été validé).
@@ -177,7 +212,7 @@ namespace TenGo.Rendering
             if (JuiceSettings.MotionEnabled)
                 Tw.Run(_corolla.gameObject, Tw.Forever(Tw.RotateBy(_corolla, Mathf.PI * 2f, 24f)));
 
-            var badge = RenderShared.Node("Badge", transform, Units.P(RadiusPt * 0.72f, RadiusPt * 0.72f));
+            var badge = RenderShared.Node("Badge", transform, Units.P(_radius * 0.72f, _radius * 0.72f));
             ShapeView.Circle("Disc", badge, Vector2.zero, 15, new Color(0.52f, 0.34f, 0.06f), Colors.White(1, 0.95f), 2, Order + 3);
             TenGoText.Create(badge, "×" + power, Fonts.AvenirHeavy, 14, Color.white, Vector2.zero, Order + 4);
         }
@@ -201,8 +236,7 @@ namespace TenGo.Rendering
             IsSelected = selected;
             if (selected)
             {
-                _circle.Stroke = Colors.White(1, 0.9f);
-                _circle.LineWidthPt = 2.5f;
+                ShowRing(true);
                 float t = Mathf.Clamp01(tension);
                 float target = 1.08f + 0.06f * t;
                 Tw.Run(gameObject, Tw.Scale(transform, target, 0.1f), "select");
@@ -213,12 +247,26 @@ namespace TenGo.Rendering
             }
             else
             {
-                // iOS remet le filet standard (assombri de 0,12, 1,5 pt) quelle que
-                // soit la matière : reproduit tel quel.
-                _circle.Stroke = _color.Darkened(0.12f);
-                _circle.LineWidthPt = 1.5f;
+                ShowRing(false);
+                _circle.Stroke = _baseStroke;
+                _circle.LineWidthPt = _baseLineWidth;
                 Tw.Run(gameObject, Tw.Scale(transform, 1f, 0.08f), "select");
             }
+        }
+
+        /// Anneau crème de 3 pt puis anneau encre de 3 pt autour du disque
+        /// (`box-shadow: 0 0 0 3px bg, 0 0 0 6px ink`), au-dessus des voisines.
+        void ShowRing(bool on)
+        {
+            if (!on) { if (_ring != null) _ring.gameObject.SetActive(false); return; }
+            if (_ring == null)
+            {
+                _ring = RenderShared.Node("Ring", transform);
+                float w = _radius * (3f / 23.5f);
+                ShapeView.Circle("Cream", _ring, Vector2.zero, _radius + w / 2f, Color.clear, Look.Background, w, Order + 3);
+                ShapeView.Circle("Ink", _ring, Vector2.zero, _radius + w * 1.5f, Color.clear, Design.Ink, w + 0.6f, Order + 3);
+            }
+            _ring.gameObject.SetActive(true);
         }
 
         // MARK: - Souffle (voisines d'une chaîne validée)

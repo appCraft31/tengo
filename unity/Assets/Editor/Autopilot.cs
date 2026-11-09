@@ -125,12 +125,12 @@ namespace TenGo.Editor
         /// Trace `path` comme un doigt ; `release` faux : le doigt reste posé.
         static void Drag(IReadOnlyList<Cell> path, bool release = true, int stepsPerCell = 4)
         {
-            var from = GameController.CellCenter(path[0]);
+            var from = Game.CellCenter(path[0]);
             _app.Input.InjectDown(from);
             Step();
             for (int i = 1; i < path.Count; i++)
             {
-                var to = GameController.CellCenter(path[i]);
+                var to = Game.CellCenter(path[i]);
                 for (int k = 1; k <= stepsPerCell; k++)
                 {
                     _app.Input.InjectMove(Vector2.Lerp(from, to, k / (float)stepsPerCell));
@@ -198,7 +198,7 @@ namespace TenGo.Editor
             Drag(path, release: false);
             Advance(0.1f);
             Shot("normal_2_path");
-            _app.Input.InjectUp(GameController.CellCenter(path[path.Count - 1]));
+            _app.Input.InjectUp(Game.CellCenter(path[path.Count - 1]));
             Step();
             Advance(0.12f);
             Shot("normal_3_commit");
@@ -240,6 +240,17 @@ namespace TenGo.Editor
             Advance(2.2f);
             Shot("daily_2_end");
             Report.Add($"Défi du jour : {moves} coups, score {Game.Score}");
+
+            // Les deux autres twists (jours suivants) : gel et ancres dessinés en aplat.
+            for (int d = 1; d <= 2; d++)
+            {
+                Boot();
+                var clock = new FixedClock(new DateTimeOffset(2026, 11, 9 + d, 10, 0, 0, TimeSpan.FromHours(1)), TimeZoneInfo.Utc);
+                var today = DailyChallenge.Make(clock);
+                Start(GameLaunch.ForDaily(today));
+                Advance(1.0f);
+                Shot("daily_twist_" + today.Twist.Id());
+            }
         }
 
         static void Rush()

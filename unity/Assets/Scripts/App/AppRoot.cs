@@ -235,6 +235,7 @@ namespace TenGo.App
         {
             if (!force && g.SameAs(Geometry)) return;
             Geometry = g;
+            Ui.Design.Apply(g);
             Camera.orthographicSize = g.OrthoSize;
             Shake.SetRest(new Vector3(0, 0, -10), g.OrthoSize);
             Current?.GeometryChanged(g);

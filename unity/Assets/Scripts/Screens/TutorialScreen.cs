@@ -14,13 +14,9 @@ namespace TenGo.Screens
     public sealed class TutorialScreen : ScreenBase
     {
         const int Z = 20;
-        static readonly Color Background = new(0.97f, 0.95f, 0.92f);
-        static readonly Color[] BubbleColors =
-        {
-            new(0.98f, 0.72f, 0.68f), new(0.99f, 0.84f, 0.70f), new(0.99f, 0.95f, 0.72f),
-            new(0.78f, 0.94f, 0.82f), new(0.72f, 0.88f, 0.98f), new(0.82f, 0.78f, 0.97f),
-            new(0.98f, 0.78f, 0.88f), new(0.80f, 0.91f, 0.80f), new(0.76f, 0.82f, 0.97f),
-        };
+        // Refonte 4.0 : fond crème et palette des bulles du thème par défaut (design/refonte/systeme.css).
+        static readonly Color Background = Ui.Design.BgHex;
+        static readonly Color[] BubbleColors = System.Array.ConvertAll(Ui.Design.BubblePaletteHex, h => Ui.Design.Hex(h));
         static readonly Color ButtonFill = new(0.94f, 0.91f, 0.88f);
         static readonly Color NextFill = new(0.82f, 0.95f, 0.88f);
 
@@ -40,34 +36,10 @@ namespace TenGo.Screens
         {
             _firstRun = firstRun;
             app.SetBackground(Background);
-            SetupBackground();
+            // Refonte 4.0 : fond uni, sans les bulles floues décoratives.
             SetupChrome();
             ShowStep(0, false);
         }
-
-        // MARK: - Fond animé
-
-        void SetupBackground()
-        {
-            var configs = new (float r, float x, float y, int c, float d)[]
-            {
-                (88, -280, 480, 0, 7.2f), (62, 260, 350, 4, 9.5f), (110, -180, -150, 6, 11.0f), (74, 310, -320, 1, 8.3f),
-                (96, -60, 560, 3, 10.1f), (54, 200, -500, 7, 6.8f), (80, -320, -480, 2, 12.4f), (68, 80, 200, 5, 9.0f),
-            };
-            foreach (var (r, x, y, c, d) in configs)
-            {
-                var b = RenderShared.Node("Bubble", Root, Units.P(x, y));
-                ShapeView.Circle("Disc", b, Vector2.zero, r, BubbleColors[c].WithAlpha(0.18f), default, 0, -10);
-                if (!JuiceSettings.MotionEnabled) continue;
-                var start = b.localPosition;
-                Tw.Run(b.gameObject, Tw.Forever(Tw.Seq(
-                    Tw.Custom(d, k => b.localPosition = start + (Vector3)Units.P(0, 18 * Ease(k))),
-                    Tw.Custom(d, k => b.localPosition = start + (Vector3)Units.P(0, 18 * (1 - Ease(k)))))));
-            }
-        }
-
-        /// `timingMode = .easeInEaseOut`.
-        static float Ease(float t) => t * t * (3f - 2f * t);
 
         // MARK: - Chrome fixe
 
