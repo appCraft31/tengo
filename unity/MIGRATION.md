@@ -8,7 +8,7 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
 |---|---|---|
 | 1 | Squelette : Unity 6000.6.8f1, URP 2D, Player Settings (identifiants des apps en ligne, 4.0.0), assemblies, verrou, polices Nunito, `GlowCircle`, scène de démo | ✅ fait |
 | 2 | Core en C# : grille, aléatoire Swift, génération, score, défi du jour, puzzles, miroir, graines, progression, économie, fin de partie + tests portés de Kotlin | ✅ fait |
-| 3 | Reprise des données des apps natives (UserDefaults iOS, DataStore et SharedPreferences Android) | à faire |
+| 3 | Reprise des données des apps natives (UserDefaults iOS, DataStore et SharedPreferences Android) + sauvegarde fichier JSON | ✅ fait (reste la vérification sur appareil, étape 9) |
 | 4 | Rendu (bulles, relief, tracés, thèmes, effets) et audio synthétisé | à faire |
 | 5 | Partie (`GameScene` : 6 modes, boosters, sauvegarde, fin de partie) | à faire |
 | 6 | Écrans (menu, boutique, profil, missions, succès, miroir, duel, puzzles, classement, réglages, tutoriel) | à faire |
@@ -64,5 +64,73 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
   - La graine d'un duel reste un `long` (comme Kotlin).
   - Arrondi Swift `.rounded()` = `MidpointRounding.AwayFromZero` ; tri stable (`OrderBy`) là où Swift trie.
   - Les dépôts lisent et écrivent exactement les formats d'iOS : la reprise des données natives (étape 3) n'aura qu'à recopier les valeurs.
-- **Reste pour la suite** : lecture des UserDefaults / DataStore natifs (étape 3), `ScalesTest` et rendu (étape 4), implémentation d'`ISaveStore` sur `PlayerPrefs` ou fichier (étape 3), analytics réelles derrière `IGameAnalytics` (étape 7), coûts et achats réels de la boutique (étape 7).
+- **Reste pour la suite** : lecture des UserDefaults / DataStore natifs (étape 3), `ScalesTest` et rendu (étape 4), analytics réelles derrière `IGameAnalytics` (étape 7), coûts et achats réels de la boutique (étape 7).
 - **Point d'entrée prévu pour l'étape 5** : la scène de jeu compose les dépôts autour d'un même `ISaveStore` et d'une `IClock` système, puis appelle `GameEndCoordinator` : `OnGameStarted(mode)` au début, `OnChainCommitted` / `OnBonusScored` / `OnRushBoardCleared` en cours de partie, `OnGameEnded(GameEndInput)` à la fin (avec `ContinuedFrom` après « Continuer »). La grille vient de `GridModel.Generate`, `DailyChallenge.Make(clock)`, `PuzzleLevel.MakeGrid()` ou `GameStateRepository.Load()`.
+
+## Notes de l'étape 3
+
+- **Sauvegarde Unity** : `Platform/JsonFileSaveStore` (assembly `TenGo`), fichier `tengo_save.json` dans `Application.persistentDataPath`, format `SaveStoreJson` (Core) `{"format":1,"values":{…}}`.
+  - Écriture atomique : `.tmp` vidé sur disque puis `File.Replace` (l'ancienne version passe en `.bak`).
+  - Lecture : fichier principal, puis `.bak`, puis `.tmp`. Un fichier illisible est renommé en `.corrupt-<horodatage>`. Si rien n'est lisible, on repart à vide, ce qui relance la reprise des données natives.
+  - Écriture sur `Flush()` seulement (`Dirty` indique s'il reste des changements). **Étape 5** : appeler `Flush()` en fin de partie, sur `OnApplicationPause(true)` et à la fermeture.
+  - Jamais de `PlayerPrefs` pour nos données : sur iOS, ils vivent dans les mêmes `standardUserDefaults` que l'app native.
+- **Reprise** (`Core/Legacy`, sans UnityEngine) :
+  - `LegacyMigration.Run` passe une seule fois. Il pose le marqueur `unity_migratedFromNative`, avec `…Version` (`Application.version`) et `…Source` (`ios` ou `android`), y compris quand il n'y a rien à reprendre.
+  - Il ne touche jamais aux données natives : lecture seule, aucun effacement, donc retour arrière possible vers la 3.3.0.
+  - Il ne remplace jamais une valeur Unity déjà présente.
+  - Il journalise un bilan qui ne cite que des noms de clés, jamais leurs valeurs.
+  - Une lecture qui échoue est retentée au lancement suivant, au plus 3 fois (`unity_migrationAttempts`), puis abandonnée.
+- **Point d'entrée** : `Platform/Legacy/LegacyBootstrap.Run(store)`, à appeler au démarrage (étape 5), juste après `JsonFileSaveStore.OpenDefault()` et **avant** tout dépôt qui écrit une valeur par défaut (`FirstRunState.Bootstrap`…). En éditeur, la variable `TENGO_LEGACY_FIXTURE` peut désigner un dossier de fixtures (disposition Android ou `ios.json`).
+- **Schéma cible** : `LegacySchema` liste les 50 clés iOS et les 3 préfixes, avec leur type. Toute valeur y est ramenée (booléen stocké en entier, nombre en chaîne, `Data` JSON vers une chaîne validée, `NSDate` vers des secondes Swift).
+- **iOS** :
+  - `Plugins/iOS/TenGoLegacy.mm` lit le domaine persistant de l'app (`persistentDomainForName:bundleIdentifier`), limité aux clés et préfixes demandés (`IosLegacyImporter.RequestJson`). Il renvoie un JSON typé : `bool` (CFBoolean), `int` ou `double` (selon `objCType`), `date`, `data` (UTF-8), `bytes` (base64), `array`.
+  - Si la sérialisation échoue, il renvoie un JSON invalide exprès : la lecture compte alors comme un échec à retenter, et non comme « aucune donnée ».
+  - Le greffon est compilé avec `-fobjc-arc` (meta), mais il fonctionne aussi sans ARC.
+  - Il a été vérifié sous macOS avec un banc d'essai : sa sortie est identique aux fixtures, et les clés étrangères sont exclues.
+- **Android** : `AndroidLegacyPaths` obtient par JNI `getFilesDir()` et `getDataDir()/shared_prefs`. `Application.persistentDataPath` n'est pas le dossier interne `files/`. `AndroidFilesLegacySource` lit ensuite les trois fichiers :
+  - `files/datastore/tengo.preferences_pb` ;
+  - `shared_prefs/tengo_first_run.xml` ;
+  - `shared_prefs/tengo_ads.xml`.
+- **Décodeurs** :
+  - `DataStorePreferencesDecoder` décode le protobuf `PreferenceMap` (champs 1 à 8 : booléen, float, int32, int64, chaîne, ensemble de chaînes, double, octets). Le schéma a été vérifié sur `datastore-preferences-proto` 1.1.7.
+  - `SharedPreferencesXmlDecoder` lit `int`, `long`, `float`, `boolean`, `string`, `set` et `null`, avec résolution des entités.
+- **Correspondance Android → iOS** (`AndroidLegacyImporter.Rules`, chaque clé Kotlin a une règle, test `EveryKotlinKeyHasARule`) :
+
+| Clé Kotlin | Conversion |
+|---|---|
+| Réglages, tutoriel, guide boutique, pièces, XP, stats, missions, défi du jour, boucliers, paliers, boosters `tenGO_booster_*`, coach-marks `tenGO_boosterCoachSeen_*`, étoiles `tenGO_puzzleStars_*`, thème/style/tracé actifs, `tenGO_noAdsPurchased`, `tenGO_seedFlowerExplained`, notifications | identique (mêmes noms, mêmes types) |
+| `tengo_high_scores`, `tengo_rush_high_scores` (CSV) | tableau d'entiers |
+| `tenGO_duelHistory` (CSV) | tableau de chaînes (vides retirées, ordre gardé) |
+| `tenGO_achievementsUnlocked`, `tenGO_ownedThemes`, `tenGO_ownedBubbleStyles`, `tenGO_ownedTrails` (ensembles) | tableaux triés |
+| `tenGO_streakLastPlayed` (jour epoch en chaîne) | minuit local de ce jour, en secondes Swift (fuseau de l'appareil) |
+| `tenGO_mirrorData` (une clé, ms) | `tenGO_mirrorRecords` + `tenGO_mirrorPartitions` (secondes Swift) |
+| `tenGO_seedGarden` `{plantedAtMs, chain, bloomAtMs}` | `{plantedAt, chain, bloomAt}` (secondes Swift) |
+| `tengo_saved_game` (avec `id` par bulle et `mode`) | JSON iOS (relu puis réécrit par `SavedGame`) ; un mode autre que `normal` est ignoré |
+| `tenGO_rewardedDayKey`, `tenGO_rewardedCount` | `tenGO_rewardedDay`, `tenGO_rewardedDayCount` |
+| `tengo_first_run.xml` : `tenGO_firstOpenAt` (ms) | secondes Swift ; état et `firstGameStartLogged` identiques |
+| `tengo_ads.xml` : `AdMob.interstitialLastShownAt` (ms, 0 = jamais) | secondes Swift, omis si 0 ; `interstitialsTodayDay` entier → chaîne `AAAAMMJJ` ; compteurs identiques |
+
+- **Clés ignorées** :
+  - `tenGO_noAdsBonusGranted` : Kotlin note « bonus déjà versé », alors qu'iOS ne garde qu'un drapeau « bonus en attente » (achat différé). Sur Android, le bonus est versé avec l'achat, donc il n'y a jamais rien en attente à reprendre.
+  - Côté iOS, toutes les clés hors schéma (consentement `IABTCF_*`, Firebase, `PlayerPrefs`) sont ignorées : UMP et Firebase relisent eux-mêmes leurs données natives.
+  - Toute clé inconnue est ignorée et signalée dans le bilan.
+- **Fixtures** (`Assets/Tests/EditMode/Fixtures/Legacy`) :
+  - `android/emulator` : **réelles**. App Android 3.3.0, variante `qa` (`com.appcraft31.tengo.test`), sur emulator-5554, avec `tengo_seed`, `tengo_qa_mirror` et `tengo_qa_seed`, puis des parties terminées, une vidéo « Continuer » et une partie laissée en cours. Récupérées par `run-as`. L'app a ensuite été désinstallée.
+  - `android/complete` : le DataStore est **fabriqué avec les classes protobuf de DataStore 1.1.7** (petit programme Java hors dépôt) et contient toutes les clés de `Prefs.kt`, plus des clés `zz_*` pour chaque type protobuf. Les XML sont **écrits à la main** au format Android (entités, `set`, `float`, `null`).
+  - `ios/lived.json` : **réel**. UserDefaults de l'app iOS (build 281) déjà installée sur le simulateur iPhone 16 Pro Max, lus sans y toucher.
+  - `ios/seeded.json` : **réel**. Même build installé sur le simulateur iPhone 16e et lancé avec `SCREENSHOT_SEED_DATA=1`, `QA_MIRROR=1` et `QA_SEED=grow:7`, puis désinstallé.
+  - Les deux fixtures iOS ont été converties du plist au format du greffon.
+  - Aucune donnée personnelle dans les fixtures.
+- **Tests** : 28 nouveaux tests EditMode, soit **145** en tout, tous verts (PlayMode : 1).
+  - Décodage protobuf et XML.
+  - Conversion Android, puis relecture par les dépôts de Core : pièces, boosters, XP, série, stats, succès, missions, puzzles, duels, thèmes, cosmétiques, miroir, graine, partie en cours, réglages, premier lancement, pubs.
+  - Import iOS et normalisation des types.
+  - Idempotence, non-écrasement, absence de données natives, échecs retentés puis abandonnés.
+  - Fichiers natifs inchangés, journal sans valeurs.
+  - Fichier de sauvegarde corrompu ou interrompu.
+- **Reste à vérifier sur appareil (étape 9)**, en installant la 4.0.0 par-dessus une 3.3.0 qui a des données :
+  - iOS : le greffon dans un vrai build Xcode (ARC, `__Internal`, libération de la chaîne par le marshalling IL2CPP) ; `persistentDomainForName` sur l'appareil.
+  - Android : l'appel JNI (`getFilesDir`, `getDataDir`) sous IL2CPP. Les branches `UNITY_ANDROID` et `UNITY_IOS` n'ont pas été compilées ici (cible éditeur seulement) : à compiler au premier build de l'étape 8.
+  - Android : vérifier que `getFilesDir()` d'Unity est bien `/data/data/com.appcraft31.tengo/files`.
+  - Firebase (Auth anonyme des duels, Analytics), UMP et Play Games / Game Center : les SDK Unity reposent sur les SDK natifs et retrouvent leurs propres données. À confirmer à l'étape 7.
+  - Retour arrière : réinstaller la 3.3.0 après la 4.0.0 doit retrouver les données natives intactes.
