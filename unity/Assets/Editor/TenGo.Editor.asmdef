@@ -1,0 +1,7 @@
+{
+  "name": "TenGo.Editor",
+  "rootNamespace": "TenGo.Editor",
+  "references": ["TenGo", "TenGo.Core", "Unity.TextMeshPro", "Unity.RenderPipelines.Universal.Runtime", "Unity.RenderPipelines.Core.Runtime"],
+  "includePlatforms": ["Editor"],
+  "autoReferenced": false
+}

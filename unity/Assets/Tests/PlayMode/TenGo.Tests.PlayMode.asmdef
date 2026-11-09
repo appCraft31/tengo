@@ -1,0 +1,9 @@
+{
+  "name": "TenGo.Tests.PlayMode",
+  "rootNamespace": "TenGo.Tests",
+  "references": ["TenGo", "TenGo.Core", "Unity.TextMeshPro", "UnityEngine.UI", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll"],
+  "autoReferenced": false,
+  "defineConstraints": ["UNITY_INCLUDE_TESTS"]
+}
