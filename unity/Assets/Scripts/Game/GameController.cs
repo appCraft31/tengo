@@ -234,6 +234,11 @@ namespace TenGo.Game
             DidMove();
         }
 
+        /// Gamme et tonalité de la partie, déduites de la grille de départ : une
+        /// grille partagée (défi du jour, duel, puzzle, démo) sonne pareil pour tous.
+        void BeginGameSound() => SoundManager.Shared.BeginGame(Scales.GridHash(_grid),
+            Kind is GameModeKind.Daily or GameModeKind.Duel or GameModeKind.Puzzle or GameModeKind.Demo);
+
         void SceneDidLoad()
         {
             _app.SetBackground(Look.Background);
@@ -277,6 +282,8 @@ namespace TenGo.Game
                 PlantBloomedFlowerIfAny();
             }
             SetupGrid();
+            // Son 4.0 : nouvelle partie, nouvelle gamme (pas au retour de la boutique).
+            if (!_resuming) BeginGameSound();
 
             // En démo : pas d'effets de bord, boutons parasites masqués, auto-player.
             if (Kind == GameModeKind.Demo)

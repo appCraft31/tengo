@@ -23,7 +23,7 @@ namespace TenGo.Editor
             {
                 var engine = new SynthEngine(Rate);
                 double now = 100;
-                var board = new SoundBoard(engine, () => now);
+                var board = new SoundBoard(engine, () => now, seed: 7);
                 var pcm = new System.Collections.Generic.List<float>();
                 // `advance(s)` : rend s secondes et fait avancer l'horloge du throttle.
                 void Advance(double s) { pcm.AddRange(engine.RenderMono(s)); now += s; }
@@ -56,7 +56,7 @@ namespace TenGo.Editor
                 }
                 b.PlayCombo(path.Length);
             });
-            foreach (var len in new[] { 2, 4, 6 })
+            foreach (var len in new[] { 2, 4, 5, 6, 7 })
             {
                 int l = len;
                 Export($"combo_{l}", 2.5, (b, adv) => { b.PlaySelect(5); adv(0.3); b.PlayCombo(l); });
@@ -65,7 +65,7 @@ namespace TenGo.Editor
             Export("win", 3.5, (b, adv) => b.PlayWin());
             Export("lose", 3.0, (b, adv) => b.PlayLose());
             // Huit notes à la fois : saturation des voix et du mélange.
-            Export("eight_voices", 3.0, (b, adv) => b.PlayChord(Scales.Notes[..8], 1f));
+            Export("eight_voices", 3.0, (b, adv) => b.PlayChord(Scales.NotesFor(0)[..8], 1f));
 
             var reportPath = Path.GetFullPath(Path.Combine(Dir, "report.txt"));
             File.WriteAllText(reportPath, report.ToString());

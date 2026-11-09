@@ -14,6 +14,7 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
 | 6 | Écrans (menu, boutique, profil, missions, succès, miroir, duel, puzzles, classement, réglages, tutoriel) | ✅ fait (achats, pubs, consentement et Game Center simulés jusqu'à l'étape 7) |
 | 7 | Services : AdMob + UMP/ATT + médiation, Unity IAP, Firebase (Analytics, Auth, Firestore), Game Center / Play Games, notifications, avis, partage, haptique, liens profonds | ✅ fait (intégration locale ; vérifications sur appareil et en console listées ci-dessous) |
 | R | Refonte visuelle 4.0 (direction A « plat crème ») | faite : tous les écrans, thèmes payants recalculés, tutoriel jouable et cadeau de bienvenue (voir « Refonte visuelle (4.0) ») |
+| S | Son 4.0 (kalimba, gammes tournantes) | fait (voir « Son (4.0) ») ; reste l'écoute sur appareil |
 | 8 | Builds signés (AAB, projet Xcode), fastlane iOS, `.play-deploy.json` | à faire |
 | 9 | Recette (mise à jour par-dessus la 3.3.0) puis publication simultanée, sur accord de l'utilisateur | à faire |
 | 10 | Gel des apps natives `ios/` et `android/` | à faire |
@@ -460,3 +461,41 @@ Décision de l'utilisateur (9 nov. 2026) : la 4.0 sort avec la nouvelle interfac
 - Le Défi du jour n'a ni boosters ni bouton Rejouer, comme sur iOS ; la maquette les montre.
 - Le décompte de début de Rush est conservé.
 - Sur un écran haut (440 pt de large), l'espace vertical sous la grille est plus grand que sur les 390 pt de la maquette.
+
+## Son (4.0)
+
+Décision de l'utilisateur (9 nov. 2026) : la 4.0 abandonne le son de la 3.3.0 (sinus étouffé, gamme fixe en La) pour la **variante B** des maquettes, **kalimba + gammes tournantes, sans nappe d'accords** (ni marimba). Référence : le script de maquette `render.py` (variante `B`), dont l'extrait a été validé à l'écoute. Le moteur reste un synthé maison sans fichier audio (`Scripts/Audio`, `Core/Audio`).
+
+**Règles** :
+1. **Timbre kalimba** pour toutes les notes (`SynthVoice`, `VoiceKind`) : corps sinus en exp −5,5/s (notes courtes, 1,2 s) ou −2,6/s (longues, 2,4 s), « lame » à 5,4 × f (0,35, exp −28/s), clic à 9,1 × f (0,25, exp −90/s), attaque 3 ms, gain 0,55. Partiels par phaseurs (aucun sinus ni exponentielle par échantillon, aucune allocation), vol de voix sans claquement (écart résorbé en 2 ms). **12 voix** au lieu de 8 : la victoire superpose 7 notes et 3 cloches.
+2. **Gammes tournantes** : 10 palettes, pentatonique majeure ou mineure sur les racines Fa 174,6 / Sol 196 / La♭ 207,7 / La 220 / Si♭ 233,1 Hz (`Scales.Palettes`, 15 notes sur trois octaves). Le chiffre v joue `N[v − 1]` de la palette de la partie ; la tension ≥ 0,8 monte d'une octave.
+3. **Humanisation** : ±8 cents et vélocité ×[0,85 ; 1,05] par note (notes du tracé et arpèges de chaîne) ; première bulle à 80 % (0,36).
+4. **Anti-saturation** : au plus une note sous le doigt toutes les **70 ms**.
+5. **Bulle refusée** : « tok » mat (sinus 150 Hz, exp −40/s, 120 ms), plus de note grave à 110 Hz.
+6. **Chaîne validée** : arpège montant de 2 à 7 notes selon la longueur (départ `N[5]`, ou `N[7]` à partir de 5 ; degrés +0 +2 +4 +5 +7 +9 plafonnés à `N[14]`), pas de 45 ms (60 ms à partir de 5), résolu sur la tonique `N[5]` (`N[10]` à partir de 6) ; à partir de 6 bulles, une cloche `N[10]` (partiels 1 / 2,76 / 5,4 / 8,9) après l'arpège.
+7. **Victoire / record** : arpège `N[5..10], N[12]` à 70 ms, puis cloches `N[10]`, `N[12]`, `N[14]` à 0,55 s, 0,67 s et 0,79 s.
+8. **Défaite** : `N[4]`, `N[2]`, `N[0]` à 220 ms d'écart, sans note grave isolée ; vibration légère conservée.
+9. **Mixage** (`SynthEngine`) : passe-bas 5 kHz, réverbération à 4 peignes de render.py (29,7 / 37,1 / 41,1 / 43,7 ms × 1,3, rétroaction 0,78, 22 %), gain final **0,62**, puis limiteur doux (transparent sous 0,8, plafond 0,98). render.py sort à 0,70, mais l'extrait validé avait été ramené au niveau de l'ancien son (−21,6 dBFS RMS sur la séquence) ; 0,62 redonne ce niveau.
+10. « Son coupé » et le reste du comportement sont inchangés : notes différées annulées à la coupure, haptique de défaite, `PlayBacktrack` / `CancelPath`.
+
+**Règle de rotation** (`Scales.PaletteForGame`, appelée par `GameController.BeginGameSound` à chaque nouvelle partie et à « Rejouer », pas au retour de la boutique) :
+- la palette vaut `GridHash(grille de départ) mod 10` (FNV-1a 64 bits sur les valeurs et les cases bloquées, puis mélange SplitMix64) ;
+- **grille partagée** (défi du jour, duel, puzzle, démo) : palette prise telle quelle, donc la même pour tous les joueurs et sur toutes les plateformes ; rejouer le même défi garde sa gamme ;
+- **grille aléatoire** (partie classique, Rush, reprise d'une sauvegarde) : si elle retombe sur la palette de la partie précédente, on prend la suivante, donc le son change à chaque partie ;
+- dans une partie, la palette ne bouge plus (les nouvelles grilles du Rush non plus).
+
+**Contrôle** : `Tools/unity.sh TenGo.Editor.SoundPreview.Render` rejoue par le vrai moteur la séquence de render.py (deux parties : Sol majeur gagnée, Si♭ mineur perdue ; `Audio/SoundSequence`) dans `Logs/sound/preview.wav`. `RenderDry` fait la même chose sans humanisation (`preview_dry.wav`). Mesures sur 42,2 s :
+
+| Rendu | RMS | Crête | Centroïde spectral | 300–1000 Hz | 1–3 kHz |
+|---|---|---|---|---|---|
+| `son_B.wav` (extrait validé) | −21,6 dBFS | −5,35 dBFS | 614 Hz | 80,3 % | 7,9 % |
+| `preview.wav` (moteur C#) | −21,5 dBFS | −3,98 dBFS | 625 Hz | 79,4 % | 8,4 % |
+| ancien son (`son_A.wav`) | −21,6 dBFS | −4,68 dBFS | 426 Hz | 68,3 % | 0,9 % |
+
+Sans humanisation et à gain final égal (0,70), render.py et le moteur C# coïncident : corrélation des enveloppes de 50 ms à 0,9999, écart de 0,2 dB au plus par demi-seconde. Avec le gain de 0,62, il reste un décalage constant de −1,05 dB. Avec humanisation, l'aléatoire diffère, d'où une corrélation de 0,94 et une crête plus haute de 1,4 dB, toujours sous le seuil du limiteur. `AudioExport.All` exporte aussi chaque son isolément.
+
+**Tests** :
+- `ScalesTests` : palettes, pentatoniques, une note par chiffre, rotation déterministe ;
+- `SynthTests` : throttle de 70 ms, humanisation bornée, arpège selon la chaîne, cloche à partir de 6, victoire, défaite, tok, coupure du son, vol de voix sans claquement, séquence type sans saturation et au niveau de l'ancien son.
+
+**À vérifier sur appareil** : écoute sur haut-parleur de téléphone (les graves de 175 Hz y passent mal, la lame et le clic portent la note), coût CPU des 12 voix à 48 kHz sur un appareil d'entrée de gamme.

@@ -62,6 +62,7 @@ namespace TenGo.Game
                     PlantBloomedFlowerIfAny();
                 }
                 SetupGridAnimated();
+                BeginGameSound();
                 _lastResult = null;
                 _endRecorded = false;
                 _secondChanceUsed = false;

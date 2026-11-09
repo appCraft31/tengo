@@ -34,7 +34,7 @@ Sans ça, un duel ou un défi du jour donnerait une grille différente selon la 
 | `touchesBegan/Moved/Ended` | Input System (`EnhancedTouch`), souris en éditeur |
 | `UserDefaults.standard` / DataStore | `ISaveStore` dans Core, fichier JSON dans `Application.persistentDataPath` |
 | `L("clé")` / `Localizable.xcstrings` | `Loc.T("clé")`, `Resources/Localization/strings.json` généré depuis le `.xcstrings` |
-| `SoundManager` (AVAudioEngine, 8 voix synthétisées) | Synthé `OnAudioFilterRead`, repris de `Sfx` dans Orbis et réglé sur la gamme pentatonique de `Scales.kt` |
+| `SoundManager` (AVAudioEngine, 8 voix synthétisées) | Synthé `OnAudioFilterRead`, repris de `Sfx` dans Orbis ; depuis le son 4.0, kalimba et gammes tournantes (`Scales`, voir MIGRATION.md) |
 | `HapticManager` | `IHaptics` |
 | Game Center / Play Games, StoreKit / Play Billing, AdMob, Firebase | Services derrière des interfaces, avec une version simulée en éditeur |
 

@@ -2,96 +2,162 @@ using System;
 
 namespace TenGo.Audio
 {
-    /// Voix polyphonique (classe `Voice` de SoundManager.swift, Voice.kt) :
-    /// oscillateur 85 % sinus + 15 % triangle, enveloppe ADSR. Deux profils :
-    /// long (accords, victoire) 0,05 / 0,20 / maintien 0,25 / 2,00 s ; court
-    /// (notes du tracé) 0,03 / 0,10 / 0,03 / 0,35 s. Palier 0,3, gain 0,6.
-    /// Aucune allocation par échantillon.
+    /// Timbres du synthé (son 4.0, variante kalimba validée le 9 nov. 2026).
+    public enum VoiceKind
+    {
+        /// Kalimba courte (notes sous le doigt) : corps en exp −5,5/s, 1,2 s.
+        KalimbaShort,
+        /// Kalimba longue (arpèges, victoire, défaite) : corps en exp −2,6/s, 2,4 s.
+        KalimbaLong,
+        /// Cloche : partiels 1 / 2,76 / 5,4 / 8,9, 3 s.
+        Bell,
+        /// « Tok » mat de la bulle refusée : sinus 150 Hz en exp −40/s, 120 ms.
+        Tok,
+    }
+
+    /// Voix polyphonique à partiels sinusoïdaux décroissants (render.py, variante B) :
+    /// - kalimba : corps 1 × f, « lame » 5,4 × f (0,35, exp −28/s), clic 9,1 × f
+    ///   (0,25, exp −90/s), attaque 3 ms, gain 0,55 ;
+    /// - cloche : (1, 1, −1,2/s), (0,5, 2,76, −2,5/s), (0,3, 5,4, −4/s), (0,15, 8,9, −7/s),
+    ///   attaque 2 ms, gain 0,3 ;
+    /// - tok : 150 Hz, exp −40/s, gain 0,5.
+    /// Chaque partiel est un phaseur tourné à chaque échantillon et une
+    /// enveloppe multipliée par un facteur constant : aucun sinus ni aucune
+    /// exponentielle calculés par échantillon, aucune allocation. Un partiel
+    /// au-delà de 0,45 × la fréquence d'échantillonnage est omis (repliement).
+    /// Un vol de voix ne claque pas : l'écart avec la dernière valeur sortie
+    /// s'éteint en ~2 ms.
     public sealed class SynthVoice
     {
-        enum Stage { Idle, Attack, Decay, Sustain, Release }
-
-        public const float SustainLevel = 0.3f;
-        public const float VoiceGain = 0.6f;
+        public const int MaxPartials = 4;
+        public const float KalimbaGain = 0.55f;
+        public const float BellGain = 0.30f;
+        public const float TokGain = 0.50f;
+        /// Fondu de fin (la référence coupe net à la durée du timbre).
+        const double EndFade = 0.005;
 
         readonly double _sampleRate;
-        readonly int[] _long, _short;
-        int _attack, _decay, _hold, _release;
-        Stage _stage = Stage.Idle;
-        double _phase, _phaseIncrement;
-        int _sampleIndex;
-        float _currentEnv, _attackStartEnv, _velocity = 1f;
+        readonly double[] _re = new double[MaxPartials], _im = new double[MaxPartials];
+        readonly double[] _cos = new double[MaxPartials], _sin = new double[MaxPartials];
+        readonly double[] _amp = new double[MaxPartials], _decay = new double[MaxPartials];
+        readonly double _declickMul;
+        int _partials;
+        int _sampleIndex, _length, _attack, _fadeStart;
+        double _gain, _declick;
+        float _last;
 
         public bool IsActive { get; private set; }
         /// Ordre de déclenchement (vol de la plus ancienne voix).
         public long StartTime { get; private set; }
         public double Frequency { get; private set; }
-        public float Velocity => _velocity;
-        public bool IsShort { get; private set; }
+        public float Velocity { get; private set; }
+        public VoiceKind Kind { get; private set; }
+        public bool IsShort => Kind == VoiceKind.KalimbaShort || Kind == VoiceKind.Tok;
 
         public SynthVoice(double sampleRate)
         {
             _sampleRate = sampleRate;
-            _long = new[] { S(0.05), S(0.20), S(0.25), S(2.00) };
-            _short = new[] { S(0.03), S(0.10), S(0.03), S(0.35) };
-            (_attack, _decay, _hold, _release) = (_long[0], _long[1], _long[2], _long[3]);
+            _declickMul = Math.Exp(-1.0 / (0.002 * sampleRate));
         }
 
-        int S(double seconds) => Math.Max(1, (int)(seconds * _sampleRate));
-
-        /// Déclenche une note. Phase conservée et attaque partant du niveau
-        /// courant : un vol de voix ne claque pas.
-        public void NoteOn(double frequency, long now, float velocity = 1f, bool isShort = false)
+        /// Durée du timbre en secondes (comme les tampons de render.py).
+        public static double DurationOf(VoiceKind kind) => kind switch
         {
-            var p = isShort ? _short : _long;
-            (_attack, _decay, _hold, _release) = (p[0], p[1], p[2], p[3]);
-            _velocity = Math.Max(0f, Math.Min(1f, velocity));
-            _phaseIncrement = frequency / _sampleRate;
-            _attackStartEnv = _currentEnv;
-            _sampleIndex = 0;
-            _stage = Stage.Attack;
-            StartTime = now;
+            VoiceKind.KalimbaShort => 1.2,
+            VoiceKind.KalimbaLong => 2.4,
+            VoiceKind.Bell => 3.0,
+            _ => 0.12,
+        };
+
+        public void NoteOn(double frequency, long now, float velocity = 1f, bool isShort = false) =>
+            NoteOn(isShort ? VoiceKind.KalimbaShort : VoiceKind.KalimbaLong, frequency, now, velocity);
+
+        public void NoteOn(VoiceKind kind, double frequency, long now, float velocity)
+        {
+            // Vol de voix : on part de la dernière valeur sortie pour éviter le claquement.
+            _declick = _last;
+            Kind = kind;
             Frequency = frequency;
-            IsShort = isShort;
+            Velocity = Math.Max(0f, Math.Min(1f, velocity));
+            StartTime = now;
+            _partials = 0;
+            switch (kind)
+            {
+                case VoiceKind.KalimbaShort:
+                case VoiceKind.KalimbaLong:
+                    AddPartial(frequency, 1.0, kind == VoiceKind.KalimbaShort ? 5.5 : 2.6);
+                    AddPartial(frequency * 5.4, 0.35, 28);
+                    AddPartial(frequency * 9.1, 0.25, 90);
+                    _gain = KalimbaGain;
+                    _attack = Samples(0.003);
+                    break;
+                case VoiceKind.Bell:
+                    AddPartial(frequency, 1.0, 1.2);
+                    AddPartial(frequency * 2.76, 0.5, 2.5);
+                    AddPartial(frequency * 5.4, 0.3, 4);
+                    AddPartial(frequency * 8.9, 0.15, 7);
+                    _gain = BellGain;
+                    _attack = Samples(0.002);
+                    break;
+                default:
+                    AddPartial(frequency, 1.0, 40);
+                    _gain = TokGain;
+                    _attack = 1;
+                    break;
+            }
+            _gain *= Velocity;
+            _length = Samples(DurationOf(kind));
+            _fadeStart = _length - Samples(EndFade);
+            _sampleIndex = 0;
             IsActive = true;
+        }
+
+        int Samples(double seconds) => Math.Max(1, (int)(seconds * _sampleRate));
+
+        void AddPartial(double freq, double amp, double decayPerSecond)
+        {
+            if (freq <= 0 || freq > 0.45 * _sampleRate) return;
+            int i = _partials++;
+            double w = 2.0 * Math.PI * freq / _sampleRate;
+            _cos[i] = Math.Cos(w);
+            _sin[i] = Math.Sin(w);
+            _re[i] = 1.0;   // phaseur (cos, sin) : départ à sin 0
+            _im[i] = 0.0;
+            _amp[i] = amp;
+            _decay[i] = Math.Exp(-decayPerSecond / _sampleRate);
         }
 
         public float NextSample()
         {
-            if (_stage == Stage.Idle) return 0f;
-            float env;
-            switch (_stage)
+            if (!IsActive)
             {
-                case Stage.Attack:
-                    env = _attackStartEnv + (float)_sampleIndex / _attack * (1f - _attackStartEnv);
-                    if (++_sampleIndex >= _attack) { _stage = Stage.Decay; _sampleIndex = 0; }
-                    break;
-                case Stage.Decay:
-                    env = 1f - (float)_sampleIndex / _decay * (1f - SustainLevel);
-                    if (++_sampleIndex >= _decay) { _stage = Stage.Sustain; _sampleIndex = 0; }
-                    break;
-                case Stage.Sustain:
-                    env = SustainLevel;
-                    if (++_sampleIndex >= _hold) { _stage = Stage.Release; _sampleIndex = 0; }
-                    break;
-                default:
-                    env = SustainLevel * (1f - (float)_sampleIndex / _release);
-                    if (++_sampleIndex >= _release)
-                    {
-                        _stage = Stage.Idle;
-                        IsActive = false;
-                        _currentEnv = 0f;
-                        return 0f;
-                    }
-                    break;
+                if (_declick == 0.0) return _last = 0f;
+                _declick *= _declickMul;
+                if (Math.Abs(_declick) < 1e-6) _declick = 0.0;
+                return _last = (float)_declick;
             }
-            _currentEnv = env;
-            float sine = (float)Math.Sin(_phase * 2.0 * Math.PI);
-            float tri = (float)(4.0 * Math.Abs(_phase - 0.5) - 1.0);
-            float mixed = sine * 0.85f + tri * 0.15f;
-            _phase += _phaseIncrement;
-            if (_phase >= 1.0) _phase -= 1.0;
-            return mixed * env * VoiceGain * _velocity;
+            double s = 0.0;
+            for (int i = 0; i < _partials; i++)
+            {
+                s += _amp[i] * _im[i];
+                double re = _re[i] * _cos[i] - _im[i] * _sin[i];
+                _im[i] = _re[i] * _sin[i] + _im[i] * _cos[i];
+                _re[i] = re;
+                _amp[i] *= _decay[i];
+            }
+            // Renormalisation périodique des phaseurs (dérive numérique).
+            if ((_sampleIndex & 1023) == 1023)
+                for (int i = 0; i < _partials; i++)
+                {
+                    double n = 1.0 / Math.Sqrt(_re[i] * _re[i] + _im[i] * _im[i]);
+                    _re[i] *= n; _im[i] *= n;
+                }
+            double env = _sampleIndex < _attack ? _sampleIndex / (double)_attack : 1.0;
+            if (_sampleIndex >= _fadeStart) env *= Math.Max(0.0, (_length - _sampleIndex) / (double)(_length - _fadeStart));
+            double o = s * env * _gain + _declick;
+            _declick *= _declickMul;
+            if (++_sampleIndex >= _length) IsActive = false;
+            return _last = (float)o;
         }
     }
 }
