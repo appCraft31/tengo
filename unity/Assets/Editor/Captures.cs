@@ -122,7 +122,11 @@ namespace TenGo.Editor
         }
 
         /// Rend `cam` en `width` × `height` et écrit le PNG ; retourne son chemin.
-        public static string Shot(Camera cam, string file, int width, int height)
+        public static string Shot(Camera cam, string file, int width, int height) =>
+            ShotTo(cam, Path.GetFullPath(Path.Combine(Dir, file)), width, height);
+
+        /// Rend `cam` en `width` × `height` dans le fichier `path` (chemin quelconque).
+        public static string ShotTo(Camera cam, string path, int width, int height)
         {
             if (cam == null) throw new System.InvalidOperationException("Pas de caméra à capturer");
             var rt = new RenderTexture(width, height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = 1 };
@@ -136,7 +140,7 @@ namespace TenGo.Editor
                 var tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
                 tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
                 tex.Apply();
-                var path = Path.GetFullPath(Path.Combine(Dir, file));
+                path = Path.GetFullPath(path);
                 Directory.CreateDirectory(Path.GetDirectoryName(path));
                 File.WriteAllBytes(path, tex.EncodeToPNG());
                 Object.DestroyImmediate(tex);

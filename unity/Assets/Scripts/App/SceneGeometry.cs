@@ -69,6 +69,10 @@ namespace TenGo.App
         /// l'appareil des captures iOS de référence.
         public static SceneGeometry IPhone17ProMax => new(1320, 2868, 3f, 62f * 3f, 34f * 3f);
 
+        /// Tablette Android 10 pouces en portrait (1600 × 2560 px, 2 px/dp, barre d'état 24 dp,
+        /// barre de navigation par gestes 24 dp) : format des captures de tablette de Google Play.
+        public static SceneGeometry AndroidTablet10 => new(1600, 2560, 2f, 24f * 2f, 24f * 2f);
+
         public bool SameAs(SceneGeometry o) =>
             PixelWidth == o.PixelWidth && PixelHeight == o.PixelHeight &&
             Mathf.Abs(SafeTopPx - o.SafeTopPx) < 0.5f && Mathf.Abs(SafeBottomPx - o.SafeBottomPx) < 0.5f;

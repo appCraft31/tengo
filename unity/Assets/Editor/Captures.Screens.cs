@@ -128,7 +128,7 @@ namespace TenGo.Editor
             Debug.Log($"[Capture] {count} capture(s) d'écrans");
         }
 
-        static string[] Arg(string name, string fallback)
+        internal static string[] Arg(string name, string fallback)
         {
             var args = Environment.GetCommandLineArgs();
             int i = Array.IndexOf(args, name);
@@ -147,7 +147,7 @@ namespace TenGo.Editor
         }
 
         /// Application neuve, sauvegarde de vitrine, iPhone 17 Pro Max, horloge fixe.
-        public static AppRoot BootShowcase(string lang, string theme, Action<ISaveStore> seed = null)
+        public static AppRoot BootShowcase(string lang, string theme, Action<ISaveStore> seed = null, SceneGeometry? geometry = null)
         {
             TeardownShot();
             EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -163,7 +163,7 @@ namespace TenGo.Editor
             {
                 Store = store,
                 Clock = new FixedClock(new DateTimeOffset(2026, 11, 9, 10, 0, 0, TimeSpan.FromHours(1)), TimeZoneInfo.Utc),
-                Geometry = SceneGeometry.IPhone17ProMax,
+                Geometry = geometry ?? SceneGeometry.IPhone17ProMax,
                 AutoTick = false,
                 ReadDevices = false,
                 Language = lang,
@@ -179,7 +179,7 @@ namespace TenGo.Editor
             return _shotApp;
         }
 
-        static void TeardownShot()
+        internal static void TeardownShot()
         {
             if (_shotApp != null) UnityEngine.Object.DestroyImmediate(_shotApp.gameObject);
             _shotApp = null;
@@ -219,7 +219,7 @@ namespace TenGo.Editor
             d.SetStringList(SaveKeys.DuelHistory, new[] { "K7MQ2P", "B4XN9T", "R2WH6C" });
         }
 
-        static void SeedResumeAndBloom(ISaveStore s)
+        internal static void SeedResumeAndBloom(ISaveStore s)
         {
             var clock = new FixedClock(new DateTimeOffset(2026, 11, 9, 10, 0, 0, TimeSpan.FromHours(1)), TimeZoneInfo.Utc);
             new SeedRepository(s, clock).ForceBloomForQa(6);
@@ -236,13 +236,13 @@ namespace TenGo.Editor
             new GameStateRepository(s).Save(grid, 40);
         }
 
-        static void SeedMirror(ISaveStore s)
+        internal static void SeedMirror(ISaveStore s)
         {
             var clock = new FixedClock(new DateTimeOffset(2026, 11, 9, 10, 0, 0, TimeSpan.FromHours(1)), TimeZoneInfo.Utc);
             new MirrorRepository(s, clock).SeedForQa();
         }
 
-        static void Run(float seconds)
+        internal static void Run(float seconds)
         {
             const float dt = 1f / 60f;
             int n = Mathf.Max(1, Mathf.RoundToInt(seconds / dt));
