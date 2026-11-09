@@ -1,0 +1,25 @@
+{
+  "_comment": "GÉNÉRÉ depuis ios/tenGO/PuzzleCatalog.swift (lui-même produit par ios/tools/puzzle_gen.swift, solvabilité prouvée). Ne pas éditer à la main.",
+  "levels": [
+    { "world": 1, "index": 1, "layout": "|73|5|72|393|1|", "moves": 4, "twoStarScore": 30, "threeStarScore": 50 },
+    { "world": 1, "index": 2, "layout": "|25|581|6|63|13|", "moves": 4, "twoStarScore": 40, "threeStarScore": 60 },
+    { "world": 1, "index": 3, "layout": "|195|5|63|173|19|", "moves": 5, "twoStarScore": 40, "threeStarScore": 50 },
+    { "world": 1, "index": 4, "layout": "|864|161|732|273||", "moves": 5, "twoStarScore": 50, "threeStarScore": 70 },
+    { "world": 1, "index": 5, "layout": "|254|835|43|561|59|", "moves": 6, "twoStarScore": 40, "threeStarScore": 60 },
+    { "world": 1, "index": 6, "layout": "|1645|34|4572|252||", "moves": 5, "twoStarScore": 90, "threeStarScore": 130 },
+    { "world": 1, "index": 7, "layout": "|3487|6114|1153|15||", "moves": 5, "twoStarScore": 120, "threeStarScore": 170 },
+    { "world": 1, "index": 8, "layout": "5|7332|7|313|6139|52|", "moves": 6, "twoStarScore": 70, "threeStarScore": 100 },
+    { "world": 1, "index": 9, "layout": "|1322|1756|42|6673|41|", "moves": 6, "twoStarScore": 140, "threeStarScore": 200 },
+    { "world": 1, "index": 10, "layout": "442|6263|4478|91|2|864|", "moves": 8, "twoStarScore": 60, "threeStarScore": 80 },
+    { "world": 1, "index": 11, "layout": "|7651|541|9141|1534|517|", "moves": 7, "twoStarScore": 150, "threeStarScore": 210 },
+    { "world": 1, "index": 12, "layout": "|273|2311|5435|2143|1779|", "moves": 7, "twoStarScore": 160, "threeStarScore": 220 },
+    { "world": 1, "index": 13, "layout": "|266|71434|56522|5843|7|", "moves": 8, "twoStarScore": 100, "threeStarScore": 140 },
+    { "world": 1, "index": 14, "layout": "|13644|73149|41|44261|51|", "moves": 7, "twoStarScore": 160, "threeStarScore": 220 },
+    { "world": 1, "index": 15, "layout": "82|3|37758|15191|521|282|", "moves": 8, "twoStarScore": 110, "threeStarScore": 160 },
+    { "world": 1, "index": 16, "layout": "15|4125|6423|514|74585|26|", "moves": 8, "twoStarScore": 120, "threeStarScore": 170 },
+    { "world": 1, "index": 17, "layout": "9251|87318|55245|23|64|28|", "moves": 9, "twoStarScore": 70, "threeStarScore": 110 },
+    { "world": 1, "index": 18, "layout": "69|63211|78442|368|2242|91|", "moves": 9, "twoStarScore": 120, "threeStarScore": 170 },
+    { "world": 1, "index": 19, "layout": "|36121|44418|687|37123|531|", "moves": 8, "twoStarScore": 180, "threeStarScore": 260 },
+    { "world": 1, "index": 20, "layout": "121|26315|77352|178|31271|5|", "moves": 8, "twoStarScore": 180, "threeStarScore": 250 }
+  ]
+}
