@@ -24,6 +24,13 @@ namespace TenGo.Core
 
         public static AnalyticsEvent TutorialComplete() => new("tutorial_complete");
 
+        /// Tutoriel jouable (4.0) passé avant la fin, à l'étape `step` (0 à 2).
+        public static AnalyticsEvent TutorialSkip(int step) => new AnalyticsEvent("tutorial_skip").Add("step", step);
+
+        /// Cadeau de bienvenue versé (4.0) : `via` = complete | skip.
+        public static AnalyticsEvent WelcomeGift(string via, int coins, int hints) =>
+            new AnalyticsEvent("welcome_gift").Add("via", via).Add("coins", coins).Add("hints", hints);
+
         public static AnalyticsEvent LevelEnd(string mode, int score, bool won) =>
             new AnalyticsEvent("level_end").Add("level_name", mode).Add("success", won ? 1 : 0).Add("score", score);
 

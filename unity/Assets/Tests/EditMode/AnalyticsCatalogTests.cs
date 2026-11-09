@@ -19,6 +19,9 @@ namespace TenGo.Tests
             Assert.AreEqual("daily_challenge_played score=88", AnalyticsCatalog.DailyChallengePlayed(88).ToString());
             Assert.AreEqual("sound_toggled enabled=0", AnalyticsCatalog.SoundToggled(false).ToString());
             Assert.AreEqual("tutorial_complete", AnalyticsCatalog.TutorialComplete().ToString());
+            // Ajouts 4.0 (tutoriel jouable), sans équivalent Swift.
+            Assert.AreEqual("tutorial_skip step=1", AnalyticsCatalog.TutorialSkip(1).ToString());
+            Assert.AreEqual("welcome_gift via=skip coins=50 hints=2", AnalyticsCatalog.WelcomeGift("skip", 50, 2).ToString());
         }
 
         [Test]

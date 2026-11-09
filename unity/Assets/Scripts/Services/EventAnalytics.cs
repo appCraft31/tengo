@@ -35,6 +35,8 @@ namespace TenGo.Services
         public void NoAdsOfferDeclined(string source) => Send(AnalyticsCatalog.NoAdsOfferDeclined(source));
         public void ShopOpenedFromGame(string reason) => Send(AnalyticsCatalog.ShopOpenedFromGame(reason));
         public void TutorialComplete() => Send(AnalyticsCatalog.TutorialComplete());
+        public void TutorialSkip(int step) => Send(AnalyticsCatalog.TutorialSkip(step));
+        public void WelcomeGift(string via) => Send(AnalyticsCatalog.WelcomeGift(via, Core.WelcomeGift.Coins, Core.WelcomeGift.Hints));
 
         /// `sound_toggled` puis la propriété `sound_on`.
         public void SoundToggled(bool enabled)

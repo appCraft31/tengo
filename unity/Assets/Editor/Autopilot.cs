@@ -41,6 +41,7 @@ namespace TenGo.Editor
                 Duel();
                 Demo();
                 SecondChance();
+                EndSheets();
             }
             finally
             {
@@ -335,6 +336,27 @@ namespace TenGo.Editor
                 Shot("normal_9_continued");
             }
             Report.Add($"Seconde chance : continuée {(!Game.IsGameOver)}, bilans {Game.GameEndsRecorded}");
+        }
+
+        /// Feuilles de fin de partie de la refonte 4.0 : sans seconde chance, puis avec un nouveau record.
+        static void EndSheets()
+        {
+            Boot(seed: s => s.SetIntList(SaveKeys.HighScores, new List<int> { 4310, 3980 }));
+            Start(GameLaunch.Normal());
+            Advance(1.0f);
+            for (int i = 0; i < 3; i++) PlayOne();
+            Game.QaForceGameOver(1840, 7, 34, allowSecondChance: false);
+            Advance(2.2f);
+            Shot("end_1_plain");
+
+            Boot(seed: s => s.SetIntList(SaveKeys.HighScores, new List<int> { 4310, 3980 }));
+            Start(GameLaunch.Normal());
+            Advance(1.0f);
+            for (int i = 0; i < 3; i++) PlayOne();
+            Game.QaForceGameOver(4820, 9, 41, allowSecondChance: false);
+            Advance(2.2f);
+            Shot("end_2_record");
+            Report.Add("Fins de partie : sans seconde chance, nouveau record");
         }
     }
 }

@@ -39,6 +39,7 @@ namespace TenGo.App
         public readonly MirrorRepository Mirror;
         public readonly SeedRepository Seeds;
         public readonly FirstRunState FirstRun;
+        public readonly WelcomeGift WelcomeGift;
         public readonly ThemeRepository Themes;
         public readonly CosmeticRepository Cosmetics;
         public readonly AdFreeRepository AdFree;
@@ -75,6 +76,7 @@ namespace TenGo.App
             Mirror = new MirrorRepository(store, clock);
             Seeds = new SeedRepository(store, clock);
             FirstRun = new FirstRunState(store, clock, Analytics);
+            WelcomeGift = new WelcomeGift(store, Economy);
             Themes = new ThemeRepository(store, Economy);
             Cosmetics = new CosmeticRepository(store, Economy);
             AdFree = new AdFreeRepository(store, Economy);

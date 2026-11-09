@@ -488,28 +488,91 @@ namespace TenGo.Tests
             Assert.IsNotNull(tuto);
             Assert.IsFalse(tuto.FirstRun);
             Assert.AreEqual(3, tuto.TotalSteps);
+            Assert.AreEqual(0, tuto.Step, "rejoue le mini niveau depuis le début");
+        }
+
+        [Test]
+        public void Settings_ReplayTutorial_GiftOnlyIfNeverPaid()
+        {
+            // Joueur repris d'une app native : jamais reçu le cadeau → versé au premier tutoriel jouable.
+            Boot();
+            int coins = S.Economy.Balance, hints = S.Economy.BoosterCount(Booster.Hint);
+            _app.ShowTutorial();
+            Advance(0.3f);
+            TapNamed("skip");
+            Advance(0.4f);
+            var tuto = (TutorialScreen)_app.Current;
+            Assert.IsTrue(tuto.IsFinished);
+            Assert.IsTrue(tuto.GiftPaidNow);
+            Assert.AreEqual(coins + WelcomeGift.Coins, S.Economy.Balance);
+            Assert.AreEqual(hints + WelcomeGift.Hints, S.Economy.BoosterCount(Booster.Hint));
+            Assert.AreEqual(1, _analytics.Count("welcome_gift"));
+
+            // Rejouer : le mini niveau, sans redonner le cadeau.
+            _app.ShowTutorial();
+            Advance(0.3f);
+            tuto = (TutorialScreen)_app.Current;
+            PlayWholeTutorial(tuto);
+            Assert.IsTrue(tuto.IsFinished);
+            Assert.IsFalse(tuto.GiftPaidNow);
+            Assert.AreEqual(coins + WelcomeGift.Coins, S.Economy.Balance);
+            Assert.AreEqual(1, _analytics.Count("welcome_gift"));
+        }
+
+        /// Mène le mini niveau au bout comme le joueur : 4 → 6, 4 + 2 + 1 + 3, puis 3 + 7 après la chute.
+        void PlayWholeTutorial(TutorialScreen tuto)
+        {
+            Assert.AreEqual(0, tuto.Step);
+            Assert.IsFalse(tuto.Trace((0, 0), (0, 1)), "bulles éteintes à l'étape 1");
+            Assert.IsTrue(tuto.Trace((1, 0), (1, 1)));
+            Advance(0.6f);
+            Assert.AreEqual(1, tuto.Step);
+            Assert.IsFalse(tuto.Trace((0, 0), (0, 1)), "deux bulles ne suffisent plus");
+            Assert.IsTrue(tuto.Trace(TutorialLevel.Step1Demo));
+            Advance(0.6f);
+            Assert.AreEqual(2, tuto.Step);
+            Assert.IsTrue(tuto.Trace((2, 0), (2, 1)));
+            Advance(0.6f);
+            Assert.IsTrue(tuto.IsFinished);
         }
 
         // MARK: - Premier lancement
 
         [Test]
-        public void FirstRun_ShortTutorialThenGame_ThenNeverAgain()
+        public void FirstRun_PlayableTutorialThenGame_ThenNeverAgain()
         {
             Boot(firstInstall: true);
             var tuto = _app.Current as TutorialScreen;
             Assert.IsNotNull(tuto, "premier écran : tutoriel");
             Assert.IsTrue(tuto.FirstRun);
-            Assert.AreEqual(2, tuto.TotalSteps);
+            Assert.AreEqual(3, tuto.TotalSteps);
             Assert.IsFalse(_app.ConsentRequested, "pas de consentement avant la première partie");
 
-            TapNamed("next");
-            Advance(0.4f);
-            Assert.AreEqual(1, tuto.Step);
-            TapNamed("next");
+            // Le doigt réel : glisser du 4 au 6.
+            var screen = (ScreenBase)_app.Current;
+            Vector2 Center((int r, int c) cell) => tuto.BubblePoint(cell.r, cell.c).Value;
+            screen.PointerDown(Center((1, 0)));
+            screen.PointerMove(Center((1, 1)));
+            Assert.AreEqual(2, tuto.Path.Count);
+            screen.PointerUp(Center((1, 1)));
+            Advance(0.6f);
+            Assert.AreEqual(1, tuto.Step, "étape 2 après 4 → 6");
+
+            Assert.IsTrue(tuto.Trace(TutorialLevel.Step1Demo));
+            Advance(0.6f);
+            Assert.IsTrue(tuto.Trace((2, 0), (2, 1)));
+            Advance(0.6f);
+            Assert.IsTrue(tuto.IsFinished);
+            Assert.IsTrue(tuto.GiftPaidNow, "cadeau de bienvenue à la fin");
+            Assert.AreEqual(WelcomeGift.Coins, S.Economy.Balance);
+            Assert.AreEqual(WelcomeGift.Hints, S.Economy.BoosterCount(Booster.Hint));
+            Assert.AreEqual(1, _analytics.Count("tutorial_complete"));
+            Assert.AreEqual(1, _analytics.Count("welcome_gift"));
+            Assert.IsTrue(S.Settings.HasSeenTutorial);
+
+            TapNamed("play");
             Advance(0.4f);
             Assert.IsNotNull(_app.Game, "le tutoriel mène droit en partie");
-            Assert.IsTrue(S.Settings.HasSeenTutorial);
-            Assert.AreEqual(1, _analytics.Count("tutorial_complete"));
 
             // Fin de la première partie → consentement 1,6 s plus tard, Game Center après.
             S.FirstRun.GameCompleted("normal", 300, false);
@@ -525,13 +588,23 @@ namespace TenGo.Tests
         }
 
         [Test]
-        public void FirstRun_ClosingTutorialStillStartsGame()
+        public void FirstRun_SkippingStillPaysGiftAndStartsGame()
         {
             Boot(firstInstall: true);
-            TapNamed("close");
+            var tuto = (TutorialScreen)_app.Current;
+            Assert.IsTrue(tuto.Trace((1, 0), (1, 1)));
+            Advance(0.6f);
+            TapNamed("skip");
+            Advance(0.4f);
+            Assert.IsTrue(tuto.IsFinished);
+            Assert.IsTrue(S.Settings.HasSeenTutorial);
+            Assert.IsTrue(tuto.GiftPaidNow, "passer ne prive pas du cadeau");
+            Assert.AreEqual(WelcomeGift.Coins, S.Economy.Balance);
+            Assert.AreEqual(0, _analytics.Count("tutorial_complete"));
+            Assert.AreEqual(1, _analytics.Count("tutorial_skip"));
+            TapNamed("play");
             Advance(0.3f);
             Assert.IsNotNull(_app.Game);
-            Assert.IsTrue(S.Settings.HasSeenTutorial);
         }
 
         [Test]

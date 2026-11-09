@@ -30,6 +30,10 @@ namespace TenGo.Services
         void ShopOpenedFromGame(string reason);
         /// `tutorial_complete`.
         void TutorialComplete();
+        /// `tutorial_skip` (step) : tutoriel jouable passé avant la fin.
+        void TutorialSkip(int step);
+        /// `welcome_gift` (via, coins, hints) : cadeau de bienvenue versé.
+        void WelcomeGift(string via);
         /// `sound_toggled` (enabled) + propriété `sound_on`.
         void SoundToggled(bool enabled);
         /// `spend_virtual_currency` (item_name, virtual_currency_name, value, quantity, source).

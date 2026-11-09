@@ -80,9 +80,18 @@ namespace TenGo.Editor
             new() { Name = "duel_empty", Make = a => a.Screens.Duel(a), Seed = s => s.Remove(SaveKeys.DuelHistory) },
             new() { Name = "puzzles_fresh", Make = a => a.Screens.PuzzleLevels(a, 1), Seed = s => { for (int i = 1; i <= 20; i++) s.Remove(SaveKeys.PuzzleStars(1, i)); } },
             new() { Name = "leaderboard", Make = a => a.Screens.Leaderboard(a) },
-            new() { Name = "tutorial_first", Make = a => a.Screens.Tutorial(a, true) },
-            new() { Name = "tutorial_first_2", Make = a => a.Screens.Tutorial(a, true), After = a => TapNamed(a, "next") },
-            new() { Name = "tutorial_replay_3", Make = a => a.Screens.Tutorial(a, false), After = a => { TapNamed(a, "next"); Run(1f); TapNamed(a, "next"); } },
+            // Tutoriel jouable (4.0) : chaque étape, un tracé en cours, la fin avec le cadeau.
+            new() { Name = "tutorial_1", Make = a => a.Screens.Tutorial(a, true), After = a => Run(0.9f) },
+            new() { Name = "tutorial_1_drag", Make = a => a.Screens.Tutorial(a, true), After = a => Hold(a, (1, 0)) },
+            new() { Name = "tutorial_2", Make = a => a.Screens.Tutorial(a, true), After = a => { Tuto(a).Trace((1, 0), (1, 1)); Run(0.8f); } },
+            new() { Name = "tutorial_2_trace", Make = a => a.Screens.Tutorial(a, true),
+                After = a => { Tuto(a).Trace((1, 0), (1, 1)); Run(0.8f); Hold(a, TenGo.Core.TutorialLevel.Step1Demo); } },
+            new() { Name = "tutorial_3", Make = a => a.Screens.Tutorial(a, true),
+                After = a => { Tuto(a).Trace((1, 0), (1, 1)); Run(0.8f); Tuto(a).Trace(TenGo.Core.TutorialLevel.Step1Demo); Run(0.5f); } },
+            new() { Name = "tutorial_end", Make = a => a.Screens.Tutorial(a, true), Seed = s => s.Remove(SaveKeys.WelcomeGiftPaid),
+                After = a => { var t = Tuto(a); t.Trace((1, 0), (1, 1)); Run(0.8f); t.Trace(TenGo.Core.TutorialLevel.Step1Demo); Run(1f); t.Trace((2, 0), (2, 1)); Run(1f); } },
+            new() { Name = "tutorial_replay_end", Make = a => a.Screens.Tutorial(a, false), Seed = s => s.SetBool(SaveKeys.WelcomeGiftPaid, true),
+                After = a => { TapNamed(a, "skip"); Run(1f); } },
         };
 
         public static void Screens()
@@ -232,6 +241,17 @@ namespace TenGo.Editor
                 FxTime.Step(dt);
                 _shotApp.Tick(dt);
             }
+        }
+
+        static TutorialScreen Tuto(AppRoot app) => (TutorialScreen)app.Current;
+
+        /// Doigt posé : appuie sur la première case puis glisse sur les suivantes, sans relâcher.
+        static void Hold(AppRoot app, params (int, int)[] cells)
+        {
+            var t = Tuto(app);
+            t.PointerDown(t.BubblePoint(cells[0].Item1, cells[0].Item2).Value);
+            for (int i = 1; i < cells.Length; i++) t.PointerMove(t.BubblePoint(cells[i].Item1, cells[i].Item2).Value);
+            Run(0.3f);
         }
 
         static void TapNamed(AppRoot app, string name)

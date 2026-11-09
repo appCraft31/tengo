@@ -37,6 +37,8 @@ namespace TenGo.Core
         public const string RewardedDayCount = "tenGO_rewardedDayCount";
         public const string NoAdsPurchased = "tenGO_noAdsPurchased";
         public const string NoAdsBonusPending = "tenGO_noAdsBonusPending";
+        /// Cadeau de bienvenue du tutoriel jouable versé (4.0, sans équivalent natif).
+        public const string WelcomeGiftPaid = "tenGO_welcomeGiftPaid";
         public const string TotalXP = "tenGO_totalXP";
         public const string MissionsDayKey = "tenGO_missionsDayKey";
         /// JSON `[{"id","value","claimed"}]`.
