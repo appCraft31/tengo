@@ -1,0 +1,7 @@
+Un son plus sobre et plus lisible :
+• chaque chiffre garde toujours la même note ;
+• une chaîne validée se conclut par un accord bref ;
+• des notes de tracé plus douces et plus courtes ;
+• la fanfare de victoire est plus courte.
+
+Plus aucun emoji dans le jeu, et petites corrections.

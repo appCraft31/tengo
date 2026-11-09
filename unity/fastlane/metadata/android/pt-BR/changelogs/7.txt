@@ -1,0 +1,7 @@
+O tabuleiro ganha vida: as sequências reagem com mais força e a intensidade cresce conforme sua corrente aumenta.
+
+Os boosters ficam claros: só aparecem depois de obtidos, cada um é explicado na primeira vez e sua primeira dica é gratuita.
+
+Novo ajuste "Efeitos reduzidos" para um visual calmo.
+
+Correção: os lembretes diários voltam a chegar no horário previsto.

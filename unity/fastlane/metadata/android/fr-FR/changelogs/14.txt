@@ -1,0 +1,7 @@
+Ten Go fait peau neuve :
+• un rendu plus soigné : boutons, cartes et pastilles en relief, textes plus lisibles ;
+• écran Progression repensé, avec les missions du jour à réclamer sur place ;
+• duels plus clairs, avec leur résultat ;
+• puzzles : un bouton vous emmène au prochain niveau ;
+• en partie, le score passe en haut de l'écran ;
+• la boutique tient sur une seule page, avec des prix dans votre devise.

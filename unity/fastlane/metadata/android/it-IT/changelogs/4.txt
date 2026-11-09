@@ -1,0 +1,4 @@
+Novità:
+- Nuova opzione «Senza pubblicità»: rimuovi la pubblicità per sempre.
+- Sfida del giorno: ora giocabile una volta al giorno, come previsto.
+- Miglioramenti e correzioni di bug.

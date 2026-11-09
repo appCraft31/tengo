@@ -1,0 +1,4 @@
+Nouveau : « Ton cerveau », vos progrès mesurés en jouant et le carnet de vos façons de faire 10.
+Nouveau : les graines de dix. Une fois éclose, votre graine pose une fleur ×N qui multiplie vos chaînes.
+Écran de fin repensé, avec « Continuer » intégré.
+Chaînes en diagonale plus faciles, nouvelle barre d'onglets, retours haptiques.

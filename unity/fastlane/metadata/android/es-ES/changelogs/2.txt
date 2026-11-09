@@ -1,0 +1,4 @@
+Lanzamiento de producción:
+- Disponibilidad global de compras integradas (paquetes de monedas) habilitada en más de 160 países.
+- Configuración final de anuncios de producción (AdMob).
+- Mejoras de estabilidad general y correcciones de errores.

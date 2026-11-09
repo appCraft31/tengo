@@ -1,0 +1,4 @@
+Production release:
+- Global availability of in-app purchases (coin packs) enabled in over 160 countries.
+- Final AdMob production ads configuration.
+- Overall stability improvements and bug fixes.

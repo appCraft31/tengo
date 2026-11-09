@@ -1,0 +1,4 @@
+Nieuw:
+- Nieuwe optie 'Geen advertenties': verwijder advertenties permanent.
+- Dagelijkse uitdaging: nu één keer per dag te spelen, zoals bedoeld.
+- Verbeteringen en bugfixes.

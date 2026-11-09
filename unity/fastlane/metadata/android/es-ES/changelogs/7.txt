@@ -1,0 +1,7 @@
+El tablero cobra vida: las cadenas reaccionan con más fuerza y la intensidad crece con la longitud de tu cadena.
+
+Los potenciadores se entienden mejor: solo aparecen cuando los obtienes, cada uno se explica la primera vez y tu primera pista es gratuita.
+
+Nuevo ajuste «Efectos reducidos» para un aspecto tranquilo.
+
+Corrección: los recordatorios diarios vuelven a llegar a su hora.

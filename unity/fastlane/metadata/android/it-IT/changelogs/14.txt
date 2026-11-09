@@ -1,0 +1,7 @@
+Ten Go si rinnova:
+• un aspetto più curato: pulsanti, schede ed etichette in rilievo, testi più leggibili;
+• schermata Progressi ridisegnata, con le missioni del giorno da riscattare lì;
+• duelli più chiari, con il risultato;
+• puzzle: un pulsante ti porta al livello successivo;
+• in partita, il punteggio passa in alto;
+• il negozio è ora in un'unica pagina, con i prezzi nella tua valuta.

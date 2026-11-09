@@ -1,0 +1,7 @@
+Ten Go has a fresh new look:
+• a more polished design: buttons, cards and badges with depth, easier-to-read text;
+• redesigned Progress screen, with daily missions you can claim right there;
+• clearer duels, with their results;
+• puzzles: one button takes you to the next level;
+• in a game, the score moves to the top of the screen;
+• the shop is now a single page, with prices in your currency.

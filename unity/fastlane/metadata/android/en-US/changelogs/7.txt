@@ -1,0 +1,7 @@
+The board comes alive: chains react more vividly, and the intensity builds as your chain grows longer.
+
+Boosters are clearer: they only show up once you own them, each one is explained the first time, and your first hint is free.
+
+New "Reduced effects" setting for a calmer look.
+
+Fix: daily reminders arrive on time again.

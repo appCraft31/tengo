@@ -1,0 +1,4 @@
+Novo: "O teu cérebro", o teu progresso medido enquanto jogas e um caderno com as tuas formas de fazer 10.
+Novo: as sementes do dez. Ao florescer, a tua semente coloca uma flor ×N que multiplica as tuas cadeias.
+Ecrã final renovado com "Continuar" integrado.
+Cadeias na diagonal mais fáceis, nova barra de separadores, resposta tátil.

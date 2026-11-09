@@ -1,0 +1,4 @@
+Nuevo: «Tu cerebro», tu progreso medido mientras juegas y un cuaderno con tus formas de sumar 10.
+Nuevo: las semillas del diez. Al florecer, tu semilla coloca una flor ×N que multiplica tus cadenas.
+Pantalla final renovada con «Continuar» integrado.
+Cadenas en diagonal más fáciles, nueva barra de pestañas, respuesta háptica.

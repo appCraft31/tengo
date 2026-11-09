@@ -1,0 +1,7 @@
+Das Spielfeld wird lebendig: Ketten reagieren deutlicher, und die Intensität steigt mit der Länge deiner Kette.
+
+Booster werden klar: Sie erscheinen erst, wenn du sie erhalten hast, jeder wird beim ersten Mal erklärt, und dein erster Hinweis ist geschenkt.
+
+Neue Einstellung „Reduzierte Effekte“ für eine ruhige Darstellung.
+
+Behoben: Tägliche Erinnerungen kommen wieder zur geplanten Zeit.

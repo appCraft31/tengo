@@ -1,0 +1,4 @@
+Novidades:
+- Nova opção "Sem anúncios": remova os anúncios permanentemente.
+- Desafio diário: agora jogável uma vez por dia, como previsto.
+- Melhorias e correções de bugs.

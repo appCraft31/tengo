@@ -1,0 +1,3 @@
+Update release:
+- Integrated Firebase Analytics for engagement and gameplay tracking.
+- Performance optimizations and bug fixes.

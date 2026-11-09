@@ -1,0 +1,7 @@
+Cleaner, more readable sound:
+• each number always plays the same note;
+• a completed chain resolves with a short chord;
+• softer, shorter notes while you trace;
+• a shorter victory jingle.
+
+No more emojis in the game, plus minor fixes.

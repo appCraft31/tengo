@@ -1,0 +1,1 @@
+Technisches Update: interne Android-Komponenten modernisiert. Am Spiel ändert sich nichts.

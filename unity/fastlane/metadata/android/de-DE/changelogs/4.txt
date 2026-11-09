@@ -1,0 +1,4 @@
+Neu:
+- Neue Option „Ohne Werbung“: Anzeigen dauerhaft entfernen.
+- Tägliche Challenge: jetzt wie vorgesehen einmal pro Tag spielbar.
+- Verbesserungen und Fehlerbehebungen.

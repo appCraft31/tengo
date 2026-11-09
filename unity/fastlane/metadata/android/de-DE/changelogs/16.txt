@@ -1,0 +1,4 @@
+Neu: „Dein Gehirn“, deine Fortschritte beim Spielen gemessen, und ein Heft mit deinen Wegen zur 10.
+Neu: Zehner-Samen. Sobald er blüht, setzt dein Samen eine ×N-Blume, die deine Ketten vervielfacht.
+Neuer Endbildschirm mit integriertem „Weiter“.
+Leichtere Diagonalketten, neue Tab-Leiste, haptisches Feedback.

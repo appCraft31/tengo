@@ -1,0 +1,4 @@
+Nouveautés :
+- Nouvelle option « Sans pub » : supprimez définitivement les publicités.
+- Défi du jour : jouable une seule fois par jour, comme prévu.
+- Améliorations et corrections de bugs.

@@ -1,0 +1,7 @@
+O Ten Go tem um novo visual:
+• aspeto mais cuidado: botões, cartões e etiquetas com relevo, textos mais legíveis;
+• ecrã de Progresso redesenhado, com as missões do dia para resgatar aí mesmo;
+• duelos mais claros, com o resultado;
+• puzzles: um botão leva-te ao nível seguinte;
+• durante o jogo, a pontuação passa para o topo do ecrã;
+• a loja é agora uma única página, com preços na tua moeda.

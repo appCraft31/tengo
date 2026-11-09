@@ -1,0 +1,4 @@
+New: "Your brain", your progress measured as you play and a notebook of your ways to make 10.
+New: seeds of ten. Once it blooms, your seed places a ×N flower that multiplies your chains.
+Redesigned end screen with Continue built in.
+Easier diagonal chains, new tab bar, haptic feedback.

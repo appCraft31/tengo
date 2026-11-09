@@ -1,0 +1,4 @@
+Nieuw: 'Je brein', je vooruitgang gemeten tijdens het spelen en een notitieboek met je manieren om 10 te maken.
+Nieuw: tienzaadjes. Zodra je zaadje bloeit, zet het een ×N-bloem die je ketens vermenigvuldigt.
+Vernieuwd eindscherm met 'Doorgaan' ingebouwd.
+Makkelijkere diagonale ketens, nieuwe tabbalk, haptische feedback.

@@ -1,0 +1,4 @@
+Mise à jour de production :
+- Activation globale des achats in-app (packs de pièces) dans plus de 160 pays.
+- Configuration finale des publicités de production (AdMob).
+- Améliorations de la stabilité globale et corrections de bugs.

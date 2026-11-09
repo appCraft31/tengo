@@ -1,0 +1,1 @@
+Los enlaces de los eventos de Play ahora abren tu Progreso directamente.

@@ -1,0 +1,2 @@
+- Compatibilité Android 16.
+- Améliorations techniques et corrections de bugs.

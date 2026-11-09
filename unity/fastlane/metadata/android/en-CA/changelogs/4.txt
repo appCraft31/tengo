@@ -1,0 +1,4 @@
+What's new:
+- New "No ads" option: remove ads permanently.
+- Daily challenge: now playable once per day, as intended.
+- Improvements and bug fixes.

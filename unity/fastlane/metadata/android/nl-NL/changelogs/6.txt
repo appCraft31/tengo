@@ -1,0 +1,2 @@
+- Compatibiliteit met Android 16.
+- Technische verbeteringen en bugfixes.

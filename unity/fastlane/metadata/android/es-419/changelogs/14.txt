@@ -1,0 +1,7 @@
+Ten Go estrena imagen:
+• un diseño más cuidado: botones, tarjetas y etiquetas con relieve, textos más legibles;
+• pantalla de Progreso renovada, con las misiones del día para reclamar ahí mismo;
+• duelos más claros, con su resultado;
+• puzles: un botón te lleva al siguiente nivel;
+• en la partida, la puntuación pasa a la parte superior;
+• la tienda cabe en una sola página, con precios en tu moneda.

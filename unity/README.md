@@ -24,6 +24,7 @@ Toutes les commandes passent par le verrou `Logs/unity.lock`, qui garantit une s
 | `Tools/unity.sh TenGo.Editor.Captures.GlowDemo` | Rend la scène de démo dans `Logs/captures/glow_demo.png` |
 | `Tools/unity.sh TenGo.Editor.NativeSetup.Apply` | Symboles `TENGO_*`, ids AdMob, gabarits Gradle, copie de la configuration Firebase depuis `../ios` et `../android` (jamais versionnée) |
 | `Tools/unity.sh TenGo.Editor.BuildAndroidDev.Run -buildTarget Android` | APK de développement `com.appcraft31.tengo.unitydev` (émulateur uniquement) |
+| `Tools/unity.sh TenGo.Editor.BuildAndroidRelease.Run -buildTarget Android` | AAB de production signé `Builds/Android/tengo-<version>-<versionCode>.aab` (`com.appcraft31.tengo`, IL2CPP ARM64, symboles natifs inclus), clé d'upload lue dans `../android/keystore.properties` au moment du build, jamais enregistrée. Validation : `play-upload --track internal` depuis `unity/` (`.play-deploy.json`), métadonnées dans `fastlane/metadata/android` |
 | `Tools/unity.sh TenGo.Editor.BuildIos.Run -buildTarget iOS` | Projet Xcode dans `Builds/iOS` (pods installés par l'EDM) |
 | `Tools/fetch_packages.sh` | Télécharge les archives Firebase dans `Packages/tarballs/` (lancé tout seul au premier usage) |
 

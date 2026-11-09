@@ -1,0 +1,7 @@
+O tabuleiro ganha vida: as sequências reagem de forma mais marcada e a intensidade aumenta com o comprimento da sua cadeia.
+
+Os boosters tornam-se claros: só aparecem depois de obtidos, cada um é explicado na primeira vez e a sua primeira dica é oferecida.
+
+Nova definição «Efeitos reduzidos» para um aspeto calmo.
+
+Correcção: os lembretes diários voltam a chegar à hora prevista.

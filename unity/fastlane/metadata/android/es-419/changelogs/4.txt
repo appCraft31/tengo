@@ -1,0 +1,4 @@
+Novedades:
+- Nueva opción «Sin anuncios»: elimina los anuncios de forma permanente.
+- Reto diario: ahora se juega una vez al día, como debe ser.
+- Mejoras y corrección de errores.

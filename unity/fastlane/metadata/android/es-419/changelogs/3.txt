@@ -1,0 +1,3 @@
+Actualización:
+- Integración de Firebase Analytics para el seguimiento de la interacción y del juego.
+- Optimizaciones de rendimiento y corrección de errores.
