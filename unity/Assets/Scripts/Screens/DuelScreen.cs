@@ -3,6 +3,7 @@ using TenGo.App;
 using TenGo.Core;
 using TenGo.Platform;
 using TenGo.Rendering;
+using TenGo.Services;
 using TMPro;
 using UnityEngine;
 
@@ -15,11 +16,9 @@ namespace TenGo.Screens
     /// « joinDuel », ouvre la saisie du code), « duelShare:&lt;CODE&gt; » (duel
     /// lancé et sans adversaire : partage du code).
     ///
-    /// Écart assumé en attendant l'étape 7 : `IDuelBackend` n'a ni `fetch(code:)`
-    /// ni `myDuels()`. La liste montre donc l'historique local des codes
-    /// (`DuelHistoryRepository`), chacun « en attente » et partageable, et la
-    /// réponse à un code dérive la graine du code lui-même (`LocalSeedForCode`)
-    /// au lieu de la lire sur le serveur.
+    /// La liste relit les duels de l'historique local sur le serveur
+    /// (`IDuelBackend.MyDuels`) ; répondre à un code lit le duel (`Fetch`),
+    /// dit le score à battre, puis lance la partie sur la graine du serveur.
     public sealed class DuelScreen : ScreenBase
     {
         const int Z = 20;
@@ -27,6 +26,12 @@ namespace TenGo.Screens
         float _listTopY;
         TenGoText _status;
         DuelCodeEntryOverlay _entry;
+        bool _disposed;
+        bool _joining;
+        readonly List<Duel> _duels = new();
+
+        /// Duels affichés dans la liste (après rechargement).
+        public IReadOnlyList<Duel> Duels => _duels;
 
         /// Dernier message d'état affiché (chargement, erreur).
         public string StatusText => _status != null ? _status.Text : "";
@@ -99,8 +104,9 @@ namespace TenGo.Screens
             Relief.Raise(bg, 6);
 
             float avatarY = half - 68;
-            // Pas de pseudo Game Center (étape 7) : le nom est anonyme, donc une silhouette.
-            AddAvatar(card, null, 42, Look.BubbleColor(5), new Vector2(-96, avatarY), true);
+            // Initiale du pseudo Game Center / Play Games, sinon une silhouette.
+            string me = S.Play.PlayerName?.Trim();
+            AddAvatar(card, string.IsNullOrEmpty(me) ? null : me.Substring(0, 1).ToUpperInvariant(), 42, Look.BubbleColor(5), new Vector2(-96, avatarY), true);
             AddAvatar(card, "?", 42, Color.white, new Vector2(96, avatarY), false);
 
             ShapeView.Rect("Versus", card, P(0, avatarY), new Vector2(62, 36), 18, Color.white, default, 0, Z + 2);
@@ -157,16 +163,25 @@ namespace TenGo.Screens
             AddTarget("joinDuel", card, new Vector2(_cardWidth, height), PromptForCode);
         }
 
-        /// Duels passés (iOS : rechargés depuis le serveur à partir de l'historique local).
+        /// Duels passés, rechargés depuis le serveur à partir de l'historique local.
         void ReloadDuels()
         {
-            var codes = S.DuelHistory.Codes;
-            if (codes.Count == 0) return;
-            RenderDuelList(codes);
+            if (S.DuelHistory.Codes.Count == 0) return;
+            SetStatus(Loc.T("duel.loading"));
+            S.Duels.MyDuels(list =>
+            {
+                if (_disposed) return;
+                if (!_joining) SetStatus("");
+                _duels.Clear();
+                _duels.AddRange(list);
+                RenderDuelList();
+            });
         }
 
-        void RenderDuelList(IReadOnlyList<string> codes)
+        void RenderDuelList()
         {
+            string uid = S.Duels.Uid;
+            if (uid == null || _duels.Count == 0) return;
             TenGoText.Create(Root, Loc.T("duel.section_list"), Fonts.AvenirBold, 22, Look.Logo, P(-_cardWidth / 2 + 4, _listTopY - 16), Z + 2,
                 horizontal: HorizontalAlignmentOptions.Left);
 
@@ -176,42 +191,78 @@ namespace TenGo.Screens
             Scroll = new ScrollArea(Root, top, bottom, -UsableW / 2, UsableW / 2);
             const float rowH = 72;
             float cursor = -16;
-            foreach (var code in codes)
+            var now = System.DateTimeOffset.UtcNow;
+            foreach (var duel in _duels)
             {
-                AddDuelRow(code, cursor - rowH / 2, rowH);
+                AddDuelRow(duel, uid, now, cursor - rowH / 2, rowH);
                 cursor -= rowH + 12;
             }
             Scroll.ContentHeight = -cursor + 4;
             Scroll.ApplyClip();
         }
 
-        void AddDuelRow(string code, float y, float height)
+        void AddDuelRow(Duel duel, string uid, System.DateTimeOffset now, float y, float height)
         {
-            var row = RenderShared.Node("duelShare:" + code, Scroll.Content, P(0, y));
+            string code = duel.Code;
+            // Duel lancé par ce joueur et toujours sans adversaire : on revient
+            // ici quand on a oublié d'envoyer le code sur le moment.
+            bool shareable = !duel.IsComplete && !duel.IsExpired(now) && duel.ChallengerUid == uid;
+            var row = RenderShared.Node(shareable ? "duelShare:" + code : "duelRow", Scroll.Content, P(0, y));
             var bg = ShapeView.Rect("Bg", row, Vector2.zero, new Vector2(_cardWidth, height), 24, Relief.Surface, default, 0, Z);
             Relief.Raise(bg, 4);
 
-            // Adversaire inconnu tant que personne n'a répondu : « ? » teinté selon le code.
+            // Adversaire : son initiale, ou « ? » tant que personne n'a répondu.
+            string rival = duel.RivalName(uid).Trim();
             float avatarX = -_cardWidth / 2 + 20 + 24;
             int[] tints = { 6, 2, 8, 5, 7, 3 };
             int sum = 0;
             foreach (char c in code) sum += c;
-            AddAvatar(row, "?", 24, Look.BubbleColor(tints[Mathf.Abs(sum) % tints.Length]), new Vector2(avatarX, 0), false);
+            string initial = rival.Length > 0 ? rival.Substring(0, 1).ToUpperInvariant() : "?";
+            AddAvatar(row, initial, 24, Look.BubbleColor(tints[Mathf.Abs(sum) % tints.Length]), new Vector2(avatarX, 0), false);
 
-            // Statut « en attente » (pas encore d'issue connue) + partage du code.
-            var status = TenGoText.Create(row, Loc.T("duel.row_pending"), Fonts.AvenirBold, 14, Look.Logo.WithAlpha(0.8f), Vector2.zero, Z + 3);
+            // Statut : pastille colorée à droite.
+            string statusKey;
+            Color fill = Look.Logo.WithAlpha(0.08f).Flattened(Relief.Surface), ink = Look.Logo.WithAlpha(0.8f);
+            if (duel.IsComplete && duel.OutcomeFor(uid) is DuelOutcome outcome)
+            {
+                switch (outcome)
+                {
+                    case DuelOutcome.Win:
+                        statusKey = "duel.row_win";
+                        fill = new Color(0.99f, 0.95f, 0.80f);
+                        ink = new Color(0.45f, 0.34f, 0.10f);
+                        break;
+                    case DuelOutcome.Loss:
+                        statusKey = "duel.row_loss";
+                        fill = new Color(0.99f, 0.89f, 0.88f);
+                        ink = new Color(0.60f, 0.24f, 0.22f);
+                        break;
+                    default: statusKey = "duel.row_draw"; break;
+                }
+            }
+            else statusKey = duel.IsExpired(now) ? "duel.row_expired" : "duel.row_pending";
+
+            var status = TenGoText.Create(row, Loc.T(statusKey), Fonts.AvenirBold, 14, ink, Vector2.zero, Z + 3);
             float tagW = status.WidthPt() + 28;
-            float tagX = _cardWidth / 2 - 18 - tagW / 2 - 40;
-            ShapeView.Rect("Tag", row, P(tagX, 0), new Vector2(tagW, 34), 17, Look.Logo.WithAlpha(0.08f).Flattened(Relief.Surface), default, 0, Z + 1);
+            float tagX = _cardWidth / 2 - 18 - tagW / 2 - (shareable ? 40 : 0);
+            ShapeView.Rect("Tag", row, P(tagX, 0), new Vector2(tagW, 34), 17, fill, default, 0, Z + 1);
             status.transform.localPosition = P(tagX, 0);
-            VectorIcon.Create(row, VectorIconName.IconShare, P(_cardWidth / 2 - 30, 0), 22, Look.Logo.WithAlpha(0.75f), Z + 3);
+            if (shareable) VectorIcon.Create(row, VectorIconName.IconShare, P(_cardWidth / 2 - 30, 0), 22, Look.Logo.WithAlpha(0.75f), Z + 3);
 
+            // Nom de l'adversaire (ou code du duel), puis les scores.
             float textX = avatarX + 24 + 14;
             float textW = tagX - tagW / 2 - 12 - textX;
-            TenGoText.Create(row, code, Fonts.AvenirBold, 17, Look.Logo, P(textX, 0), Z + 3, horizontal: HorizontalAlignmentOptions.Left)
-                .ShrinkToFit(textW);
-            string c2 = code;
-            AddTarget("duelShare:" + code, row, new Vector2(_cardWidth, height), () => S.Play.ShareDuel(c2), animate: false);
+            TenGoText.Create(row, rival.Length == 0 ? code : rival, Fonts.AvenirBold, 17, Look.Logo, P(textX, 11), Z + 3,
+                horizontal: HorizontalAlignmentOptions.Left).ShrinkToFit(textW);
+            int mine = uid == duel.ChallengerUid ? duel.ChallengerScore : (duel.OpponentScore ?? 0);
+            int? theirs = uid == duel.ChallengerUid ? duel.OpponentScore : duel.ChallengerScore;
+            string points = Loc.T("game.points_label");
+            string detail = theirs is int t ? $"{mine} – {t} {points}" : $"{mine} {points}";
+            if (rival.Length > 0) detail = code + " · " + detail;
+            TenGoText.Create(row, detail, Fonts.AvenirMedium, 13, Look.Logo.WithAlpha(0.7f), P(textX, -12), Z + 3,
+                horizontal: HorizontalAlignmentOptions.Left).ShrinkToFit(textW);
+            if (shareable)
+                AddTarget("duelShare:" + code, row, new Vector2(_cardWidth, height), () => S.Play.ShareDuel(code), animate: false);
         }
 
         // MARK: - Actions
@@ -233,20 +284,34 @@ namespace TenGo.Screens
             Overlay = _entry;
         }
 
-        /// Répond au duel `code` et lance la partie sur la même grille. Les refus
-        /// (code introuvable) sont dits clairement plutôt que de mener à une
-        /// partie qui ne comptera pas.
+        /// Récupère le duel et lance la partie sur la MÊME grille. Les refus
+        /// (introuvable, expiré, déjà joué, son propre duel) sont dits
+        /// clairement plutôt que de mener à une partie qui ne comptera pas.
         public void JoinWithCode(string code)
         {
-            string normalized = (code ?? "").Trim().ToUpperInvariant();
+            string normalized = DuelRules.Normalize(code);
             if (!IsWellFormed(normalized))
             {
                 SetStatus(Loc.T("duel.error_not_found"));
                 return;
             }
+            if (_joining) return;
+            _joining = true;
             SetStatus(Loc.T("duel.loading"));
-            long seed = LocalSeedForCode(normalized);
-            App.Router.StartGame(GameLaunch.Duel(seed, normalized));
+            S.Duels.Fetch(normalized, duel =>
+            {
+                if (_disposed) return;
+                _joining = false;
+                string refusal = DuelRules.JoinRefusal(duel, S.Duels.Uid, System.DateTimeOffset.UtcNow);
+                if (refusal != null) { SetStatus(Loc.T(refusal)); return; }
+                SetStatus(Loc.F("duel.score_to_beat", duel.ChallengerName, duel.ChallengerScore));
+                App.Router.StartGame(GameLaunch.Duel(duel.Seed, duel.Code));
+            }, message =>
+            {
+                if (_disposed) return;
+                _joining = false;
+                SetStatus(message);
+            });
         }
 
         void SetStatus(string text)
@@ -264,24 +329,16 @@ namespace TenGo.Screens
             return true;
         }
 
-        /// Repli local (pas de `fetch(code:)` avant l'étape 7) : graine stable
-        /// tirée du code (FNV-1a 64 bits), identique d'un appareil à l'autre.
-        public static long LocalSeedForCode(string code)
-        {
-            ulong h = 14695981039346656037UL;
-            foreach (char c in code)
-            {
-                h ^= c;
-                h *= 1099511628211UL;
-            }
-            if (h == 0) h = 1;
-            return unchecked((long)h);
-        }
-
         public override void Back()
         {
             if (Overlay != null && Overlay.IsOpen) { Overlay.Close(); return; }
             App.ShowTab(Tab.Play);
+        }
+
+        public override void Dispose()
+        {
+            _disposed = true;
+            base.Dispose();
         }
     }
 }

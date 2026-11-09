@@ -1,7 +1,7 @@
 {
   "name": "TenGo",
   "rootNamespace": "TenGo",
-  "references": ["TenGo.Core", "Unity.TextMeshPro", "UnityEngine.UI", "Unity.InputSystem", "Unity.RenderPipelines.Universal.Runtime", "Unity.RenderPipelines.Core.Runtime"],
+  "references": ["TenGo.Core", "Unity.TextMeshPro", "UnityEngine.UI", "Unity.InputSystem", "Unity.RenderPipelines.Universal.Runtime", "Unity.RenderPipelines.Core.Runtime", "Unity.Notifications.Android", "Unity.Notifications.iOS", "UnityEngine.Purchasing", "UnityEngine.Purchasing.Stores", "Purchasing.Common", "Unity.Services.Core"],
   "autoReferenced": true,
   "noEngineReferences": false
 }

@@ -23,8 +23,14 @@ namespace TenGo.Services
 
         public InterstitialPolicy Policy => _policy;
 
-        /// Fin de partie (gagnée ou perdue).
-        public void MarkGameCompleted() => _policy.MarkGameCompleted();
+        /// Fin de partie (gagnée ou perdue) : compte la partie, puis précharge
+        /// paresseusement la première annonce (le réseau ignore la demande tant
+        /// que le SDK n'a pas démarré, ou si le mod « sans pub » est acheté).
+        public void MarkGameCompleted()
+        {
+            _policy.MarkGameCompleted();
+            if (!_ads.IsReady && !_isAdFree()) _ads.Load();
+        }
 
         public void MaybeShow(AdTrigger trigger, Action<bool> completion)
         {

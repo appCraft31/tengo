@@ -14,6 +14,9 @@ namespace TenGo.Services
 
         public bool IsReady => Ready;
 
+        public int Loads { get; private set; }
+        public void Load() => Loads++;
+
         public void Show(Action onPresented, Action<bool> onClosed)
         {
             if (!Ready) { onClosed?.Invoke(false); return; }

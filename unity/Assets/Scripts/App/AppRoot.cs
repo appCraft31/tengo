@@ -110,12 +110,17 @@ namespace TenGo.App
 
             // 2. Textes, dépôts, services.
             AppServices.LoadStrings(_options.Language ?? DeviceLanguage.Current());
+            // Rappels des SDK natifs ramenés sur le fil d'Unity.
+            TenGo.Services.MainThread.Init(gameObject);
             Services = new AppServices(store, clock, _options.Services);
             Services.FirstRun.Bootstrap();
             SoundManager.Bind(Services.Settings);
             HapticManager.Bind(Services.Settings);
             JuiceSettings.Bind(Services.Settings);
             Services.ApplyLook();
+            // Propriété `sound_on` et notifications reprogrammées à chaque lancement (AppDelegate).
+            Services.Analytics.SetSoundProperty(!Services.Settings.SoundMuted);
+            if (_options.StartServices) Services.Play.RefreshNotifications();
 
             // 3. Caméra et entrée.
             SetupCamera();
@@ -196,9 +201,13 @@ namespace TenGo.App
                 {
                     if (this == null) return;
                     if (gameCenterAfterConsent) Services.Play.Authenticate();
-                    Debug.Log("[AdMob] Démarrage pubs — mode " + (personalized ? "personnalisé" : "non personnalisé") + " (simulé)");
-                    AdsSessionStarted = true;
-                    Services.Rewarded.PreloadIfNeeded();
+                    // `MobileAds.start` seulement maintenant : rien n'est demandé au réseau avant.
+                    Services.AdsSdk.Start(personalized, () =>
+                    {
+                        if (this == null) return;
+                        AdsSessionStarted = true;
+                        Services.Rewarded.PreloadIfNeeded();
+                    });
                 });
             });
         }

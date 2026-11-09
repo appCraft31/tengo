@@ -44,5 +44,32 @@ namespace TenGo.Services
         void NoAdsOfferView(string source);
         /// `mirror_opened` (games, repertoire).
         void MirrorOpened(int gamesMeasured, int repertoire);
+
+        // MARK: Achats en vraie monnaie (StoreManager.swift)
+
+        /// `iap_tapped` (item_id, source).
+        void IapTapped(string productId, string source);
+        /// `iap_success` (item_id, source, store_env?).
+        void IapSucceeded(string productId, string source, string environment);
+        /// `iap_failed` (item_id, source, reason).
+        void IapFailed(string productId, string source, string reason);
+        /// `iap_cancelled` (item_id, source).
+        void IapCancelled(string productId, string source);
+        /// `iap_pending` (item_id, source).
+        void IapPending(string productId, string source);
+        /// `purchase` (value, currency, transaction_id, items).
+        void Purchase(string productId, string productName, double value, string currency, string transactionId);
+
+        // MARK: Publicité
+
+        /// `ad_impression` (revenu d'un affichage, `paidEventHandler`).
+        void AdImpression(string format, string unitName, long valueMicros, string currency);
+
+        // MARK: Propriétés utilisateur
+
+        /// Propriété `sound_on` (« on » / « off »).
+        void SetSoundProperty(bool enabled);
+        /// Propriété utilisateur libre (`store_env`, `build_channel`…).
+        void SetUserProperty(string name, string value);
     }
 }

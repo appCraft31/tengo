@@ -387,6 +387,52 @@ namespace TenGo.Tests
         }
 
         [Test]
+        public void Duel_JoinRefusalsAreShownWithoutStartingAGame()
+        {
+            Boot();
+            var backend = (SimulatedDuelBackend)S.Duels;
+            backend.Seed(new Duel { Code = "MYWNZ2", Seed = 9, ChallengerUid = backend.Uid, ChallengerName = "Moi", ChallengerScore = 50,
+                ExpiresAt = System.DateTimeOffset.UtcNow.AddDays(1) });
+            backend.Seed(new Duel { Code = "LDXNE3", Seed = 9, ChallengerUid = "rival", ChallengerScore = 50,
+                ExpiresAt = System.DateTimeOffset.UtcNow.AddDays(-1) });
+            _app.ShowDuel();
+            Advance(0.3f);
+            var duel = (DuelScreen)_app.Current;
+            foreach (var (code, key) in new[] { ("MYWNZ2", "duel.error_own_duel"), ("LDXNE3", "duel.error_expired") })
+            {
+                duel.JoinWithCode(code);
+                Advance(0.6f);
+                Assert.IsNull(_app.Game, "refus : pas de partie pour " + code);
+                Assert.AreEqual(Loc.T(key), duel.StatusText);
+            }
+            backend.InventsUnknownDuels = false;
+            duel.JoinWithCode("ZZZZZZ");
+            Advance(0.6f);
+            Assert.AreEqual(Loc.T("duel.error_not_found"), duel.StatusText);
+        }
+
+        [Test]
+        public void Duel_ListReloadsFromServerWithOutcomes()
+        {
+            Boot();
+            var backend = (SimulatedDuelBackend)S.Duels;
+            backend.Seed(new Duel { Code = "WNWNWN", Seed = 1, ChallengerUid = backend.Uid, ChallengerScore = 900, OpponentUid = "rival",
+                OpponentName = "Rival", OpponentScore = 400, ExpiresAt = System.DateTimeOffset.UtcNow.AddDays(2) });
+            backend.Seed(new Duel { Code = "WAITME", Seed = 2, ChallengerUid = backend.Uid, ChallengerScore = 300,
+                ExpiresAt = System.DateTimeOffset.UtcNow.AddDays(2) });
+            S.DuelHistory.Remember("WNWNWN");
+            S.DuelHistory.Remember("WAITME");
+            _app.ShowDuel();
+            Advance(0.8f);
+            var duel = (DuelScreen)_app.Current;
+            Assert.AreEqual(2, duel.Duels.Count);
+            Assert.IsNotNull(duel.FindTarget("duelShare:WAITME"), "duel lancé sans adversaire : partageable");
+            Assert.IsNull(duel.FindTarget("duelShare:WNWNWN"), "duel terminé : pas de partage");
+            duel.TapTarget("duelShare:WAITME");
+            Assert.IsTrue(((LogPlayServices)S.Play).Calls.Contains("partage du duel WAITME"));
+        }
+
+        [Test]
         public void PuzzleLevels_SelectUnlockedLevel_LockedRefused()
         {
             Boot();

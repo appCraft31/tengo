@@ -446,6 +446,8 @@ namespace TenGo.Game
         {
             if (Kind != GameModeKind.Normal) return;
             if (_s.Seeds.TakeFlower() is not int power) return;
+            // Fleur cueillie : l'annonce d'éclosion n'a plus lieu d'être (`cancelSeedBloom`).
+            _s.Play.CancelSeedBloom();
             if (_grid.PlantFlower(power, SystemRng.Create()) == null) return;
             _s.Analytics.FlowerPlaced(power);
             bool firstTime = !_s.Seeds.FlowerExplained;

@@ -85,14 +85,41 @@ namespace TenGo.Screens
             var back = ProgressUi.BackButton(Root, bottomY + 90, Z + 10);
             AddTarget("back", back, new Vector2(80, 80), () => App.ShowMenu());
 
-            // iOS ne les montre qu'une fois Game Center connecté ; l'état de connexion
-            // n'est pas exposé par IPlayServices, la plateforme gère la connexion à l'ouverture.
+            // iOS ne les montre qu'une fois Game Center connecté : s'il ne l'est
+            // pas encore, ils apparaissent dès que la connexion aboutit.
+            _buttonsY = bottomY;
+            if (S.Play.ShowsLeaderboardButtons) AddLeaderboardButtons();
+            else S.Play.SignInChanged += OnSignInChanged;
+        }
+
+        float _buttonsY;
+        bool _buttonsShown;
+
+        /// Boutons de classement affichés (connexion Game Center / Play Games faite).
+        public bool LeaderboardButtonsShown => _buttonsShown;
+
+        void OnSignInChanged()
+        {
+            if (S.Play.ShowsLeaderboardButtons) AddLeaderboardButtons();
+        }
+
+        void AddLeaderboardButtons()
+        {
+            if (_buttonsShown) return;
+            _buttonsShown = true;
+            float bottomY = _buttonsY;
             AddLeaderboardButton("dailyLeaderboard", Loc.T("leaderboard.daily_button"), new Color(0.86f, 0.82f, 0.97f),
                 new Vector2(-100, bottomY + 190), Leaderboard.Daily);
             AddLeaderboardButton("worldLeaderboard", Loc.T("leaderboard.world_button"), new Color(0.72f, 0.88f, 0.98f),
                 new Vector2(100, bottomY + 190), Leaderboard.Normal);
             AddLeaderboardButton("rushLeaderboard", Loc.T("leaderboard.rush_button"), new Color(0.99f, 0.84f, 0.70f),
                 new Vector2(0, bottomY + 250), Leaderboard.Rush);
+        }
+
+        public override void Dispose()
+        {
+            S.Play.SignInChanged -= OnSignInChanged;
+            base.Dispose();
         }
 
         void AddTopScore(int score, float y)

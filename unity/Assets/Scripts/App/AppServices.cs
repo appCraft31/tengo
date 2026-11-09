@@ -21,6 +21,7 @@ namespace TenGo.App
             public IAdFreeStore AdFreeStore;
             public ICoinStore CoinStore;
             public IConsentFlow Consent;
+            public IAdsSdk AdsSdk;
         }
 
         public readonly ISaveStore Store;
@@ -51,6 +52,8 @@ namespace TenGo.App
         public readonly IAdFreeStore AdFreeStore;
         public readonly ICoinStore CoinStore;
         public readonly IConsentFlow Consent;
+        public readonly IAdsSdk AdsSdk;
+        public readonly StoreFlow StoreFlow;
         public readonly GameEndCoordinator Coordinator;
 
         public AppServices(ISaveStore store, IClock clock, Overrides o = null)
@@ -58,7 +61,7 @@ namespace TenGo.App
             o ??= new Overrides();
             Store = store;
             Clock = clock;
-            Analytics = o.Analytics ?? new LogAnalytics();
+            Analytics = o.Analytics ?? RealServices.Analytics() ?? new LogAnalytics();
             Settings = new SettingsRepository(store);
             Games = new GameStateRepository(store);
             Economy = new EconomyRepository(store);
@@ -77,16 +80,22 @@ namespace TenGo.App
             AdFree = new AdFreeRepository(store, Economy);
             DuelHistory = new DuelHistoryRepository(store);
 
+            // Services réels sur appareil (symboles TENGO_*, voir RealServices),
+            // simulés dans l'éditeur et les tests.
+            AdsSdk = o.AdsSdk ?? RealServices.AdsSdk() ?? new SimulatedAdsSdk();
+            StoreFlow = new StoreFlow(Economy, AdFree, Analytics);
             var interstitialPolicy = new InterstitialPolicy(store, clock);
-            Interstitials = new InterstitialAdManager(interstitialPolicy, o.Interstitials ?? new SimulatedInterstitialAds(),
+            Interstitials = new InterstitialAdManager(interstitialPolicy,
+                o.Interstitials ?? RealServices.Interstitials(AdsSdk, Analytics, () => AdFree.IsPurchased) ?? new SimulatedInterstitialAds(),
                 () => AdFree.IsPurchased, () => FirstRun.IsFirstSession);
-            Rewarded = new RewardedAdManager(new RewardedPolicy(store, clock), o.Rewarded ?? new SimulatedRewardedAds(),
-                interstitialPolicy, Analytics);
-            Duels = o.Duels ?? new SimulatedDuelBackend(DuelHistory);
-            Play = o.Play ?? new LogPlayServices(Settings);
-            AdFreeStore = o.AdFreeStore ?? new SimulatedAdFreeStore(AdFree);
-            CoinStore = o.CoinStore ?? new SimulatedCoinStore(Economy, AdFree);
-            Consent = o.Consent ?? new SimulatedConsentFlow();
+            Rewarded = new RewardedAdManager(new RewardedPolicy(store, clock),
+                o.Rewarded ?? RealServices.Rewarded(AdsSdk, Analytics) ?? new SimulatedRewardedAds(), interstitialPolicy, Analytics);
+            Play = o.Play ?? RealServices.Play(Settings, Streak) ?? new LogPlayServices(Settings);
+            Duels = o.Duels ?? RealServices.Duels(DuelHistory, () => Play.PlayerName) ?? new SimulatedDuelBackend(DuelHistory);
+            var realStore = RealServices.Store(StoreFlow, AdFree);
+            AdFreeStore = o.AdFreeStore ?? realStore as IAdFreeStore ?? new SimulatedAdFreeStore(AdFree);
+            CoinStore = o.CoinStore ?? realStore as ICoinStore ?? new SimulatedCoinStore(Economy, AdFree);
+            Consent = o.Consent ?? RealServices.Consent(Analytics) ?? new SimulatedConsentFlow();
             Coordinator = new GameEndCoordinator(Games, Economy, Level, Missions, Stats, Achievements, Puzzles, Streak,
                 clock, Analytics, Mirror, Seeds, FirstRun);
             Coordinator.SeedPlanted += ms => Play.ScheduleSeedBloom(ms);
