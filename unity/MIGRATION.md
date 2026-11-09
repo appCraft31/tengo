@@ -13,6 +13,7 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
 | 5 | Partie (`GameScene` : 6 modes, boosters, sauvegarde, fin de partie) | ✅ fait (services simulés jusqu'à l'étape 7, écrans hors partie livrés à l'étape 6) |
 | 6 | Écrans (menu, boutique, profil, missions, succès, miroir, duel, puzzles, classement, réglages, tutoriel) | ✅ fait (achats, pubs, consentement et Game Center simulés jusqu'à l'étape 7) |
 | 7 | Services : AdMob + UMP/ATT + médiation, Unity IAP, Firebase (Analytics, Auth, Firestore), Game Center / Play Games, notifications, avis, partage, haptique, liens profonds | ✅ fait (intégration locale ; vérifications sur appareil et en console listées ci-dessous) |
+| R | Refonte visuelle 4.0 (direction A « plat crème ») | en cours : système, partie, accueil et barre d'onglets faits ; autres écrans à refaire (voir « Refonte visuelle (4.0) ») |
 | 8 | Builds signés (AAB, projet Xcode), fastlane iOS, `.play-deploy.json` | à faire |
 | 9 | Recette (mise à jour par-dessus la 3.3.0) puis publication simultanée, sur accord de l'utilisateur | à faire |
 | 10 | Gel des apps natives `ios/` et `android/` | à faire |
@@ -361,3 +362,50 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
     - reprise de l'uid Firebase anonyme : les SDK natifs gardent leur trousseau ou leurs préférences, à confirmer.
   - **Firebase sur l'APK de dev** : le paquet unitydev n'est pas déclaré dans google-services.json. Firebase s'y initialise avec l'app Android de production, mais une build de développement n'envoie aucune analytics.
 
+## Refonte visuelle (4.0)
+
+Décision de l'utilisateur (9 nov. 2026) : la 4.0 sort avec la nouvelle interface, plutôt qu'en parité visuelle avec la 3.3.0. Il a retenu la direction **A « plat crème »**, **sans bandeau de somme** pendant le tracé. Les maquettes sont dans `../design/refonte/` (`systeme.css`, `systeme.js`, `01_partie_A`, `02_accueil`, etc.) et le dossier est en lecture seule.
+
+**Système** (`Assets/Scripts/Ui/Design.cs`) :
+- Jetons de couleur :
+  - fond #F7F3EC, carte blanche, creux #EFE9DF, filet #E6DED1 ;
+  - encres #34312C, #6F675B, #8C8376 ;
+  - accent #65BD90, avec texte #1F3D2E ;
+  - en dehors du thème par défaut, les mêmes rôles sont dérivés du fond et de l'encre du thème.
+- Échelle `Design.Pt()` : points de maquette vers unités de scène, avec la largeur visible bornée entre 360 et 480 pt.
+- Briques : surfaces avec filet de 1 pt, disques, boutons-icônes, pastilles, pièce plate.
+- Aplats sans ombre portée ni rebord 3D. `Relief.Raise` aplatit désormais toutes les surfaces existantes (seul reste un filet sous les surfaces claires), ce qui uniformise aussi les écrans pas encore refaits.
+- Icônes au trait : 27 SVG repris de `systeme.js` (`IconLibrary.Line.cs`, noms `Line…`). Le test `LineIconsMatchDesignSystem` les compare à la maquette. `SvgPath` lit maintenant `circle` et `rect`.
+- Barre d'onglets libellée (Jouer, Profil, Duel, Boutique) ; l'onglet actif est posé sur une pilule.
+- Textes ajoutés par Unity : `Resources/Localization/strings_unity.json` (clés `ui.*`), fusionné dans `Loc` par `Loc.Merge`. Le test `UnityStringsTests` vérifie les 10 langues et la présence des glyphes CJK dans les polices de repli.
+  - Ces polices ne contiennent que les caractères du catalogue iOS, d'où quelques traductions de compromis : ja ブロック/アンカー/フリーズ ; zh 关闭/锁定/定住 pour « obstacles / ancrées / gelées ».
+  - À faire relire, ou à régénérer avec les polices.
+
+**Thème « default »** :
+- Nouvelle palette des bulles 1 à 9, lisible en daltonisme.
+- Bulles en aplat, chiffre encre en Nunito Bold.
+- Sélection : agrandissement de 1,08 avec deux anneaux, crème puis encre.
+- Trait du chemin : encre à 55 %, 7 pt, sans comète.
+- Pierres en #D9D3C9, gelées entourées d'un anneau blanc en pointillés, ancrées marquées d'un point encre.
+- Fond uni, sans cercles flous.
+
+**Écrans faits** :
+- partie, d'après `01_partie_A` :
+  - en-tête maison / score / pause, « Meilleur » ou puce du mode ;
+  - chrono et barre en Rush ;
+  - gain dans une pastille blanche ;
+  - rangée des boosters, toujours visibles : un « + » quand le stock est vide, qui ouvre la proposition vers la Boutique ;
+- accueil, d'après `02_accueil` : niveau et XP, pièces, réglages, logo, Jouer ou Reprendre + Nouvelle partie (graines), carte Défi du jour, Rush / Duel / Puzzles, vidéo ;
+- barre d'onglets.
+
+**Écrans à refaire** (ils marchent, aplatis par `Relief`, mais gardent leur ancienne mise en page) : fin de partie, boutique, profil, ton cerveau (miroir), missions, succès, duel, puzzles, classement, réglages, tutoriel. Leurs maquettes sont dans `design/refonte/`.
+
+**À revoir avec la Boutique** :
+- Les 6 autres thèmes gardent leurs couleurs de bulles et leurs fonds animés.
+- Les matières cosmétiques (brillante, verre, néon) restent fonctionnelles, mais ne sont pas encore pensées pour l'aplat.
+- Les tracés autres que « classique » gardent leur comète.
+
+**Écarts assumés avec les maquettes** :
+- Le Défi du jour n'a ni boosters ni bouton Rejouer, comme sur iOS ; la maquette les montre.
+- Le décompte de début de Rush est conservé.
+- Sur un écran haut (440 pt de large), l'espace vertical sous la grille est plus grand que sur les 390 pt de la maquette.
