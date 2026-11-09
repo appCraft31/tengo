@@ -17,6 +17,17 @@ half3 TenGoOut(half3 srgbPremultiplied)
     return srgbPremultiplied;
 #else
     return SRGBToLinear(max(srgbPremultiplied, 0));
+// Masque de découpe (SKCropNode des pages défilantes) : rectangle en
+// coordonnées monde (xmin, ymin, xmax, ymax), bord adouci d'un pixel. Le
+// rectangle par défaut (±1e6) ne découpe rien.
+float TenGoClipMask(float2 ws, float4 rect)
+{
+    float2 d = min(ws - rect.xy, rect.zw - ws);
+    float m = min(d.x, d.y);
+    float aa = max(fwidth(m), 1e-5);
+    return saturate(m / aa + 0.5);
+}
+
 #endif
 }
 
@@ -55,6 +66,17 @@ float TenGoSegment(float2 p, float2 a, float2 b, out float t)
     float2 pa = p - a, ba = b - a;
     t = saturate(dot(pa, ba) / max(dot(ba, ba), 1e-8));
     return length(pa - ba * t);
+}
+
+// Masque de découpe (SKCropNode des pages défilantes) : rectangle en
+// coordonnées monde (xmin, ymin, xmax, ymax), bord adouci d'un pixel. Le
+// rectangle par défaut (±1e6) ne découpe rien.
+float TenGoClipMask(float2 ws, float4 rect)
+{
+    float2 d = min(ws - rect.xy, rect.zw - ws);
+    float m = min(d.x, d.y);
+    float aa = max(fwidth(m), 1e-5);
+    return saturate(m / aa + 0.5);
 }
 
 #endif

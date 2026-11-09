@@ -24,6 +24,11 @@ namespace TenGo.Services
             if (_settings != null) _settings.NotifGamesPlayed += 1;
             Log("partie comptée pour les notifications");
         }
+        public void Authenticate() => Log("connexion Game Center / Play Games");
+        /// Partage de l'app (`AppConfig.shareMessage`), demande d'avis, mail au support, réglages système.
+        public void ShareApp() => Log("partage de l'app");
+        public void OpenSupportMail() => Log("mail au support");
+        public void OpenSystemSettings() => Log("réglages système de l'app");
         public void ShareDuel(string code) => Log("partage du duel " + code);
         public void ScheduleSeedBloom(long bloomAtMs) => Log("notification d'éclosion à " + bloomAtMs);
     }

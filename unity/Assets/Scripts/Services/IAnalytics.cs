@@ -28,5 +28,21 @@ namespace TenGo.Services
         void NoAdsOfferDeclined(string source);
         /// `shop_from_game` (reason).
         void ShopOpenedFromGame(string reason);
+        /// `tutorial_complete`.
+        void TutorialComplete();
+        /// `sound_toggled` (enabled) + propriété `sound_on`.
+        void SoundToggled(bool enabled);
+        /// `spend_virtual_currency` (item_name, virtual_currency_name, value, quantity, source).
+        void BoosterPurchased(string id, int quantity, int cost, string source);
+        /// `earn_virtual_currency` (reason = tutorial_refund).
+        void BoosterRefunded(string id, int amount);
+        /// `shop_guide` (step : shown | opened | purchased | refunded | later | gaveup).
+        void ShopGuide(string step);
+        /// `shop_opened` (source : tab | game).
+        void ShopOpened(string source);
+        /// `noads_offer_view` (source) sans compteurs (carte de la boutique).
+        void NoAdsOfferView(string source);
+        /// `mirror_opened` (games, repertoire).
+        void MirrorOpened(int gamesMeasured, int repertoire);
     }
 }

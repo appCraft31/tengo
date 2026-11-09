@@ -47,7 +47,7 @@ namespace TenGo.Game
         readonly bool _resuming;
 
         public GameMode Mode { get; }
-        GameModeKind Kind => Mode.Kind;
+        public GameModeKind Kind => Mode.Kind;
         public Transform Root { get; }
         SceneGeometry _geometry;
 

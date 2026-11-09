@@ -17,6 +17,14 @@ namespace TenGo.Services
         void RegisterGameAndMaybeRequestNotifications();
         /// `DuelShare.present(code:)`.
         void ShareDuel(string code);
+        /// Feuille de partage de l'app (`AppConfig.shareMessage`, réglages).
+        void ShareApp();
+        /// Mail au support (`mailto:` avec version et système).
+        void OpenSupportMail();
+        /// Page de l'app dans les réglages système (suivi, notifications).
+        void OpenSystemSettings();
+        /// Connexion Game Center / Play Games (`GameCenterManager.authenticate`).
+        void Authenticate();
         /// Programme l'annonce d'éclosion de la graine (ms Unix).
         void ScheduleSeedBloom(long bloomAtMs);
     }

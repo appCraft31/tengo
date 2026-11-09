@@ -10,6 +10,7 @@ Shader "TenGo/Trail"
         _Color ("Couleur sRGB", Vector) = (1, 1, 1, 0.6)
         _Line ("Demi-épaisseur, nombre de points, période et longueur du tiret (unités)", Vector) = (0.03, 0, 0, 0)
         _Params ("Alpha hérité", Vector) = (1, 0, 0, 0)
+        _TenGoClip ("Découpe monde (xmin, ymin, xmax, ymax)", Vector) = (-1000000, -1000000, 1000000, 1000000)
     }
 
     SubShader
@@ -33,18 +34,20 @@ Shader "TenGo/Trail"
                 float4 _Color;
                 float4 _Line;
                 float4 _Params;
+                float4 _TenGoClip;
             CBUFFER_END
             // x, y (unités locales), longueur cumulée au point.
             float4 _Points[32];
 
             struct Attributes { float4 positionOS : POSITION; };
-            struct Varyings { float4 positionCS : SV_POSITION; float2 local : TEXCOORD0; };
+            struct Varyings { float4 positionCS : SV_POSITION; float2 local : TEXCOORD0; float2 world : TEXCOORD1; };
 
             Varyings vert(Attributes v)
             {
                 Varyings o;
                 o.positionCS = TransformObjectToHClip(v.positionOS.xyz);
                 o.local = v.positionOS.xy;
+                o.world = TransformObjectToWorld(v.positionOS.xyz).xy;
                 return o;
             }
 
@@ -69,7 +72,7 @@ Shader "TenGo/Trail"
                     }
                     best = min(best, d);
                 }
-                float a = TenGoCover(best - halfW, 0) * _Color.a * _Params.x;
+                float a = TenGoCover(best - halfW, 0) * _Color.a * _Params.x * TenGoClipMask(i.world, _TenGoClip);
                 return half4(TenGoOut(_Color.rgb * a), a);
             }
             ENDHLSL

@@ -12,6 +12,11 @@ namespace TenGo.Rendering
         static readonly int MainTexId = Shader.PropertyToID("_MainTex");
         static readonly int ColorId = Shader.PropertyToID("_Color");
         static readonly int SdfId = Shader.PropertyToID("_Sdf");
+        static readonly int ClipRectId = Shader.PropertyToID("_TenGoClip");
+        Vector4 _clipRect = Clipping.None;
+
+        /// Découpe monde (xmin, ymin, xmax, ymax) des pages défilantes (`Clipping`).
+        public void SetClip(Vector4 worldRect) { _clipRect = worldRect; Apply(); }
 
         VectorIconName _name;
         float _sizePt;
@@ -49,6 +54,7 @@ namespace TenGo.Rendering
             _block.SetTexture(MainTexId, IconLibrary.Field(_name));
             _block.SetVector(ColorId, _color.ToVector());
             _block.SetVector(SdfId, new Vector4(IconLibrary.Range, IconLibrary.HalfStroke, half, FxAlpha.Inherited(transform)));
+            _block.SetVector(ClipRectId, _clipRect);
             r.SetPropertyBlock(_block);
             r.localBounds = new Bounds(Vector3.zero, new Vector3(half * 2f, half * 2f, 0.01f));
         }

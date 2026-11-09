@@ -19,6 +19,8 @@ namespace TenGo.App
             public IDuelBackend Duels;
             public IPlayServices Play;
             public IAdFreeStore AdFreeStore;
+            public ICoinStore CoinStore;
+            public IConsentFlow Consent;
         }
 
         public readonly ISaveStore Store;
@@ -47,6 +49,8 @@ namespace TenGo.App
         public readonly IDuelBackend Duels;
         public readonly IPlayServices Play;
         public readonly IAdFreeStore AdFreeStore;
+        public readonly ICoinStore CoinStore;
+        public readonly IConsentFlow Consent;
         public readonly GameEndCoordinator Coordinator;
 
         public AppServices(ISaveStore store, IClock clock, Overrides o = null)
@@ -81,6 +85,8 @@ namespace TenGo.App
             Duels = o.Duels ?? new SimulatedDuelBackend(DuelHistory);
             Play = o.Play ?? new LogPlayServices(Settings);
             AdFreeStore = o.AdFreeStore ?? new SimulatedAdFreeStore(AdFree);
+            CoinStore = o.CoinStore ?? new SimulatedCoinStore(Economy, AdFree);
+            Consent = o.Consent ?? new SimulatedConsentFlow();
             Coordinator = new GameEndCoordinator(Games, Economy, Level, Missions, Stats, Achievements, Puzzles, Streak,
                 clock, Analytics, Mirror, Seeds, FirstRun);
             Coordinator.SeedPlanted += ms => Play.ScheduleSeedBloom(ms);

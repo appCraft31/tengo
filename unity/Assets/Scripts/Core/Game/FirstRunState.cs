@@ -28,6 +28,10 @@ namespace TenGo.Core
         /// jusqu'au prochain lancement à froid.
         public bool IsFirstSession { get; private set; }
 
+        /// La toute première partie vient de se terminer (`tenGOFirstGameCompleted`) :
+        /// le contrôleur lance alors consentement, Game Center et pubs.
+        public event Action? FirstGameCompleted;
+
         /// Aucune partie terminée depuis l'installation.
         public bool IsPending => _store.GetString(SaveKeys.FirstRunState) == Pending;
 
@@ -73,6 +77,7 @@ namespace TenGo.Core
             long seconds = SecondsSinceFirstOpen;
             _store.SetString(SaveKeys.FirstRunState, Done);
             _analytics?.FirstGameComplete(mode, score, won, seconds);
+            FirstGameCompleted?.Invoke();
             return true;
         }
     }

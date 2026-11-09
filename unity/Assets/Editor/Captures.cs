@@ -12,7 +12,7 @@ namespace TenGo.Editor
     /// Captures d'écran en batchmode (`Tools/unity.sh TenGo.Editor.Captures.GlowDemo`) :
     /// la caméra de la scène est rendue dans une RenderTexture, enregistrée
     /// en PNG dans Logs/captures/.
-    public static class Captures
+    public static partial class Captures
     {
         public const string Dir = "Logs/captures";
 
@@ -136,8 +136,8 @@ namespace TenGo.Editor
                 var tex = new Texture2D(width, height, TextureFormat.RGBA32, false);
                 tex.ReadPixels(new Rect(0, 0, width, height), 0, 0);
                 tex.Apply();
-                Directory.CreateDirectory(Dir);
                 var path = Path.GetFullPath(Path.Combine(Dir, file));
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
                 File.WriteAllBytes(path, tex.EncodeToPNG());
                 Object.DestroyImmediate(tex);
                 return path;

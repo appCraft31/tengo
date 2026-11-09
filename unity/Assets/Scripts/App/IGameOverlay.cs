@@ -12,7 +12,7 @@ namespace TenGo.App
         void Close();
     }
 
-    /// Fabrique des surcouches : l'étape 6 y branche les vrais réglages.
+    /// Fabrique des surcouches (`TenGo.Screens.OverlayFactory`).
     public interface IOverlayFactory
     {
         /// Réglages (son, vibrations, revoir le tutoriel…) posés sur `parent`.

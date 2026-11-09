@@ -17,6 +17,11 @@ namespace TenGo.Rendering
         static readonly int LineId = Shader.PropertyToID("_Line");
         static readonly int ParamsId = Shader.PropertyToID("_Params");
         static readonly int PointsId = Shader.PropertyToID("_Points");
+        static readonly int ClipRectId = Shader.PropertyToID("_TenGoClip");
+        Vector4 _clipRect = Clipping.None;
+
+        /// Découpe monde (xmin, ymin, xmax, ymax) des pages défilantes (`Clipping`).
+        public void SetClip(Vector4 worldRect) { _clipRect = worldRect; Apply(); }
 
         readonly List<Vector2> _points = new();
         readonly Vector4[] _packed = new Vector4[MaxPoints];
@@ -101,6 +106,7 @@ namespace TenGo.Rendering
             _block.SetVector(LineId, new Vector4(halfW, _points.Count, Units.FromPoints(period), Units.FromPoints(_dashOnPt)));
             _block.SetVector(ParamsId, new Vector4(FxAlpha.Inherited(transform), 0, 0, 0));
             _block.SetVectorArray(PointsId, _packed);
+            _block.SetVector(ClipRectId, _clipRect);
             _renderer.SetPropertyBlock(_block);
         }
 

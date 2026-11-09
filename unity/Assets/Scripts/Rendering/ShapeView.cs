@@ -28,6 +28,11 @@ namespace TenGo.Rendering
         static readonly int BoxId = Shader.PropertyToID("_Box");
         static readonly int ParamsId = Shader.PropertyToID("_Params");
         static readonly int ExtentId = Shader.PropertyToID("_Extent");
+        static readonly int ClipRectId = Shader.PropertyToID("_TenGoClip");
+        Vector4 _clipRect = Clipping.None;
+
+        /// Découpe monde (xmin, ymin, xmax, ymax) des pages défilantes (`Clipping`).
+        public void SetClip(Vector4 worldRect) { _clipRect = worldRect; Apply(); }
 
         [SerializeField] ShapeKind kind;
         [SerializeField] Vector2 sizePt = new(78, 78);
@@ -118,6 +123,7 @@ namespace TenGo.Rendering
             _block.SetVector(BoxId, new Vector4(hx, hy, Units.FromPoints(cornerPt), lw));
             _block.SetVector(ParamsId, new Vector4((int)kind, soft, additive ? 1f : 0f, FxAlpha.Inherited(transform)));
             _block.SetVector(ExtentId, new Vector4(ex, ey, 0, 0));
+            _block.SetVector(ClipRectId, _clipRect);
             _renderer.SetPropertyBlock(_block);
             _renderer.localBounds = new Bounds(Vector3.zero, new Vector3(ex * 2f, ey * 2f, 0.01f));
         }

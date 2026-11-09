@@ -36,5 +36,15 @@ namespace TenGo.Services
         public void NoAdsOfferView(string source, int adsSeen, int adsToday) => Log("noads_offer_view", $"source={source} ads_seen={adsSeen} ads_today={adsToday}");
         public void NoAdsOfferDeclined(string source) => Log("noads_offer_decline", $"source={source}");
         public void ShopOpenedFromGame(string reason) => Log("shop_from_game", $"reason={reason}");
+        public void TutorialComplete() => Log("tutorial_complete", "");
+        public void SoundToggled(bool enabled) => Log("sound_toggled", $"enabled={(enabled ? 1 : 0)}");
+        public void BoosterPurchased(string id, int quantity, int cost, string source) =>
+            Log("spend_virtual_currency", $"item_name={id} virtual_currency_name=coins value={cost} quantity={quantity} source={source}");
+        public void BoosterRefunded(string id, int amount) =>
+            Log("earn_virtual_currency", $"virtual_currency_name=coins value={amount} item_name={id} reason=tutorial_refund");
+        public void ShopGuide(string step) => Log("shop_guide", $"step={step}");
+        public void ShopOpened(string source) => Log("shop_opened", $"source={source}");
+        public void NoAdsOfferView(string source) => Log("noads_offer_view", $"source={source}");
+        public void MirrorOpened(int gamesMeasured, int repertoire) => Log("mirror_opened", $"games={gamesMeasured} repertoire={repertoire}");
     }
 }

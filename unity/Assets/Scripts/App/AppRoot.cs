@@ -8,6 +8,7 @@ using TenGo.Haptics;
 using TenGo.Platform;
 using TenGo.Platform.Legacy;
 using TenGo.Rendering;
+using TenGo.Screens;
 using TenGo.Ui;
 using UnityEngine;
 using UnityEngine.InputSystem;
@@ -42,6 +43,10 @@ namespace TenGo.App
             public bool ShowMenuOnBoot = true;
             /// Faux : pas de fondu entre écrans (tests, captures).
             public bool Fades = true;
+            /// Lien du lancement à froid (tests) ; `null` = `Application.absoluteURL`.
+            public string LaunchUrl;
+            /// Faux : ni consentement ni Game Center au démarrage (captures).
+            public bool StartServices = true;
         }
 
         public static AppRoot Instance { get; private set; }
@@ -52,9 +57,15 @@ namespace TenGo.App
         public ShakeCamera Shake { get; private set; }
         public PointerInput Input { get; } = new();
         public IAppScreen Current { get; private set; }
-        /// Fabrique des écrans hors partie (étape 6 : remplacer `ProvisionalScreens`).
-        public IScreenFactory Screens { get; set; } = new ProvisionalScreens();
-        public IOverlayFactory Overlays { get; set; } = new ProvisionalOverlays();
+        /// Fabrique des écrans hors partie.
+        public IScreenFactory Screens { get; set; } = new ScreenFactory();
+        public IOverlayFactory Overlays { get; set; } = new OverlayFactory();
+        /// Liens entrants en attente (lancement à froid ou écran en transition).
+        public DeepLinkInbox Links { get; } = new();
+        /// Consentement recueilli et pubs démarrées (`isAdsSessionStarted`).
+        public bool AdsSessionStarted { get; private set; }
+        /// Le recueil du consentement a commencé (une seule fois par lancement).
+        public bool ConsentRequested { get; private set; }
         public IScreenRouter Router => this;
         public bool Booted { get; private set; }
 
@@ -112,8 +123,84 @@ namespace TenGo.App
             if (_options.ReadDevices) PointerInput.EnableTouch();
             Application.targetFrameRate = 60;
 
-            if (_options.ShowMenuOnBoot) Show(Screens.Menu(this), fade: false);
+            // 4. Premier écran (GameViewController.viewDidLoad) : tout premier
+            // lancement → tutoriel court qui mène droit en partie ; sinon l'accueil.
+            if (_options.ShowMenuOnBoot)
+            {
+                bool firstRun = Services.FirstRun.IsPending && !Services.Settings.HasSeenTutorial;
+                Show(firstRun ? Screens.Tutorial(this, true) : Screens.Menu(this), fade: false);
+            }
+
+            // 5. Liens entrants : celui du lancement à froid, puis ceux qui arrivent app ouverte.
+            string launchUrl = _options.LaunchUrl ?? (_options.Store == null ? Application.absoluteURL : null);
+            if (!string.IsNullOrEmpty(launchUrl)) Links.Receive(launchUrl);
+            if (_options.Store == null) Application.deepLinkActivated += OnDeepLinkActivated;
+            if (_options.ShowMenuOnBoot) ProcessPendingLinks();
+
+            // 6. Consentement, Game Center, pubs (viewDidAppear).
+            if (_options.StartServices) StartConsentFlow();
             FlushSave();
+        }
+
+        // MARK: - Liens profonds
+
+        void OnDeepLinkActivated(string url) => HandleDeepLink(url);
+
+        /// Lien reçu app ouverte (`DeepLink.handle` + notification) ; vrai si reconnu.
+        public bool HandleDeepLink(string url)
+        {
+            if (!Links.Receive(url)) { Debug.Log("[DeepLink] lien ignoré"); return false; }
+            ProcessPendingLinks();
+            return true;
+        }
+
+        /// Ouvre la destination des liens en attente (`viewDidAppear` à froid).
+        public void ProcessPendingLinks()
+        {
+            if (Links.ConsumeDaily()) Show(CreateGame(GameLaunch.ForDaily()));
+            if (Links.ConsumeProgress()) Show(Screens.Profile(this));
+            var code = Links.ConsumeDuelCode();
+            if (code != null) Show(Screens.Duel(this, code));
+        }
+
+        // MARK: - Consentement et services
+
+        /// `viewDidAppear` : au tout premier lancement, ni consentement ni Game
+        /// Center avant la fin de la première partie (puis 1,6 s, le temps que le
+        /// panneau de fin s'affiche, Game Center après la réponse). Sinon, 0,5 s
+        /// après l'affichage, Game Center puis consentement.
+        void StartConsentFlow()
+        {
+            if (ConsentRequested) return;
+            if (Services.FirstRun.IsPending)
+            {
+                void OnFirst()
+                {
+                    Services.FirstRun.FirstGameCompleted -= OnFirst;
+                    GatherConsent(1.6f, gameCenterAfterConsent: true);
+                }
+                Services.FirstRun.FirstGameCompleted += OnFirst;
+                return;
+            }
+            GatherConsent(0.5f, gameCenterAfterConsent: false);
+        }
+
+        void GatherConsent(float delay, bool gameCenterAfterConsent)
+        {
+            ConsentRequested = true;
+            if (!gameCenterAfterConsent) Services.Play.Authenticate();
+            FxTime.AfterRealtime(delay, () =>
+            {
+                if (this == null) return;
+                Services.Consent.Gather(personalized =>
+                {
+                    if (this == null) return;
+                    if (gameCenterAfterConsent) Services.Play.Authenticate();
+                    Debug.Log("[AdMob] Démarrage pubs — mode " + (personalized ? "personnalisé" : "non personnalisé") + " (simulé)");
+                    AdsSessionStarted = true;
+                    Services.Rewarded.PreloadIfNeeded();
+                });
+            });
         }
 
         void SetupCamera()
@@ -221,8 +308,30 @@ namespace TenGo.App
         public void ShowMenu() => Show(Screens.Menu(this));
         public void ShowPuzzleLevels(int world) => Show(Screens.PuzzleLevels(this, world));
         public void ShowDuel() => Show(Screens.Duel(this));
+        public void ShowDuel(string incomingCode) => Show(Screens.Duel(this, incomingCode));
         public void ShowShop(bool returnToGame) => Show(Screens.Shop(this, returnToGame));
-        public void ShowTutorial() => Show(Screens.Tutorial(this, false));
+        public void ShowShop(bool returnToGame, bool guided) => Show(Screens.Shop(this, returnToGame, guided));
+        /// Joueur qui n'a encore rien terminé : même tutoriel court que le premier lancement.
+        public void ShowTutorial() => Show(Screens.Tutorial(this, Services.FirstRun.IsPending));
+        public void ShowProfile() => Show(Screens.Profile(this));
+        public void ShowMissions() => Show(Screens.Missions(this));
+        public void ShowAchievements() => Show(Screens.Achievements(this));
+        public void ShowMirror() => Show(Screens.Mirror(this));
+        public void ShowLeaderboard() => Show(Screens.Leaderboard(this));
+
+        /// Onglet de premier niveau, sans transition (`TabBar.present`) : les
+        /// quatre écrans forment un même espace, pas une succession de pages.
+        public void ShowTab(Tab tab)
+        {
+            IAppScreen screen = tab switch
+            {
+                Tab.Progress => Screens.Profile(this),
+                Tab.Social => Screens.Duel(this),
+                Tab.Shop => Screens.Shop(this, false),
+                _ => Screens.Menu(this),
+            };
+            Show(screen, fade: false);
+        }
         public void StartGame(GameLaunch launch) => Show(CreateGame(launch));
 
         /// Écran de partie (sans l'afficher) : le pilote et les tests s'en servent aussi.
@@ -261,6 +370,7 @@ namespace TenGo.App
 
         void OnDestroy()
         {
+            Application.deepLinkActivated -= OnDeepLinkActivated;
             if (Booted) FlushSave();
             Current?.Dispose();
             if (Instance == this) Instance = null;

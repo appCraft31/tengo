@@ -10,8 +10,8 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
 | 2 | Core en C# : grille, aléatoire Swift, génération, score, défi du jour, puzzles, miroir, graines, progression, économie, fin de partie + tests portés de Kotlin | ✅ fait |
 | 3 | Reprise des données des apps natives (UserDefaults iOS, DataStore et SharedPreferences Android) + sauvegarde fichier JSON | ✅ fait (reste la vérification sur appareil, étape 9) |
 | 4 | Rendu (bulles, relief, tracés, thèmes, effets) et audio synthétisé | ✅ fait (reste la vérification sur appareil, étape 9) |
-| 5 | Partie (`GameScene` : 6 modes, boosters, sauvegarde, fin de partie) | ✅ fait (services simulés jusqu'à l'étape 7, écrans hors partie provisoires jusqu'à l'étape 6) |
-| 6 | Écrans (menu, boutique, profil, missions, succès, miroir, duel, puzzles, classement, réglages, tutoriel) | à faire |
+| 5 | Partie (`GameScene` : 6 modes, boosters, sauvegarde, fin de partie) | ✅ fait (services simulés jusqu'à l'étape 7, écrans hors partie livrés à l'étape 6) |
+| 6 | Écrans (menu, boutique, profil, missions, succès, miroir, duel, puzzles, classement, réglages, tutoriel) | ✅ fait (achats, pubs, consentement et Game Center simulés jusqu'à l'étape 7) |
 | 7 | Services : AdMob + UMP/ATT + médiation, Unity IAP, Firebase (Analytics, Auth, Firestore), Game Center / Play Games, notifications, avis, partage, haptique, liens profonds | à faire |
 | 8 | Builds signés (AAB, projet Xcode), fastlane iOS, `.play-deploy.json` | à faire |
 | 9 | Recette (mise à jour par-dessus la 3.3.0) puis publication simultanée, sur accord de l'utilisateur | à faire |
@@ -220,3 +220,33 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
 
 - Lancer l'émulateur avec `-gpu host` (`emulator -avd <nom> -gpu host`) : en rendu logiciel, il ne fournit pas OpenGL ES 3.1 et Unity échoue à initialiser l'API graphique au démarrage de l'APK.
 - Les réglages URP (`Assets/Settings/UniversalRP.asset`, `UniversalRenderPipelineGlobalSettings.asset`) sont réécrits par le build (élagage des variantes de shaders) : commiter ces changements avec le build.
+
+## Notes de l'étape 6
+
+- **Écrans** (`Assets/Scripts/Screens`, espace `TenGo.Screens`), portés de leur scène Swift :
+  - `MenuScreen` (MenuScene) : niveau, pièces, réglages, pub « +10 », logo, « Jouer » et son badge de graine, « Continuer », Défi du jour (série, boucliers, prochaine récompense), tuiles Rush / Duel / Puzzles, guide du premier achat sur l'onglet Boutique ;
+  - `ShopScreen` (BoutiqueScene) : page unique défilante (« Sans pub », Thèmes, Matières, Tracés, Boosters, Pièces), achat et équipement, bouton de retour depuis une partie, mode guidé (un indice acheté puis remboursé, « Plus tard ») ;
+  - `ProfileScreen`, `MissionsScreen`, `AchievementsScreen`, `MirrorScreen`, `LeaderboardScreen` (onglet Progression ; briques communes dans `ProfileScreenUi.cs`) ;
+  - `DuelScreen` et `DuelCodeEntryOverlay` (saisie du code dans la scène), `PuzzleLevelsScreen` ;
+  - `TutorialScreen` (2 pages au premier lancement, 3 pour « Revoir le tutoriel ») et `SettingsOverlay` (aussi utilisé en partie).
+  - Les écrans provisoires de l'étape 5 (`ProvisionalScreens`, `DevMenuScreen`, `PlaceholderScreen`, `SimpleScreen`) sont supprimés.
+- **Socle** :
+  - `ScreenBase` : cibles nommées (tests, pilote), tap iOS (`animateTap`, action au toucher sur les menus, au relâchement sur les écrans défilants), barre d'onglets (`TabBar`, onglets sans transition), surcouche prioritaire ;
+  - `ScrollArea` : défilement au doigt façon UIScrollView (seuil 8 pt, inertie, rebond élastique) ; `Clipping` remplace `SKCropNode` (rectangle `_TenGoClip` dans les shaders Shape / IconSdf / Trail, `_ClipRect` pour TextMeshPro) ;
+  - `UiArt` : triangle plein, coche « ✓ » redessinés.
+- **Liens profonds** : `Core/Links/DeepLink` (port pur de DeepLink.swift : `tengo://` et `https://appcraft31.app/tengo/*`, tests EditMode `DeepLinkTests`), `DeepLinkInbox`. `AppRoot` lit `Application.absoluteURL` au lancement à froid et `Application.deepLinkActivated` ensuite : Défi du jour → partie, Progression → Profil, code de duel → réponse au duel.
+- **Premier lancement** (ordre de GameViewController / FirstRun) : tutoriel court → partie → consentement 1,6 s après la première fin de partie, Game Center après la réponse. Joueur connu : Game Center, puis consentement 0,5 s plus tard. `IConsentFlow` (`SimulatedConsentFlow`) jusqu'à l'étape 7.
+- **Simulé en attendant l'étape 7** : `ICoinStore` (`SimulatedCoinStore` : 4 packs aux prix de la capture App Store, restauration), `IAdFreeStore`, `IConsentFlow`, et dans `IPlayServices` : `Authenticate`, `ShareApp`, `OpenSupportMail`, `OpenSystemSettings`. Analytics ajoutées avec les noms d'iOS : `shop_opened`, `noads_offer_view`, `shop_guide`, `spend_virtual_currency`, `earn_virtual_currency`, `tutorial_complete`, `sound_toggled`, `mirror_opened`.
+- **Captures** : `Tools/unity.sh TenGo.Editor.Captures.Screens [-langs fr,en,ja] [-themes default,night] [-only menu,shop]` produit chaque écran avec les données de vitrine d'iOS (`seedShowcaseData`) dans `Logs/captures/screens/<langue>_<thème>_<écran>.png` (29 écrans × 3 langues × 2 thèmes), puis vide les atlas de polices. Comparées aux captures du simulateur iOS (accueil, boutique, pièces, profil, duel, puzzles, miroir).
+- **Hygiène** : `Tools/run_tests.sh` vide les atlas dynamiques des polices (`ProjectSetup.ClearDynamicFontData`) s'ils ont changé, pour laisser `git status` propre.
+- **Tests** : 20 PlayMode (`ScreenFlowTests` : chaque onglet et retour, tuiles de l'accueil, achat et équipement d'un thème, cosmétique et booster, « sans pub » puis restauration, pack de pièces, guide d'achat remboursé et « Plus tard », retour en partie depuis la boutique, missions réclamées, succès par catégorie, duel créé et rejoint, niveau de puzzle, réglages persistés, revoir le tutoriel, premier lancement puis plus jamais, ordre du consentement, liens au lancement et app ouverte) et les EditMode `DeepLinkTests`. Au total : **196** EditMode et **44** PlayMode, tous verts.
+- **Écarts restants avec iOS** :
+  - Marges sûres : sur le simulateur, iOS présente ses scènes avec des marges nulles (plancher de 47 pt en haut, 20 pt en bas) ; `SceneGeometry.IPhone17ProMax` simule les vraies (62 / 34 pt). La rangée du haut est donc ~20 points plus bas et la barre d'onglets un peu plus haut que sur les captures iOS. Gardé tel quel (partagé avec la partie) : à trancher à la recette sur appareil.
+  - Duel : pas de lecture serveur (`IDuelBackend` sans `fetch` ni `myDuels`) : la liste montre l'historique local « en attente », la réponse dérive la graine du code (FNV-1a), sans refus « expiré / déjà joué / ton propre duel » ni score à battre. Un code reçu par lien lance directement la partie, comme iOS.
+  - Classement : les boutons Game Center sont toujours affichés (`IPlayServices` n'expose pas encore l'état de connexion).
+  - Glyphes redessinés en traits (‹ › ✓ ↑ ↓ ✦ ⌫, cadenas, pictogrammes SF Symbols des réglages et des succès).
+  - Listes de succès et carnet du miroir défilants au lieu d'être tronqués ou tassés ; titres des Missions et Succès à l'encre du thème sur fond sombre (gris illisible de nuit sur iOS).
+  - Le changement de catégorie des succès se fait sur place (fondu), sans nouvelle scène.
+  - Alerte de restauration des achats dessinée dans la scène au lieu d'un `UIAlertController`.
+  - Tutoriel : la phrase « 4 + 2 + … = 10 ? » chevauche la dernière rangée de bulles, comme sur iOS (mêmes coordonnées).
+

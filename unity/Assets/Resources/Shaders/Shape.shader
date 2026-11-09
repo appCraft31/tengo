@@ -12,6 +12,7 @@ Shader "TenGo/Shape"
         _Box ("Demi-largeur, demi-hauteur, rayon d'angle, épaisseur (unités)", Vector) = (0.5, 0.5, 0.5, 0)
         _Params ("Type, flou (unités), additif, alpha hérité", Vector) = (0, 0, 0, 1)
         _Extent ("Demi-côtés du quad (unités)", Vector) = (0.6, 0.6, 0, 0)
+        _TenGoClip ("Découpe monde (xmin, ymin, xmax, ymax)", Vector) = (-1000000, -1000000, 1000000, 1000000)
     }
 
     SubShader
@@ -37,10 +38,11 @@ Shader "TenGo/Shape"
                 float4 _Box;
                 float4 _Params;
                 float4 _Extent;
+                float4 _TenGoClip;
             CBUFFER_END
 
             struct Attributes { float4 positionOS : POSITION; float2 uv : TEXCOORD0; };
-            struct Varyings { float4 positionCS : SV_POSITION; float2 local : TEXCOORD0; };
+            struct Varyings { float4 positionCS : SV_POSITION; float2 local : TEXCOORD0; float2 world : TEXCOORD1; };
 
             Varyings vert(Attributes v)
             {
@@ -48,6 +50,7 @@ Shader "TenGo/Shape"
                 float2 local = (v.uv * 2.0 - 1.0) * _Extent.xy;
                 o.positionCS = TransformObjectToHClip(float3(local, 0));
                 o.local = local;
+                o.world = TransformObjectToWorld(float3(local, 0)).xy;
                 return o;
             }
 
@@ -66,7 +69,7 @@ Shader "TenGo/Shape"
                     // Disque doux : dégradé radial 1 → 0,85 (55 %) → 0 (FXTextures.dot).
                     float x = length(i.local) / max(b.x, 1e-5);
                     float a = x < 0.55 ? lerp(1.0, 0.85, x / 0.55) : lerp(0.85, 0.0, saturate((x - 0.55) / 0.45));
-                    a *= fill.a * inherited;
+                    a *= fill.a * inherited * TenGoClipMask(i.world, _TenGoClip);
                     return half4(TenGoOut(fill.rgb * a), _Params.z > 0.5 ? 0 : a);
                 }
 
@@ -88,6 +91,7 @@ Shader "TenGo/Shape"
                 half sa = saturate(stroke.a * ring);
                 half3 premult = stroke.rgb * sa + fill.rgb * fa * (1 - sa);
                 half a = sa + fa * (1 - sa);
+                inherited *= TenGoClipMask(i.world, _TenGoClip);
                 premult *= inherited;
                 a *= inherited;
                 return half4(TenGoOut(premult), _Params.z > 0.5 ? 0 : a);

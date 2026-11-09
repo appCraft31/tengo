@@ -24,4 +24,11 @@ for m in $MODES; do
     rc=$code
   fi
 done
+# Les tests remplissent les atlas dynamiques des polices (Assets/Fonts/*SDF.asset) :
+# on les vide pour laisser `git status` propre.
+if ! git -C $ROOT diff --quiet -- Assets/Fonts 2>/dev/null; then
+  $ROOT/Tools/unity.sh TenGo.Editor.ProjectSetup.ClearDynamicFontData >/dev/null 2>&1 \
+    && echo "Atlas de polices dynamiques vidés." \
+    || echo "Échec du vidage des atlas de polices (Tools/unity.sh TenGo.Editor.ProjectSetup.ClearDynamicFontData)."
+fi
 exit $rc
