@@ -65,7 +65,7 @@ namespace TenGo.Tests
             Assert.IsTrue(ThemeCatalog.All.All(t => t.Bubbles.Count == 9));
             Theme space = ThemeCatalog.ById("space");
             Assert.AreEqual(300, space.Price);
-            Assert.AreEqual(0.09, space.Background.R, 1e-9);
+            Assert.AreEqual(0x17 / 255.0, space.Background.R, 1e-9);   // #17142E (palette 4.0)
             Assert.AreEqual(1.0, space.Background.ReadableInk().R, 1e-9);
             var themes = new ThemeRepository(_store, _economy);
             Assert.IsTrue(themes.Owns("default"));

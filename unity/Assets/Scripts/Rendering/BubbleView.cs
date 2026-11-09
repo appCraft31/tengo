@@ -83,32 +83,37 @@ namespace TenGo.Rendering
             _baseLineWidth = _circle.LineWidthPt;
         }
 
-        /// Matière de bulle (cosmétique, purement visuelle). Toutes restent des
-    /// aplats : mate = la bulle par défaut, brillante = un reflet plat, verre =
-    /// aplat translucide cerclé de blanc, néon = liseré clair et halo plat.
-    /// À revoir avec l'écran Boutique (refonte 4.0).
+        /// Matière de bulle (cosmétique, purement visuelle), revue pour l'aplat
+        /// (refonte 4.0) : aucun dégradé ni ombre, le chiffre reste sur un fond
+        /// opaque pour garder son contraste.
+        /// - classique : l'aplat du thème ;
+        /// - mate : teinte adoucie vers le fond, cerclée d'un filet ton sur ton ;
+        /// - brillante : l'aplat et un reflet plat en haut à gauche ;
+        /// - verre : aplat éclairci, liseré blanc et second anneau intérieur ;
+        /// - néon : liseré clair et anneau plat extérieur.
         void ApplyMaterial()
         {
             switch (Material)
             {
                 case BubbleMaterial.Matte:
-                    _circle.Stroke = Color.clear;
-                    _circle.LineWidthPt = 0;
+                    _circle.Fill = Color.Lerp(_color, Look.Background, 0.18f);
+                    _circle.Stroke = _color.Darkened(0.12f);
+                    _circle.LineWidthPt = _radius * 0.06f;
                     break;
                 case BubbleMaterial.Glossy:
                     AddGlint();
                     break;
                 case BubbleMaterial.Glass:
-                    _circle.Fill = _color.WithAlpha(0.5f);
-                    _circle.Stroke = Colors.White(1, 0.6f);
-                    _circle.LineWidthPt = 2;
+                    _circle.Fill = _color.MixedWithWhite(0.3f);
+                    _circle.Stroke = Colors.White(1, 0.9f);
+                    _circle.LineWidthPt = _radius * 0.07f;
+                    ShapeView.Circle("Inner", transform, Vector2.zero, _radius * 0.8f, Color.clear, Colors.White(1, 0.55f), _radius * 0.04f, Order + 1);
                     AddGlint();
                     break;
                 case BubbleMaterial.Neon:
-                    _circle.Fill = _color.WithAlpha(0.9f);
-                    _circle.Stroke = _color.Lightened(0.25f);
-                    _circle.LineWidthPt = 2.5f;
-                    ShapeView.Circle("Glow", transform, Vector2.zero, _radius + 4, _color.WithAlpha(0.28f), default, 0, Order - 1);
+                    _circle.Stroke = _color.Lightened(0.3f);
+                    _circle.LineWidthPt = _radius * 0.07f;
+                    ShapeView.Circle("Glow", transform, Vector2.zero, _radius * 1.12f, Color.clear, _color.WithAlpha(0.45f), _radius * 0.06f, Order - 1);
                     break;
             }
         }
@@ -116,7 +121,7 @@ namespace TenGo.Rendering
         void AddGlint()
         {
             var g = ShapeView.Ellipse("Glint", transform, Units.P(-_radius * 0.28f, _radius * 0.34f),
-                new Vector2(_radius * 0.7f, _radius * 0.42f), Colors.White(1, 0.4f), default, 0, Order + 1);
+                new Vector2(_radius * 0.62f, _radius * 0.34f), Colors.White(1, 0.55f), default, 0, Order + 1);
             g.transform.localRotation = Quaternion.Euler(0, 0, -0.5f * Mathf.Rad2Deg);
         }
 

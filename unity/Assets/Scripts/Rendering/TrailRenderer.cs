@@ -23,43 +23,38 @@ namespace TenGo.Rendering
             void Stroke(Color color, float width, bool dashed = false)
             {
                 var s = StrokeView.Create("Stroke", container, points, color.MixedWithWhite(lift), width + extra, order);
-                if (dashed) s.SetDash(2, 14);
+                if (dashed) s.SetDash(0.1f * width, 1.9f * width);
             }
 
+            // Refonte 4.0 : tous les tracés sont des aplats à bouts ronds, sans comète.
+            float u = Ui.Design.Pt(1);
             switch (style)
             {
-                // Refonte 4.0 : trait encre à 55 %, 7 pt, bouts ronds.
-                case TrailKind.Classic: Stroke(Ui.Design.Ink.WithAlpha(0.55f), Ui.Design.Pt(7)); break;
+                // Trait encre à 55 %, 7 pt.
+                case TrailKind.Classic: Stroke(Ui.Design.Ink.WithAlpha(0.55f), 7 * u); break;
+                // Néon : âme d'accent et liseré plat, sans flou.
                 case TrailKind.Neon:
-                    Stroke(accent.WithAlpha(0.25f), 16);   // halo
-                    Stroke(accent, 5);
+                    Stroke(accent.WithAlpha(0.28f), 14 * u);
+                    Stroke(accent, 5 * u);
                     break;
-                case TrailKind.Ribbon: Stroke(accent.WithAlpha(0.45f), 14); break;
-                case TrailKind.Dotted: Stroke(Colors.White(1, 0.9f), 7, dashed: true); break;
-                case TrailKind.Ink: Stroke(Colors.White(0.18f, 0.7f), 7); break;
+                // Ruban : large bande d'accent.
+                case TrailKind.Ribbon: Stroke(accent.WithAlpha(0.6f), 12 * u); break;
+                // Pointillé : points ronds d'encre.
+                case TrailKind.Dotted: Stroke(Ui.Design.Ink.WithAlpha(0.7f), 7 * u, dashed: true); break;
+                // Encre : trait plein, plus fin et plus sombre que le classique.
+                case TrailKind.Ink: Stroke(Ui.Design.Ink.WithAlpha(0.9f), 4.5f * u); break;
             }
             return container;
         }
 
-        /// Comète en tête de tracé (GameScene.moveComet) : disque doux additif,
-        /// teinte d'accent blanchie avec la tension, taille 26 + 16·t, alpha
-        /// 0,45 + 0,35·t, glisse en 0,06 s. `null` sans animations.
+        /// Comète en tête de tracé (GameScene.moveComet) : retirée par la refonte
+        /// 4.0, les tracés en aplat se lisent seuls. Rend la comète existante
+        /// effacée (`null` si aucune), pour les appelants qui la gardent.
         public static ShapeView MoveComet(ShapeView comet, Transform parent, Vector2 position, float tension, Color accent,
             int order = Layers.Comet)
         {
-            if (!JuiceSettings.MotionEnabled) return comet;
-            // Refonte 4.0 : le trait encre classique se lit seul, sans halo en tête.
-            if (Look.Trail == TrailKind.Classic) return comet;
-            if (comet == null)
-            {
-                comet = ShapeView.Dot("Comet", parent, position, 26, Color.white, additive: true, order);
-            }
-            comet.Fill = accent.MixedWithWhite(0.25f + 0.45f * tension);
-            float size = 26 + 16 * tension;
-            comet.SizePt = new Vector2(size, size);
-            FxAlpha.Of(comet.gameObject).Alpha = 0.45f + 0.35f * tension;
-            Tw.Run(comet.gameObject, Tw.MoveTo(comet.transform, position, 0.06f), "move");
-            return comet;
+            if (comet != null) { RenderShared.Destroy(comet.gameObject); }
+            return null;
         }
     }
 }

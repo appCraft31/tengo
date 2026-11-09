@@ -9,8 +9,6 @@ namespace TenGo.Core
     /// l'ordre d'affichage de la boutique.
     public static class ThemeCatalog
     {
-        private static RgbColor C(double r, double g, double b) => new RgbColor(r, g, b);
-
         /// Couleur `#RRGGBB`.
         private static RgbColor H(int rgb) => new RgbColor(((rgb >> 16) & 0xFF) / 255.0, ((rgb >> 8) & 0xFF) / 255.0, (rgb & 0xFF) / 255.0);
 
@@ -19,49 +17,36 @@ namespace TenGo.Core
             // Refonte 4.0 (direction A « plat crème », design/refonte/systeme.css) :
             // fond crème, encre #34312C, accent #65BD90 et palette des bulles
             // calculée pour rester distincte en deutéranopie, protanopie et
-            // tritanopie. Les autres thèmes seront revus avec la Boutique.
+            // tritanopie.
             new Theme("default", 0,
                 background: H(0xF7F3EC),
                 accent: H(0x65BD90),
                 digit: H(0x34312C),
                 logo: H(0x34312C),
                 bubbles: new[] { H(0xFACFCC), H(0xDB9661), H(0xD7C06C), H(0xC6E99B), H(0x65BD90), H(0x7FEFFB), H(0x97C6F7), H(0xA99BE6), H(0xF0A5D7) }),
+            // Thèmes payants recalculés pour la 4.0 (aplat) : 9 bulles distinctes
+            // en vision normale, deutéranopie, protanopie et tritanopie (pire ΔE
+            // OKLab ×100 de 7,1 à 9,8, contre 0,2 à 2,4 avant ; défaut : 5,1),
+            // chiffre ≥ 4,5:1 sur chaque bulle, teintes bornées à l'identité du
+            // thème. Voir MIGRATION.md, « Refonte visuelle (4.0) ».
             new Theme("forest", 150,
-                background: C(0.93, 0.95, 0.88),
-                accent: C(0.55, 0.68, 0.48),
-                digit: C(0.20, 0.16, 0.12),
-                logo: C(0.22, 0.32, 0.22),
-                bubbles: new[] { C(0.70, 0.80, 0.60), C(0.62, 0.74, 0.55), C(0.80, 0.82, 0.62), C(0.74, 0.68, 0.50), C(0.66, 0.72, 0.60), C(0.82, 0.72, 0.56), C(0.58, 0.70, 0.58), C(0.76, 0.78, 0.66), C(0.68, 0.66, 0.52) }),
+                background: H(0xEDF2E0), accent: H(0x97C99B), digit: H(0x242E1E), logo: H(0x284529),
+                bubbles: new[] { H(0xD9A74C), H(0xBD8C2D), H(0xDCD069), H(0xE4F28F), H(0x8B9876), H(0x97C99B), H(0xA5FDD3), H(0x85E1DA), H(0x59B6B0) }),
             new Theme("ocean", 200,
-                background: C(0.91, 0.96, 0.97),
-                accent: C(0.36, 0.72, 0.78),
-                digit: C(0.08, 0.22, 0.33),
-                logo: C(0.10, 0.28, 0.40),
-                bubbles: new[] { C(0.62, 0.85, 0.86), C(0.46, 0.78, 0.80), C(0.40, 0.74, 0.72), C(0.52, 0.80, 0.66), C(0.66, 0.84, 0.72), C(0.45, 0.71, 0.83), C(0.38, 0.62, 0.80), C(0.50, 0.68, 0.86), C(0.63, 0.78, 0.88) }),
+                background: H(0xE8F5F7), accent: H(0x4EC4A6), digit: H(0x132D3E), logo: H(0x02435F),
+                bubbles: new[] { H(0x59E5BB), H(0x9AFFE1), H(0x4EC4A6), H(0x6192E4), H(0xBBCEFF), H(0x8C95AD), H(0xA0B0E6), H(0xB48A57), H(0xCBA963) }),
             new Theme("desert", 200,
-                background: C(0.96, 0.91, 0.83),
-                accent: C(0.85, 0.55, 0.40),
-                digit: C(0.30, 0.18, 0.12),
-                logo: C(0.42, 0.26, 0.18),
-                bubbles: new[] { C(0.94, 0.84, 0.68), C(0.93, 0.78, 0.62), C(0.91, 0.72, 0.55), C(0.90, 0.68, 0.58), C(0.89, 0.62, 0.50), C(0.87, 0.58, 0.45), C(0.85, 0.66, 0.62), C(0.82, 0.55, 0.48), C(0.80, 0.50, 0.42) }),
+                background: H(0xF5E8D4), accent: H(0xC97E54), digit: H(0x3B2419), logo: H(0x613521),
+                bubbles: new[] { H(0xFFC1DD), H(0xA38B93), H(0xC97E54), H(0xCFBAAD), H(0xF0B360), H(0xCBA040), H(0xFAEA89), H(0xA2A98B), H(0xCADAA2) }),
             new Theme("candy", 250,
-                background: C(0.98, 0.94, 0.95),
-                accent: C(0.96, 0.55, 0.72),
-                digit: C(0.28, 0.16, 0.30),
-                logo: C(0.30, 0.18, 0.33),
-                bubbles: new[] { C(0.97, 0.62, 0.74), C(0.98, 0.66, 0.62), C(0.99, 0.79, 0.63), C(0.98, 0.90, 0.58), C(0.80, 0.91, 0.62), C(0.62, 0.89, 0.74), C(0.64, 0.85, 0.93), C(0.74, 0.74, 0.93), C(0.86, 0.68, 0.91) }),
+                background: H(0xFAF0F2), accent: H(0xF46E73), digit: H(0x3B1F35), logo: H(0x592850),
+                bubbles: new[] { H(0xF46E73), H(0xF5AC5E), H(0xF8E056), H(0xC0FAC1), H(0x7FD3B0), H(0x5EF0FD), H(0x9C8BFE), H(0xC4ACFF), H(0xC18ABB) }),
             new Theme("space", 300,
-                background: C(0.09, 0.08, 0.18),
-                accent: C(0.55, 0.45, 0.85),
-                digit: C(0.12, 0.10, 0.22),
-                logo: C(0.93, 0.94, 0.99),
-                bubbles: new[] { C(0.62, 0.74, 0.95), C(0.78, 0.72, 0.96), C(0.94, 0.72, 0.88), C(0.72, 0.88, 0.92), C(0.69, 0.83, 0.78), C(0.96, 0.84, 0.70), C(0.95, 0.76, 0.74), C(0.84, 0.80, 0.95), C(0.74, 0.79, 0.96) }),
+                background: H(0x17142E), accent: H(0xC6AEFF), digit: H(0x23193C), logo: H(0xEDF0FC),
+                bubbles: new[] { H(0xFEA673), H(0xFFE0A4), H(0x7CC0BB), H(0xD3FBFC), H(0xAFDCDF), H(0x509DC0), H(0xA38FFF), H(0xC6AEFF), H(0xDB6891) }),
             new Theme("night", 300,
-                background: C(0.09, 0.11, 0.20),
-                accent: C(0.55, 0.62, 0.85),
-                digit: C(0.10, 0.13, 0.26),
-                logo: C(0.90, 0.92, 0.98),
-                bubbles: new[] { C(0.78, 0.84, 0.94), C(0.72, 0.80, 0.92), C(0.68, 0.78, 0.86), C(0.74, 0.82, 0.80), C(0.80, 0.82, 0.74), C(0.86, 0.80, 0.78), C(0.84, 0.76, 0.86), C(0.76, 0.74, 0.90), C(0.70, 0.72, 0.88) }),
+                background: H(0x171C33), accent: H(0x7CB8FF), digit: H(0x131F3B), logo: H(0xE6EBFA),
+                bubbles: new[] { H(0x949192), H(0xC7C5C2), H(0xE1F6FA), H(0xE4B356), H(0xF0DDAD), H(0x65DFFF), H(0x7CB8FF), H(0x7B94E9), H(0xBCA1C3) }),
         };
 
         public static Theme Default => All[0];
