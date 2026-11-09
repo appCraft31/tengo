@@ -1,0 +1,22 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: ce30245c0fc0749f8bb968fe7a3a9507, type: 3}
+  m_Name: TenGoFonts
+  m_EditorClassIdentifier: TenGo::TenGo.Rendering.TenGoFontSet
+  regular: {fileID: 11400000, guid: 7bfdbb204e3e24982acc548cc461dd35, type: 2}
+  semiBold: {fileID: 11400000, guid: 85fc14c9737fe4da9b84c5772b431659, type: 2}
+  bold: {fileID: 11400000, guid: de31c6c8483d1456497027e0c325d92e, type: 2}
+  extraBold: {fileID: 11400000, guid: ce9c356f8325447829d42f7b4c53bfad, type: 2}
+  black: {fileID: 11400000, guid: 1646a091f0ca4489b8925c65c1babaf2, type: 2}
+  japanese: {fileID: 11400000, guid: b82bc285548ee4baea91ebca48e88aa4, type: 2}
+  korean: {fileID: 11400000, guid: 4c820bb58743b45d699d2544553f5f7a, type: 2}
+  chineseSimplified: {fileID: 11400000, guid: 82243c4b179ae43ec83e2619f5a8299f, type: 2}

@@ -11,6 +11,12 @@ namespace TenGo
         public const float PointsPerUnit = 100f;
 
         public static float FromPoints(float points) => points / PointsPerUnit;
+
+        /// Point SpriteKit relatif au parent (x, y en points) → position locale Unity.
+        public static Vector2 P(float x, float y) => new Vector2(x / PointsPerUnit, y / PointsPerUnit);
+
+        /// Taille en points → unités.
+        public static Vector2 Size(float w, float h) => new Vector2(w / PointsPerUnit, h / PointsPerUnit);
         public static float ToPoints(float units) => units * PointsPerUnit;
 
         /// Point de l'écran de référence (origine en bas à gauche) → monde Unity.

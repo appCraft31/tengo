@@ -1,5 +1,7 @@
 using System.IO;
+using System.Collections.Generic;
 using TenGo.Rendering;
+using TenGo.Showcase;
 using TMPro;
 using UnityEditor;
 using UnityEditor.Build;
@@ -35,10 +37,25 @@ namespace TenGo.Editor
         {
             ApplyPlayerSettings();
             EnsureGlowMaterial();
+            EnsureMaterials();
             EnsureFont();
             EnsureDemoScene();
-            AssetDatabase.SaveAssets();
+            ClearDynamicFontData();
             Debug.Log("[ProjectSetup] Réglages appliqués.");
+        }
+
+        /// Vide les atlas des polices dynamiques (Nunito, replis CJK) et enregistre :
+        /// les glyphes rendus en éditeur (captures, tests) n'ont pas à finir dans le dépôt.
+        public static void ClearDynamicFontData()
+        {
+            foreach (var guid in AssetDatabase.FindAssets("t:TMP_FontAsset", new[] { "Assets/Fonts" }))
+            {
+                var asset = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(AssetDatabase.GUIDToAssetPath(guid));
+                if (asset == null || asset.atlasPopulationMode != AtlasPopulationMode.Dynamic) continue;
+                asset.ClearFontAssetData(true);
+                EditorUtility.SetDirty(asset);
+            }
+            AssetDatabase.SaveAssets();
         }
 
         static void ApplyPlayerSettings()
@@ -49,6 +66,10 @@ namespace TenGo.Editor
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, AndroidId);
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Standalone, AndroidId);
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, IosId);
+
+            // Espace Gamma : les couleurs sRGB se mélangent comme dans SpriteKit
+            // (voiles, ombres et tracés translucides sur fond crème, TenGoCommon.hlsl).
+            PlayerSettings.colorSpace = ColorSpace.Gamma;
 
             // Portrait seulement.
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
@@ -92,15 +113,62 @@ namespace TenGo.Editor
             AssetDatabase.CreateAsset(new Material(shader) { name = "GlowCircle" }, MaterialPath);
         }
 
-        /// Nunito en polices SDF dynamiques (une par graisse) ; Bold par défaut dans TextMeshPro.
+        /// Matériaux des shaders de rendu (Resources : inclus dans les builds).
+        static readonly string[] RenderMaterials = { "Shape", "Trail", "Wave", "IconSdf", "Dots" };
+
+        static void EnsureMaterials()
+        {
+            foreach (var name in RenderMaterials)
+            {
+                var path = $"Assets/Resources/Materials/{name}.mat";
+                if (File.Exists(path)) continue;
+                var shader = Shader.Find("TenGo/" + name) ?? throw new System.InvalidOperationException($"Shader TenGo/{name} introuvable");
+                AssetDatabase.CreateAsset(new Material(shader) { name = name }, path);
+            }
+        }
+
+        /// Replis CJK (Assets/Fonts/Fallback, voir LICENSES.md), dans l'ordre par défaut.
+        static readonly string[] CjkFallbacks = { "NotoSansJP-Bold", "NotoSansKR-Bold", "NotoSansSC-Bold" };
+        const string FontSetPath = "Assets/Fonts/Resources/" + Fonts.ResourcePath + ".asset";
+
+        /// Nunito en polices SDF dynamiques (une par graisse), replis Noto CJK
+        /// chaînés derrière chacune ; Bold par défaut dans TextMeshPro ; jeu de
+        /// polices `TenGoFonts` (Resources) pour l'accès par graisse.
         static void EnsureFont()
         {
+            var fallbacks = new List<TMP_FontAsset>();
+            foreach (var f in CjkFallbacks)
+            {
+                var a = EnsureDynamicFont($"Assets/Fonts/Fallback/{f}.ttf", $"Assets/Fonts/Fallback/{f} SDF.asset", 64, 6);
+                if (a != null) fallbacks.Add(a);
+            }
             TMP_FontAsset? fallbackDefault = null;
+            var byWeight = new Dictionary<string, TMP_FontAsset>();
             foreach (var weight in FontWeights)
             {
                 var asset = EnsureFontAsset(weight);
+                if (asset == null) continue;
+                asset.fallbackFontAssetTable = new List<TMP_FontAsset>(fallbacks);
+                EditorUtility.SetDirty(asset);
+                byWeight[weight] = asset;
                 if (weight == DefaultWeight) fallbackDefault = asset;
             }
+            var set = AssetDatabase.LoadAssetAtPath<TenGoFontSet>(FontSetPath);
+            if (set == null)
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(FontSetPath)!);
+                set = ScriptableObject.CreateInstance<TenGoFontSet>();
+                AssetDatabase.CreateAsset(set, FontSetPath);
+            }
+            byWeight.TryGetValue("Regular", out set.regular);
+            byWeight.TryGetValue("SemiBold", out set.semiBold);
+            byWeight.TryGetValue("Bold", out set.bold);
+            byWeight.TryGetValue("ExtraBold", out set.extraBold);
+            byWeight.TryGetValue("Black", out set.black);
+            set.japanese = fallbacks.Count > 0 ? fallbacks[0] : null;
+            set.korean = fallbacks.Count > 1 ? fallbacks[1] : null;
+            set.chineseSimplified = fallbacks.Count > 2 ? fallbacks[2] : null;
+            EditorUtility.SetDirty(set);
             if (fallbackDefault == null) return;
             var settings = Resources.Load<TMP_Settings>("TMP Settings");
             if (settings == null)
@@ -110,9 +178,34 @@ namespace TenGo.Editor
             }
             var so = new SerializedObject(settings);
             so.FindProperty("m_defaultFontAsset").objectReferenceValue = fallbackDefault;
+            var list = so.FindProperty("m_fallbackFontAssets");
+            list.arraySize = fallbacks.Count;
+            for (int i = 0; i < fallbacks.Count; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = fallbacks[i];
             so.ApplyModifiedPropertiesWithoutUndo();
             EditorUtility.SetDirty(settings);
-            Debug.Log($"[ProjectSetup] Police TMP par défaut : {fallbackDefault.name}");
+            Debug.Log($"[ProjectSetup] Police TMP par défaut : {fallbackDefault.name}, {fallbacks.Count} replis CJK");
+        }
+
+        /// Police TMP SDF dynamique d'un fichier TTF (créée si absente), atlas vidé au build.
+        static TMP_FontAsset? EnsureDynamicFont(string ttf, string assetPath, int sampling, int padding)
+        {
+            var existing = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>(assetPath);
+            if (existing != null) return existing;
+            AssetDatabase.ImportAsset(ttf);
+            var font = AssetDatabase.LoadAssetAtPath<Font>(ttf);
+            if (font == null) { Debug.LogError($"[ProjectSetup] Police absente : {ttf}"); return null; }
+            var asset = TMP_FontAsset.CreateFontAsset(font, sampling, padding, GlyphRenderMode.SDFAA, 1024, 1024, AtlasPopulationMode.Dynamic, true);
+            asset.name = Path.GetFileNameWithoutExtension(assetPath);
+            AssetDatabase.CreateAsset(asset, assetPath);
+            asset.atlasTexture.name = asset.name + " Atlas";
+            AssetDatabase.AddObjectToAsset(asset.atlasTexture, asset);
+            asset.material.name = asset.name + " Material";
+            AssetDatabase.AddObjectToAsset(asset.material, asset);
+            var so = new SerializedObject(asset);
+            var clear = so.FindProperty("m_ClearDynamicDataOnBuild");
+            if (clear != null) { clear.boolValue = true; so.ApplyModifiedPropertiesWithoutUndo(); }
+            EditorUtility.SetDirty(asset);
+            return asset;
         }
 
         static TMP_FontAsset? EnsureFontAsset(string weight)
@@ -139,7 +232,8 @@ namespace TenGo.Editor
             return asset;
         }
 
-        /// Scène de démonstration : les neuf bulles du thème par défaut.
+        /// Scène de démonstration : la vitrine de l'étape 4 (plateau, chemin,
+        /// états des bulles), construite au lancement par `VitrineRunner`.
         public static void EnsureDemoScene()
         {
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
@@ -149,19 +243,10 @@ namespace TenGo.Editor
             cam.orthographic = true;
             cam.orthographicSize = Units.ReferenceOrthoSize;
             cam.clearFlags = CameraClearFlags.SolidColor;
-            cam.backgroundColor = Palette.Background;
+            cam.backgroundColor = Look.Background;
             cam.nearClipPlane = 0.1f;
             cam.farClipPlane = 50f;
-
-            // Une rangée de bulles pastel 1 à 9 sur le fond crème (rendu provisoire).
-            var root = new GameObject("Demo").transform;
-            for (var v = 1; v <= 9; v++)
-            {
-                var x = ((v - 1) % 3 - 1) * 1.9f;
-                var y = (1 - (v - 1) / 3) * 1.9f;
-                GlowCircle.Create($"Bulle{v}", root, new Vector2(x, y), Palette.Bubbles[v - 1], 0.75f,
-                    thickness: 0.04f, glowIntensity: 0.4f, glowRange: 0.15f, fill: 1f);
-            }
+            new GameObject("Vitrine", typeof(VitrineRunner));
 
             Directory.CreateDirectory(Path.GetDirectoryName(DemoScene)!);
             EditorSceneManager.SaveScene(scene, DemoScene);
