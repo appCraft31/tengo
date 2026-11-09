@@ -54,8 +54,8 @@ google-services.json
 # Fichiers que Firebase génère depuis cette configuration (clés d'API comprises)
 /Assets/Plugins/Android/FirebaseApp.androidlib/
 /Assets/Plugins/Android/FirebaseApp.androidlib.meta
-/Assets/StreamingAssets/google-services-desktop.json
-/Assets/StreamingAssets/google-services-desktop.json.meta
+/Assets/StreamingAssets/
+/Assets/StreamingAssets.meta
 # Dépôt Maven local généré par Firebase (recopié depuis les paquets)
 /Assets/GeneratedLocalRepo/
 /Assets/GeneratedLocalRepo.meta

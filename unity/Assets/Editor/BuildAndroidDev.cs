@@ -10,6 +10,11 @@ namespace TenGo.Editor
     /// Tools/unity.sh TenGo.Editor.BuildAndroidDev.Run -buildTarget Android
     /// Identifiant distinct de la production (`com.appcraft31.tengo.unitydev`),
     /// rétabli à la fin : la version Play ne peut pas être écrasée par erreur.
+    /// SDK réels compris (symboles TENGO_*) ; les dépendances Android sont
+    /// résolues par EDM avant le build. Ce paquet ne figure pas dans
+    /// google-services.json ni dans Play Games : Firebase s'y initialise avec
+    /// l'app de production mais n'envoie aucune analytics (build de dev), et
+    /// la connexion Play Games y échoue (attendu).
     public static class BuildAndroidDev
     {
         public const string DevId = "com.appcraft31.tengo.unitydev";
@@ -23,6 +28,8 @@ namespace TenGo.Editor
             try
             {
                 MainScene.Ensure();
+                NativeSetup.Apply();
+                if (!NativeSetup.ResolveAndroid()) throw new System.Exception("Résolution des dépendances Android échouée");
                 PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, DevId);
                 PlayerSettings.productName = "tenGO dev";
                 EditorUserBuildSettings.buildAppBundle = false;

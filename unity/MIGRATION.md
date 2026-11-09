@@ -12,7 +12,7 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
 | 4 | Rendu (bulles, relief, tracés, thèmes, effets) et audio synthétisé | ✅ fait (reste la vérification sur appareil, étape 9) |
 | 5 | Partie (`GameScene` : 6 modes, boosters, sauvegarde, fin de partie) | ✅ fait (services simulés jusqu'à l'étape 7, écrans hors partie livrés à l'étape 6) |
 | 6 | Écrans (menu, boutique, profil, missions, succès, miroir, duel, puzzles, classement, réglages, tutoriel) | ✅ fait (achats, pubs, consentement et Game Center simulés jusqu'à l'étape 7) |
-| 7 | Services : AdMob + UMP/ATT + médiation, Unity IAP, Firebase (Analytics, Auth, Firestore), Game Center / Play Games, notifications, avis, partage, haptique, liens profonds | à faire |
+| 7 | Services : AdMob + UMP/ATT + médiation, Unity IAP, Firebase (Analytics, Auth, Firestore), Game Center / Play Games, notifications, avis, partage, haptique, liens profonds | ✅ fait (intégration locale ; vérifications sur appareil et en console listées ci-dessous) |
 | 8 | Builds signés (AAB, projet Xcode), fastlane iOS, `.play-deploy.json` | à faire |
 | 9 | Recette (mise à jour par-dessus la 3.3.0) puis publication simultanée, sur accord de l'utilisateur | à faire |
 | 10 | Gel des apps natives `ios/` et `android/` | à faire |
@@ -249,4 +249,115 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
   - Le changement de catégorie des succès se fait sur place (fondu), sans nouvelle scène.
   - Alerte de restauration des achats dessinée dans la scène au lieu d'un `UIAlertController`.
   - Tutoriel : la phrase « 4 + 2 + … = 10 ? » chevauche la dernière rangée de bulles, comme sur iOS (mêmes coordonnées).
+
+## Notes de l'étape 7
+
+- **Paquets** (versions de Binero) :
+  - Google Mobile Ads 11.6.0 (OpenUPM), adaptateurs de médiation Liftoff Monetize 5.7.10 et Unity Ads 3.22.0 ;
+  - Firebase 14.1.0 : App, Analytics, Auth, Firestore ;
+  - Unity IAP 4.15.0, Mobile Notifications 2.5.0 ;
+  - un seul EDM, `com.unity.external-dependency-manager` 2.1.0.
+- **Archives Firebase hors git.** Elles pèsent environ 80 Mo, dans `Packages/tarballs/`, qui est ignoré. `Tools/fetch_packages.sh` :
+  - les télécharge depuis Google et vérifie leur SHA-256 ;
+  - réécrit le `package.json` de Firebase App pour qu'il dépende de l'EDM d'Unity, et non d'un second EDM (`Tools/packages/repack_firebase_app.py`).
+
+  `unity_run`, appelé par les trois scripts du verrou, lance ce script au premier lancement sur une machine neuve.
+- **Symboles** `TENGO_ADMOB`, `TENGO_FIREBASE` et `TENGO_IAP`, posés pour Android et iOS par `NativeSetup.ApplyDefines`. Le choix des services se fait dans `App/RealServices.cs` : le service réel n'est pris que si son symbole est défini **et** hors éditeur. Éditeur, tests et pilote gardent donc les services simulés.
+  - Classements, avis, notifications et partage (`NativePlayServices`) sont réels sur tout appareil, quels que soient les symboles.
+  - Retirer un symbole rend la version simulée sur appareil (utile pour isoler un SDK).
+- **Configuration Firebase** :
+  - `Editor/FirebaseConfig.Copy` copie `../ios/tenGO/GoogleService-Info.plist` et `../android/app/google-services.json` dans `Assets/` ;
+  - il est appelé par `NativeSetup.Apply` (lui-même appelé par `ProjectSetup.Apply`) et avant chaque build (`NativePreBuild`) ;
+  - les deux fichiers, le module `FirebaseApp.androidlib` qui en est généré et `StreamingAssets/` sont ignorés par git : **ne jamais les committer**.
+- **Consentement, comme la 3.3.0 (écart assumé avec le brief « UMP puis ATT »)** :
+  - **iOS : ATT seul.** Le formulaire UMP présenté après un refus ATT a valu le rejet 5.1.1(iv) de la 2.1 et a été retiré sur décision de l'utilisateur.
+    - Si ATT est refusé : `PublisherPrivacyPersonalizationState.Disabled` et `npa=1` sur chaque requête.
+    - Consent mode Firebase : stockage analytique accordé ; signaux publicitaires accordés seulement si ATT est autorisé.
+    - Les valeurs par défaut sont refusées dans l'Info.plist.
+    - « Options de confidentialité » ouvre les réglages de l'app.
+  - **Android : UMP**, puis la même ligne rouvre le formulaire.
+  - Dans tous les cas, `MobileAds.Initialize` n'est appelé qu'une fois le consentement recueilli (`IAdsSdk.Start`, `AppRoot.GatherConsent`).
+- **Publicités** (`Services/Native/AdMobAds.cs`, identifiants dans `AdUnits`) :
+  - **cadence** : elle reste dans `InterstitialPolicy` (Core) ;
+  - **chargement** : paresseux, après une fin de partie ;
+  - **échec** : nouvel essai au bout de 30 s, délai doublé à chaque échec jusqu'à 10 min ;
+  - **expiration** : annonce jetée au bout de 55 min ;
+  - **vidéo récompensée** : interstitiel récompensé sur iOS, récompensée simple sur Android (formats des blocs natifs) ;
+  - **récompense** : versée à la fermeture ;
+  - **builds de développement** : blocs de test de Google ;
+  - **analytics** : `ad_impression` sur chaque revenu ;
+  - **fil d'exécution** : les rappels sont ramenés sur le fil d'Unity par `MainThread`.
+- **Analytics** :
+  - `Core/Analytics/AnalyticsCatalog` reprend tous les événements de Swift 3.3.0, avec les mêmes noms, paramètres et types (entiers en `long`).
+  - `EventAnalytics` les envoie, avec deux implémentations : `LogAnalytics` dans l'éditeur, `FirebaseAnalyticsService` sur appareil.
+  - Avant l'initialisation de Firebase, les événements sont mis en attente (100 au plus).
+  - Propriétés envoyées :
+    - `build_channel` : development, testflight ou production ;
+    - `sound_on` à chaque lancement ;
+    - `first_game_done` après la première partie.
+  - Collecte selon le canal :
+    - iOS : les builds de développement et TestFlight passent en mode debug (DebugView) ;
+    - Android : une build de développement n'envoie rien.
+- **Duels Firestore** (`FirestoreDuelBackend`, format décrit dans `DuelCodec`) :
+  - **compatibilité** : document `duels/{code}` au champ près celui de DuelService.swift ; un duel lancé sur une app native se joue sur Unity et inversement ;
+  - **connexion** : anonyme, paresseuse ;
+  - **refus côté client**, dans l'ordre natif (`DuelRules.JoinRefusal`) : expiré, déjà joué, propre duel ;
+  - **écran Duel** : affiche le score à battre, joue la graine du serveur et recharge la liste depuis le serveur (gagné, perdu, égalité, expiré, en attente ; partage d'un duel resté sans adversaire) ;
+  - **éditeur** : le repli local par code (`LocalSeedForCode`) a disparu ; `SimulatedDuelBackend` applique les mêmes refus.
+- **Achats** (`UnityIapStore` + `StoreFlow`, logique pure testée) :
+  - **produits** : packs de pièces et mod « sans pub » (+500 pièces) ;
+  - **achat en attente** (contrôle parental, SCA) : le bonus est versé à l'approbation ;
+  - **transaction reçue hors achat** : `iap_success` avec `source=transaction_update` ;
+  - **restauration** : iOS et Android, sans analytics ;
+  - **source de vérité** : le reçu présent au démarrage active le mod ; le cache est collant, jamais dégradé localement.
+- **Plateforme** (`NativePlayServices`) :
+  - **iOS** : Game Center par l'API Social d'Unity, dépréciée mais sans plugin, comme Binero ; boutons de classement affichés une fois connecté (`IPlayServices.ShowsLeaderboardButtons` et `SignInChanged`) ; avis par `RequestStoreReview`.
+  - **Android** : Play Games Services v2 et Play In-App Review par JNI (`PlayGamesBridge`). Les paquets `play-services-games-v2` 20.1.2 et `review` 2.0.2 sont déclarés dans `Editor/TenGoDependencies.xml`.
+    - Le plugin `com.google.play.games` n'a pas été retenu : il impose un second EDM et sa propre configuration.
+    - Son id de projet est la ressource `game_services_project_id` de `Plugins/Android/TenGo.androidlib`.
+  - **Notifications locales** (`Core/Notifications/NotificationPlan`, testé) :
+    - mêmes identifiants qu'iOS : `tenGO.dailyAvailable` à 9 h (répétée), `tenGO.streakAtRisk` à 20 h, `tenGO.seedBloom` entre 9 h et 21 h ;
+    - permission demandée à la 3ᵉ partie (POST_NOTIFICATIONS sur Android 13 et plus) ;
+    - purge de l'ancien `tenGO.dailyReminder` sur iOS ;
+    - annonce d'éclosion annulée quand la fleur est cueillie ;
+    - canal Android `tengo_daily`.
+  - **Partage, support, haptique** : partage natif (`TenGoNative.mm` sur iOS, `ACTION_SEND` sur Android) ; mail au support avec version et système. L'haptique était déjà native sur les deux plateformes depuis l'étape 4.
+- **Builds** :
+  - **iOS** : `Editor/IosPostprocess.cs` règle dans le projet Xcode :
+    - Info.plist : texte ATT en 10 langues (`InfoPlist.strings`), 50 SKAdNetworkItems tirés de l'Info.plist natif (`Editor/SKAdNetworkIds.txt`), `GADApplicationIdentifier`, consent mode par défaut, schéma `tengo`, ATS, `CFBundleLocalizations`, orientations iPad ;
+    - entitlements : Game Center et domaines associés ;
+    - frameworks : GameKit et AppTrackingTransparency.
+  - **Android** :
+    - `Plugins/Android/TenGo.androidlib` apporte les permissions et l'id Play Games ;
+    - le plugin GMA ajoute l'id AdMob ;
+    - `Editor/AndroidPostprocess.cs` ajoute les intent-filters `tengo://` et `https://appcraft31.app/tengo` ;
+    - l'EDM écrit les dépendances dans les gabarits Gradle de `Plugins/Android`.
+  - **Commandes** :
+    - `Tools/unity.sh TenGo.Editor.BuildAndroidDev.Run -buildTarget Android` → APK `com.appcraft31.tengo.unitydev` ;
+    - `Tools/unity.sh TenGo.Editor.BuildIos.Run -buildTarget iOS` → `Builds/iOS` : Podfile pour AdMob et la médiation, puis `pod install` lancé par l'EDM ; Firebase iOS 14 est ajouté au projet en Swift Package.
+- **Vérifié sur émulateur** (emulator-5554, APK de dev, désinstallé ensuite) :
+  - lancement sans erreur ;
+  - Firebase prêt ;
+  - connexion anonyme réussie : un utilisateur anonyme a été créé dans tengo-b62b1 ;
+  - lien `tengo://duel/ABCDEF` : écran Duel, puis « Code introuvable » après lecture Firestore ;
+  - IAP indisponible sur cet émulateur sans Play Store (attendu).
+- **Reste à vérifier sur appareil ou en console** (étapes 8 et 9) :
+  - **Comptes de test** :
+    - achats réels en bac à sable (testeur de licence Play, Sandbox / TestFlight) ;
+    - restauration ;
+    - achat différé.
+  - **Consentement et pubs** :
+    - formulaire UMP sur un appareil européen ;
+    - boîte ATT sur iPhone ;
+    - affichage et revenu des annonces de test ;
+    - médiation Liftoff / Unity Ads.
+  - **Identifiants et domaines** :
+    - Play Games : connexion avec le vrai paquet `com.appcraft31.tengo` signé avec la clé d'envoi (le paquet unitydev n'est pas déclaré dans la console Play Games) ;
+    - Game Center ;
+    - liens universels : `assetlinks.json` du domaine pour l'empreinte de la clé Unity, `apple-app-site-association` déjà en place pour l'app iOS.
+  - **Mise à jour par-dessus la 3.3.0** :
+    - les tâches WorkManager Kotlin des notifications doivent disparaître avec la mise à jour (à confirmer) ;
+    - notifications iOS déjà programmées par l'app native (mêmes identifiants, donc remplacées) ;
+    - reprise de l'uid Firebase anonyme : les SDK natifs gardent leur trousseau ou leurs préférences, à confirmer.
+  - **Firebase sur l'APK de dev** : le paquet unitydev n'est pas déclaré dans google-services.json. Firebase s'y initialise avec l'app Android de production, mais une build de développement n'envoie aucune analytics.
 

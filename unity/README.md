@@ -22,6 +22,10 @@ Toutes les commandes passent par le verrou `Logs/unity.lock`, qui garantit une s
 | `Tools/unity.sh <Namespace.Classe.Méthode> [args]` | Lance une méthode d'éditeur en batchmode (journal `Logs/unity_<Méthode>.log`) |
 | `Tools/unity.sh TenGo.Editor.ProjectSetup.Apply` | Réapplique les réglages du Player, les polices TMP, le matériau et la scène de démo |
 | `Tools/unity.sh TenGo.Editor.Captures.GlowDemo` | Rend la scène de démo dans `Logs/captures/glow_demo.png` |
+| `Tools/unity.sh TenGo.Editor.NativeSetup.Apply` | Symboles `TENGO_*`, ids AdMob, gabarits Gradle, copie de la configuration Firebase depuis `../ios` et `../android` (jamais versionnée) |
+| `Tools/unity.sh TenGo.Editor.BuildAndroidDev.Run -buildTarget Android` | APK de développement `com.appcraft31.tengo.unitydev` (émulateur uniquement) |
+| `Tools/unity.sh TenGo.Editor.BuildIos.Run -buildTarget iOS` | Projet Xcode dans `Builds/iOS` (pods installés par l'EDM) |
+| `Tools/fetch_packages.sh` | Télécharge les archives Firebase dans `Packages/tarballs/` (lancé tout seul au premier usage) |
 
 Variables d'environnement :
 - `UNITY` : chemin de l'exécutable d'Unity ;

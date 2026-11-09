@@ -720,7 +720,9 @@ PlayerSettings:
   webWasm2023: 0
   webEnableSubmoduleStrippingCompatibility: 0
   webProgressiveAssetLoading: 0
-  scriptingDefineSymbols: {}
+  scriptingDefineSymbols:
+    Android: TENGO_ADMOB;TENGO_FIREBASE;TENGO_IAP
+    iPhone: TENGO_ADMOB;TENGO_FIREBASE;TENGO_IAP
   additionalCompilerArguments: {}
   platformArchitecture:
     iPhone: 1

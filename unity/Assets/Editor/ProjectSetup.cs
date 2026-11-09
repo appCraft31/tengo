@@ -36,6 +36,7 @@ namespace TenGo.Editor
         public static void Apply()
         {
             ApplyPlayerSettings();
+            NativeSetup.Apply();
             EnsureGlowMaterial();
             EnsureMaterials();
             EnsureFont();

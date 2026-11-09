@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Projet Play Games Services de tenGO (le même que l'app Kotlin). -->
+<resources>
+    <string name="game_services_project_id" translatable="false">627613836181</string>
+</resources>

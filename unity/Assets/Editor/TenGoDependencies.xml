@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dépendances natives de tenGO hors SDK Unity, résolues par l'External
+     Dependency Manager (mêmes versions que l'app Kotlin 3.3.0) :
+     Play Games Services v2 (classements, PlayGamesBridge.cs) et
+     Play In-App Review (demande d'avis). -->
+<dependencies>
+  <androidPackages>
+    <androidPackage spec="com.google.android.gms:play-services-games-v2:20.1.2" />
+    <androidPackage spec="com.google.android.play:review:2.0.2" />
+  </androidPackages>
+</dependencies>

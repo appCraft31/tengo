@@ -1,0 +1,10 @@
+fr=Nous utilisons des données anonymes pour afficher des publicités pertinentes.
+en=We use anonymous data to show you relevant ads.
+es=Usamos datos anónimos para mostrar anuncios relevantes.
+de=Wir verwenden anonyme Daten, um relevante Anzeigen anzuzeigen.
+it=Usiamo dati anonimi per mostrare annunci pertinenti.
+pt-BR=Usamos dados anônimos para exibir anúncios relevantes.
+ja=関連性の高い広告を表示するために匿名データを使用します。
+zh-Hans=我们使用匿名数据来展示相关广告。
+ko=관련성 있는 광고를 표시하기 위해 익명 데이터를 사용합니다.
+nl=We gebruiken anonieme gegevens om relevante advertenties te tonen.
