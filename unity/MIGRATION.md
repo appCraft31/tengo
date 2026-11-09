@@ -215,3 +215,8 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
   - un bilan unique par fin de partie.
   Au total : **171** EditMode et **24** PlayMode, tous verts.
 - **À vérifier sur appareil (étapes 8-9)** : la conversion pixels → points (`Screen.dpi`) et les marges sûres sur des Android variés, la latence du toucher, le bouton retour d'Android (Échap en éditeur), et la reprise après mise en arrière-plan en plein Rush (un écart de plus d'une seconde est ignoré, comme iOS).
+
+### Émulateur Android
+
+- Lancer l'émulateur avec `-gpu host` (`emulator -avd <nom> -gpu host`) : en rendu logiciel, il ne fournit pas OpenGL ES 3.1 et Unity échoue à initialiser l'API graphique au démarrage de l'APK.
+- Les réglages URP (`Assets/Settings/UniversalRP.asset`, `UniversalRenderPipelineGlobalSettings.asset`) sont réécrits par le build (élagage des variantes de shaders) : commiter ces changements avec le build.

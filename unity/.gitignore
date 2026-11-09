@@ -41,3 +41,4 @@ sysinfo.txt
 *.p8
 GoogleService-Info.plist
 google-services.json
+/.utmp/
