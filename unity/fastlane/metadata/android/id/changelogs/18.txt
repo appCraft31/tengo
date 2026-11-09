@@ -1,0 +1,4 @@
+Tampilan baru: game lebih cerah dan mudah dibaca, dengan warna gelembung yang juga dirancang untuk pemain buta warna.
+Tutorial interaktif untuk memulai dengan mudah, dengan hadiah selamat datang di akhir.
+Suara baru: kalimba dan suasana yang berganti setiap permainan.
+Toko, profil, dan layar akhir didesain ulang sepenuhnya.

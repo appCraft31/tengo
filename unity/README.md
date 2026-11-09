@@ -53,7 +53,7 @@ Tools/                 scripts batchmode et verrou (lib/unity_lock.zsh)
 ## Réglages
 
 - **Identité** : nom « tenGO », société AppCraft31, identifiants `com.appcraft31.tengo` (Android) et `AppCraft31.tenGO` (iOS), ceux des apps en ligne.
-- **Version** : 4.0.0, versionCode 17, build iOS 283.
+- **Version** : 4.0.0, versionCode 18, build iOS 283.
 - **Plateformes** :
   - portrait seulement ;
   - iOS 15 minimum, sur iPhone et iPad ;
