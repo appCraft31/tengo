@@ -10,7 +10,7 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
 | 2 | Core en C# : grille, aléatoire Swift, génération, score, défi du jour, puzzles, miroir, graines, progression, économie, fin de partie + tests portés de Kotlin | ✅ fait |
 | 3 | Reprise des données des apps natives (UserDefaults iOS, DataStore et SharedPreferences Android) + sauvegarde fichier JSON | ✅ fait (reste la vérification sur appareil, étape 9) |
 | 4 | Rendu (bulles, relief, tracés, thèmes, effets) et audio synthétisé | ✅ fait (reste la vérification sur appareil, étape 9) |
-| 5 | Partie (`GameScene` : 6 modes, boosters, sauvegarde, fin de partie) | à faire |
+| 5 | Partie (`GameScene` : 6 modes, boosters, sauvegarde, fin de partie) | ✅ fait (services simulés jusqu'à l'étape 7, écrans hors partie provisoires jusqu'à l'étape 6) |
 | 6 | Écrans (menu, boutique, profil, missions, succès, miroir, duel, puzzles, classement, réglages, tutoriel) | à faire |
 | 7 | Services : AdMob + UMP/ATT + médiation, Unity IAP, Firebase (Analytics, Auth, Firestore), Game Center / Play Games, notifications, avis, partage, haptique, liens profonds | à faire |
 | 8 | Builds signés (AAB, projet Xcode), fastlane iOS, `.play-deploy.json` | à faire |
@@ -164,3 +164,54 @@ Plan détaillé : `~/.claude/plans/je-voudrais-basculer-tengo-giggly-owl.md`.
   - Android : vérifier que `getFilesDir()` d'Unity est bien `/data/data/com.appcraft31.tengo/files`.
   - Firebase (Auth anonyme des duels, Analytics), UMP et Play Games / Game Center : les SDK Unity reposent sur les SDK natifs et retrouvent leurs propres données. À confirmer à l'étape 7.
   - Retour arrière : réinstaller la 3.3.0 après la 4.0.0 doit retrouver les données natives intactes.
+
+## Notes de l'étape 5
+
+- **Architecture** (`Assets/Scripts/App`, `Game`, `Services`) :
+  - Scène unique `Assets/Scenes/Main.unity`, reconstruite par `Tools/unity.sh TenGo.Editor.MainScene.Ensure` (seule scène du build). Elle contient une caméra et un `AppRoot`.
+  - `AppRoot.Boot` : `JsonFileSaveStore.OpenDefault()`, puis `LegacyBootstrap.Run`, puis les textes (`Loc`, langue de l'appareil), les dépôts et services (`AppServices`), `FirstRunState.Bootstrap()`, le branchement des réglages (son, haptique, effets réduits) et le thème actif (`Look`). `FlushSave()` en fin de partie, au retour au menu, sur `OnApplicationPause(true)`, à la fermeture et à la destruction.
+  - Caméra : cadrage aspectFill de 750 × 1334 (`SceneGeometry`), marges sûres en unités de scène avec le plancher de 47 pt d'iOS. L'entrée (`PointerInput` : EnhancedTouch, souris en éditeur, injection) convertit les pixels en points de scène sans passer par la caméra, si bien que les secousses ne déplacent pas les zones tactiles.
+  - Navigation : `IScreenRouter` (fondu de 0,28 s, `SceneFader`) et `IAppScreen` pour chaque écran.
+  - `GameController` porte `GameScene.swift` en fichiers partiels, qui suivent ses `MARK` : Layout, Input, Path, Boosters, End, Panel, Flow. Ce sont les mêmes constantes, tolérances et délais, et les mêmes priorités au toucher que `touchesBegan`.
+  - Toutes les séquences passent par `Tw` sur la racine de l'écran, donc par `FxTime`, et l'arrêt sur image les ralentit comme le `scene.speed` d'iOS. Le chrono du Rush, l'inactivité avant l'offre d'indice et les mesures du miroir suivent `FxTime.RealNow`.
+  - Fin de partie : un seul bilan par fin, garanti par `_endRecorded`, via `GameEndCoordinator.OnGameEnded`. Après « Continuer », la fin suivante passe par `ContinuedFrom`.
+  - Textes : `Tools/i18n/gen_strings.py` convertit `ios/tenGO/Localizable.xcstrings` en `Resources/Localization/strings.json` (291 clés, 10 langues, `%d`/`%@` deviennent `{0}`). `Core/Localization/Loc` les sert.
+- **Interface prévue pour l'étape 6** :
+  - remplacer `AppRoot.Screens`, une `IScreenFactory` : `Menu`, `PuzzleLevels(world)`, `Duel`, `Shop(returnToGame)`, `Tutorial(firstRun)` ;
+  - remplacer `AppRoot.Overlays`, une `IOverlayFactory` : `Settings(app, parent, replayTutorial)` qui renvoie un `IGameOverlay` ;
+  - chaque écran implémente `IAppScreen` ; `SimpleScreen` sert de base aux écrans faits de boutons ;
+  - pour lancer une partie : `app.StartGame(GameLaunch.Normal(saved) | ForDaily() | Rush() | Puzzle(w, i) | Duel(seed, code) | Demo(seed, …))`.
+  - En attendant, `ProvisionalScreens` affiche un menu de développement (un bouton par mode et « Continuer ») et des écrans d'attente : une boutique qui vend les boosters, une liste de 6 niveaux, la création et la réponse à un duel.
+- **Simulé en attendant l'étape 7** (`Services/`, interfaces appelées aux mêmes moments que Swift ; la politique de Core décide) :
+  - analytics : `LogAnalytics` journalise avec les noms et paramètres d'iOS ;
+  - interstitielles : `SimulatedInterstitialAds`, enveloppées par `InterstitialAdManager` avec `InterstitialPolicy` ;
+  - vidéos récompensées : `SimulatedRewardedAds`, enveloppées par `RewardedAdManager` avec `RewardedPolicy` ;
+  - duels : `SimulatedDuelBackend`, avec des codes au format iOS et l'historique local ;
+  - classements, demande d'avis, notifications, partage, programmation de l'éclosion : `LogPlayServices` ;
+  - achat « sans pub » : `SimulatedAdFreeStore`.
+- **Pilote automatique** : `Tools/unity.sh TenGo.Editor.Autopilot.Run`.
+  - Il joue chaque mode avec des gestes injectés et les chemins du solveur, sur l'écran simulé d'un iPhone 17 Pro Max.
+  - Pour le puzzle, il prend une solution complète trouvée par `BoardSolver`.
+  - Captures dans `Logs/captures/play/`.
+  - Les atlas de polices sont vidés à la fin.
+- **Comparaison avec iOS** (iPhone simulé, partie normale et fin de partie `SCREENSHOT_END`) : disposition « rangée haute », carte de score, logo, grille, barre du bas et panneau de fin se superposent à quelques points près. Écarts corrigés au passage :
+  - format de la durée de la graine (« 3h 59min ») ;
+  - code de duel arrivé avant l'ouverture du panneau ;
+  - cadre du coach-mark gonflé par le halo d'apparition.
+- **Écarts restants avec iOS** :
+  - Glyphes absents de Nunito et des replis : ⌂, ↺, ★/☆ et l'engrenage SF Symbol sont redessinés en traits (`Glyphs`) et ressemblent aux originaux sans les reproduire. Les flèches « ↑ » et « → » du miroir et de la graine sont supprimées.
+  - Avenir Next est remplacée par Nunito (étape 1) : le score de la carte et les titres sont un peu moins gras.
+  - La pointe du coach-mark est un losange à demi caché, au lieu d'un triangle.
+  - La partie normale est aussi sauvegardée sur `OnApplicationPause` (comme Android) ; iOS ne la sauvegardait qu'au retour à l'accueil.
+  - La « fin de partie » QA (`QA_GAME_OVER`, `SCREENSHOT_*`) devient des méthodes publiques `QaForceGameOver`, `QaShowcasePath` et `QaEndRush`, sans variables d'environnement.
+  - Les réglages en partie sont provisoires (son, vibrations, tutoriel).
+- **Tests** : 14 nouveaux PlayMode (`GameFlowTests`), qui couvrent :
+  - la validation, l'annulation, le refus d'une bulle de trop et le retour en arrière ;
+  - la gravité, avec la cohérence entre vues et modèle ;
+  - les trois boosters et leurs coach-marks ;
+  - la sauvegarde puis la reprise à l'identique ;
+  - une partie complète par mode, dont le Rush qui expire seul ;
+  - la seconde chance sans double comptage ;
+  - un bilan unique par fin de partie.
+  Au total : **171** EditMode et **24** PlayMode, tous verts.
+- **À vérifier sur appareil (étapes 8-9)** : la conversion pixels → points (`Screen.dpi`) et les marges sûres sur des Android variés, la latence du toucher, le bouton retour d'Android (Échap en éditeur), et la reprise après mise en arrière-plan en plein Rush (un écart de plus d'une seconde est ignoré, comme iOS).
