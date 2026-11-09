@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Refonte — Fin de partie</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="systeme.css">
+<style>
+  .veil { position: absolute; inset: 0; background: rgba(247,243,236,.72); }
+  .ghost { position: absolute; left: 16px; right: 16px; top: 150px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; opacity: .35; }
+  .ghost i { aspect-ratio: 1; border-radius: 50%; display: block; }
+  .sheet { position: absolute; left: 0; right: 0; bottom: 0; background: var(--bg); border-radius: 30px 30px 0 0; box-shadow: 0 -1px 0 #E6DED1; padding: 12px 20px 34px; display: flex; flex-direction: column; }
+  .grab { width: 40px; height: 5px; border-radius: 3px; background: var(--line); margin: 0 auto 18px; }
+  .kicker { text-align: center; font-size: 15px; font-weight: 800; color: var(--ink-2); }
+  .big { text-align: center; font-size: 64px; font-weight: 900; letter-spacing: -1.5px; line-height: 1.05; margin-top: 2px; }
+  .sub { text-align: center; font-size: 14px; font-weight: 700; color: var(--ink-2); margin-top: 2px; }
+  .record { display: inline-flex; align-items: center; gap: 6px; height: 30px; padding: 0 12px; border-radius: 15px; background: #FBEBC4; color: #7A5A12; font-weight: 900; font-size: 14px; }
+  .record svg { width: 16px; height: 16px; }
+  .center { display: flex; justify-content: center; margin-top: 8px; }
+  .gains { display: flex; gap: 10px; margin-top: 18px; }
+  .gain { flex: 1; padding: 12px 14px; display: flex; align-items: center; gap: 10px; }
+  .gain b { font-size: 18px; font-weight: 900; }
+  .gain span { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+  .xpbar { height: 6px; border-radius: 3px; background: var(--line); margin-top: 5px; width: 100px; overflow: hidden; }
+  .xpbar i { display: block; height: 100%; border-radius: 3px; }
+  .rows { margin-top: 10px; }
+  .row { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  .row + .row { border-top: 1px solid var(--line); }
+  .row .ic { width: 36px; height: 36px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+  .row .ic svg { width: 20px; height: 20px; }
+  .row .tx { flex: 1; font-size: 14px; font-weight: 800; }
+  .row .tx span { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); margin-top: 1px; }
+  .row .val { font-size: 14px; font-weight: 900; }
+  .mini { display: inline-flex; gap: 3px; vertical-align: middle; }
+  .mini i { width: 18px; height: 18px; border-radius: 9px; font-style: normal; font-size: 10px; font-weight: 900; display: grid; place-items: center; }
+  .actions { display: flex; flex-direction: column; gap: 10px; margin-top: 16px; }
+  .actions .btn-primary.two-line { flex-direction: column; gap: 0; height: 62px; }
+  .actions .btn-primary small { font-size: 12px; font-weight: 700; opacity: .8; }
+  .two { display: flex; gap: 10px; }
+  .two > div { flex: 1; }
+  .link { text-align: center; font-weight: 800; font-size: 15px; color: var(--ink-2); padding: 6px 0 0; }
+</style>
+</head>
+<body>
+<div id="board">
+  <div class="col"><div class="label">Actuel<small>Une dizaine de blocs au même niveau, deux boutons verts concurrents, l'émotion du score noyée.</small></div><div class="phone"><img src="ref/fin_actuelle.png" alt=""></div></div>
+  <div class="col"><div class="label">Avec seconde chance<small>Le score d'abord. Une seule action principale : la seconde chance (vidéo), tant qu'elle est proposée. Les gains et faits marquants dessous, en liste sobre.</small></div><div class="phone A" id="p1"></div></div>
+  <div class="col"><div class="label">Nouveau record, sans seconde chance<small>Pastille or « Nouveau record ». « Rejouer » devient l'action principale ; Accueil en lien discret.</small></div><div class="phone A" id="p2"></div></div>
+</div>
+<script src="systeme.js"></script>
+<script>
+const tint = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, '0');
+const ghost = () => Array.from({length: 63}, (_, i) => `<i style="background:${PAL[(i * 7 + 3) % 9]}"></i>`).join('');
+function sheet(record) {
+  const head = record
+    ? `<div class="center"><div class="record">${icon('trophy', '#7A5A12')}Nouveau record</div></div><div class="big">4 960</div><div class="sub">Ancien record : 4 820</div>`
+    : `<div class="kicker">Plus de coup possible</div><div class="big">730</div><div class="sub">Meilleur : 4 820</div>`;
+  const actions = record
+    ? `<div class="btn-primary">${icon('restart', '#1F3D2E')}Rejouer</div><div class="link">Accueil</div>`
+    : `<div class="btn-primary two-line"><span style="display:flex;gap:8px;align-items:center">${icon('video', '#1F3D2E')}Seconde chance</span><small>Grille mélangée, score gardé</small></div>
+       <div class="two"><div class="btn-secondary">Accueil</div><div class="btn-secondary">${icon('restart')}Rejouer</div></div>`;
+  const parts = [1, 1, 1, 3, 4].map(v => `<i style="background:${PAL[v - 1]}">${v}</i>`).join('');
+  return `
+  <div class="ghost">${ghost()}</div><div class="veil"></div>
+  <div class="sheet">
+    <div class="grab"></div>
+    ${head}
+    <div class="gains">
+      <div class="card gain">${coin(28)}<div><b>+10</b><span>pièces</span></div></div>
+      <div class="card gain"><div style="width:28px;height:28px;border-radius:14px;background:${tint(PAL[7], .5)};display:grid;place-items:center;font-size:11px;font-weight:900">25</div><div><b>+${record ? 64 : 26} XP</b><div class="xpbar"><i style="background:${PAL[7]};width:${record ? 46 : 28}%"></i></div></div></div>
+    </div>
+    <div class="card rows">
+      <div class="row"><div class="ic" style="background:${tint(PAL[2], .45)}">${icon('bolt')}</div><div class="tx">Chaîne max<span>11 combinaisons créées</span></div><div class="val">5 bulles</div></div>
+      <div class="row"><div class="ic" style="background:${tint(PAL[7], .45)}">${icon('brain')}</div><div class="tx">Nouveau 10 trouvé<span>Carnet : 9 / 41</span></div><div class="mini">${parts}</div></div>
+      <div class="row"><div class="ic" style="background:${tint(PAL[3], .5)}">${icon('seed', '#3E8A5F')}</div><div class="tx">Graine plantée<span>Fleurit dans 4 h</span></div><div class="val">×3</div></div>
+    </div>
+    <div class="actions">${actions}</div>
+  </div>`;
+}
+document.getElementById('p1').innerHTML = sheet(false);
+document.getElementById('p2').innerHTML = sheet(true);
+</script>
+</body>
+</html>

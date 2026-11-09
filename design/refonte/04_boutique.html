@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Refonte — Boutique</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="systeme.css">
+<style>
+  .hdr { display: flex; align-items: center; justify-content: space-between; min-height: 52px; }
+  .coins { height: 40px; padding: 0 14px 0 10px; border-radius: 20px; background: var(--card); box-shadow: var(--hair); display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 16px; }
+  .chips { display: flex; gap: 8px; margin: 12px -16px 0; padding: 0 16px 12px; border-bottom: 1px solid var(--line); overflow: hidden; }
+  .chip { height: 34px; padding: 0 14px; border-radius: 17px; background: var(--card); box-shadow: var(--hair); display: flex; align-items: center; font-size: 14px; font-weight: 800; color: var(--ink-2); white-space: nowrap; }
+  .chip.on { background: var(--ink); color: #fff; box-shadow: none; }
+  .body { flex: 1; overflow: hidden; margin: 0 -16px; padding: 14px 16px 0; }
+  h3 { font-size: 18px; font-weight: 900; margin: 6px 0 10px; display: flex; justify-content: space-between; align-items: baseline; }
+  h3 span { font-size: 13px; font-weight: 700; color: var(--ink-3); }
+  .noads { display: flex; align-items: center; gap: 12px; padding: 14px; margin-bottom: 18px; }
+  .noads .tx { flex: 1; font-size: 16px; font-weight: 900; }
+  .noads .tx span { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+  .price { height: 36px; padding: 0 14px; border-radius: 18px; display: flex; align-items: center; gap: 6px; font-weight: 900; font-size: 14px; background: var(--accent); color: var(--accent-ink); white-space: nowrap; }
+  .price.coin { background: var(--sunk); color: var(--ink); }
+  .price.short { color: var(--ink-3); }
+  .price.on { background: transparent; color: #3E8A5F; padding: 0 4px; }
+  .price svg { width: 16px; height: 16px; }
+  .themes { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .theme { overflow: hidden; }
+  .theme .pv { height: 86px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; padding: 12px 14px; align-content: center; }
+  .theme .pv i { aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-style: normal; font-size: 12px; font-weight: 800; }
+  .theme .ft { display: flex; align-items: center; justify-content: space-between; padding: 10px 12px; }
+  .theme .ft b { font-size: 15px; font-weight: 900; }
+  .theme.sel { box-shadow: 0 0 0 2.5px var(--ink); }
+  .list { margin-bottom: 18px; }
+  .item { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  .item + .item { border-top: 1px solid var(--line); }
+  .item .pvb { width: 40px; height: 40px; flex: none; display: grid; place-items: center; }
+  .item .tx { flex: 1; font-size: 15px; font-weight: 800; }
+  .item .tx span { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); }
+  .bg { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; background: var(--sunk); }
+  .bg svg { width: 22px; height: 22px; }
+  .packs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .pack { padding: 14px; display: flex; flex-direction: column; align-items: center; gap: 8px; position: relative; }
+  .pack b { font-size: 20px; font-weight: 900; }
+  .pack .tag { position: absolute; top: -8px; right: 10px; height: 22px; padding: 0 8px; border-radius: 11px; background: var(--ink); color: #fff; font-size: 11px; font-weight: 900; display: grid; place-items: center; }
+  .stack { display: flex; }
+  .stack span { margin-left: -6px; }
+</style>
+</head>
+<body>
+<div id="board">
+  <div class="col"><div class="label">Actuel<small>Longue page sans repère, aperçus de thème en 5 points, cartes en relief, prix et « Actif » noyés, contenu coupé par la barre d'onglets.</small></div><div class="phone"><img src="ref/boutique_actuelle.png" alt=""></div></div>
+  <div class="col"><div class="label">Haut de page<small>Pastilles de rubrique (défilement jusqu'à la section). « Sans pub » en bandeau sobre. Thèmes avec un vrai aperçu de grille ; le thème équipé est cerclé d'encre.</small></div><div class="phone A" id="p1"></div></div>
+  <div class="col"><div class="label">Plus bas<small>Bulles, tracés et boosters en listes compactes, une ligne = un objet, prix à droite. Prix grisé si les pièces manquent. Packs de pièces en grille, « Meilleure offre » marquée.</small></div><div class="phone A" id="p2"></div></div>
+</div>
+<script src="systeme.js"></script>
+<script>
+const rgb = a => '#' + a.map(x => Math.round(x * 255).toString(16).padStart(2, '0')).join('');
+const THEMES = [
+  ['Pastel', [0.97, 0.95, 0.92], PAL, 0, '#34312C'],
+  ['Forêt', [0.93, 0.95, 0.88], [[0.70,0.80,0.60],[0.62,0.74,0.55],[0.80,0.82,0.62],[0.74,0.68,0.50],[0.66,0.72,0.60],[0.82,0.72,0.56],[0.58,0.70,0.58],[0.76,0.78,0.66]].map(rgb), 150, '#34312C'],
+  ['Océan', [0.91, 0.96, 0.97], [[0.62,0.85,0.86],[0.46,0.78,0.80],[0.40,0.74,0.72],[0.52,0.80,0.66],[0.66,0.84,0.72],[0.45,0.71,0.83],[0.38,0.62,0.80],[0.50,0.68,0.86]].map(rgb), 200, '#34312C'],
+  ['Désert', [0.96, 0.91, 0.83], [[0.94,0.84,0.68],[0.93,0.78,0.62],[0.91,0.72,0.55],[0.90,0.68,0.58],[0.89,0.62,0.50],[0.87,0.58,0.45],[0.85,0.66,0.62],[0.82,0.55,0.48]].map(rgb), 200, '#34312C'],
+  ['Bonbon', [0.98, 0.94, 0.95], [[0.97,0.62,0.74],[0.98,0.66,0.62],[0.99,0.79,0.63],[0.98,0.90,0.58],[0.80,0.91,0.62],[0.62,0.89,0.74],[0.64,0.85,0.93],[0.74,0.74,0.93]].map(rgb), 250, '#34312C'],
+  ['Espace', [0.09, 0.08, 0.18], [[0.62,0.74,0.95],[0.78,0.72,0.96],[0.94,0.72,0.88],[0.72,0.88,0.92],[0.69,0.83,0.78],[0.96,0.84,0.70],[0.95,0.76,0.74],[0.84,0.80,0.95]].map(rgb), 300, '#24213A'],
+];
+const theme = ([n, bg, pal, price, dk], i) => {
+  const dots = pal.slice(0, 8).map((c, k) => `<i style="background:${c};color:${dk}">${k + 1}</i>`).join('');
+  const p = price === 0 ? `<div class="price on">${icon('check', '#3E8A5F')}Équipé</div>` : `<div class="price coin${price > 340 ? ' short' : ''}">${coin(16)}${price}</div>`;
+  return `<div class="card theme${price === 0 ? ' sel' : ''}"><div class="pv" style="background:${rgb(bg)}">${dots}</div><div class="ft"><b>${n}</b>${p}</div></div>`;
+};
+const hdr = (chip) => `
+  <div class="hdr"><div class="t-title">Boutique</div><div class="coins">${coin(20)}340</div></div>
+  <div class="chips">${['Thèmes', 'Bulles', 'Tracés', 'Boosters', 'Pièces'].map(c => `<div class="chip${c === chip ? ' on' : ''}">${c}</div>`).join('')}</div>`;
+const tabbar = `<div class="tabbar">
+  <div class="tab"><div class="pill">${icon('play', '#8C8376')}</div>Jouer</div>
+  <div class="tab"><div class="pill">${icon('profile', '#8C8376')}</div>Profil</div>
+  <div class="tab"><div class="pill">${icon('duel', '#8C8376')}</div>Duel</div>
+  <div class="tab on"><div class="pill">${icon('shop')}</div>Boutique</div></div>`;
+const bubble = (style) => {
+  const c = PAL[4];
+  const s = { classic: `background:${c}`, matte: `background:${c};opacity:.75`, glossy: `background:radial-gradient(circle at 35% 30%, #fff 0 14%, ${c} 15%)`, glass: `background:${c}55;box-shadow:inset 0 0 0 2px ${c}`, neon: `background:${c};box-shadow:0 0 0 3px #fff, 0 0 0 5px ${c}` }[style];
+  return `<div style="width:34px;height:34px;border-radius:17px;${s};display:grid;place-items:center;font-weight:800;font-size:15px">5</div>`;
+};
+const trail = (k) => {
+  const d = { classic: 'stroke-width="5"', dotted: 'stroke-width="5" stroke-dasharray="0.1 8"', ink: 'stroke-width="7"', ribbon: 'stroke-width="9" stroke-opacity=".35"' }[k];
+  return `<svg width="40" height="24" viewBox="0 0 40 24"><polyline points="4,18 14,6 26,18 36,6" fill="none" stroke="#34312C" stroke-linecap="round" stroke-linejoin="round" ${d}/></svg>`;
+};
+const item = (pv, name, sub, priceHtml) => `<div class="item"><div class="pvb">${pv}</div><div class="tx">${name}${sub ? `<span>${sub}</span>` : ''}</div>${priceHtml}</div>`;
+const cp = (n) => `<div class="price coin${n > 340 ? ' short' : ''}">${coin(16)}${n}</div>`;
+const on = `<div class="price on">${icon('check', '#3E8A5F')}Équipé</div>`;
+
+document.getElementById('p1').innerHTML = `<div class="scr">${hdr('Thèmes')}
+  <div class="body">
+    <div class="card noads"><div class="bg">${icon('noads')}</div><div class="tx">Sans pub<span>Plus aucune publicité, pour toujours · +500 ${coin(13)}</span></div><div class="price">3,99 €</div></div>
+    <h3>Thèmes <span>1 / 7</span></h3>
+    <div class="themes">${THEMES.map(theme).join('')}</div>
+  </div>${tabbar}</div>`;
+
+document.getElementById('p2').innerHTML = `<div class="scr">${hdr('Boosters')}
+  <div class="body" style="padding-top:8px">
+    <h3>Bulles</h3>
+    <div class="card list">
+      ${item(bubble('classic'), 'Classique', '', on)}
+      ${item(bubble('matte'), 'Mat', '', cp(100))}
+      ${item(bubble('glossy'), 'Brillant', '', cp(120))}
+    </div>
+    <h3>Boosters</h3>
+    <div class="card list">
+      ${item(`<div class="bg">${icon('bulb')}</div>`, 'Indice', 'En stock : 2', cp(30))}
+      ${item(`<div class="bg">${icon('shuffle')}</div>`, 'Mélange', 'En stock : 1', cp(50))}
+      ${item(`<div class="bg">${icon('hammer')}</div>`, 'Marteau', 'En stock : 0', cp(80))}
+    </div>
+    <h3>Pièces</h3>
+    <div class="packs">
+      <div class="card pack">${coin(30)}<b>500</b><div class="price">0,99 €</div></div>
+      <div class="card pack"><div class="stack">${coin(30)}<span>${coin(30)}</span></div><b>1 200</b><div class="price">1,99 €</div></div>
+    </div>
+  </div>${tabbar}</div>`;
+</script>
+</body>
+</html>
