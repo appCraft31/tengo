@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using TenGo.App;
 using TenGo.Core;
 using TenGo.Fx;
@@ -7,28 +8,36 @@ using TenGo.Game;
 using TenGo.Haptics;
 using TenGo.Rendering;
 using TenGo.Services;
+using TenGo.Ui;
 using TMPro;
 using UnityEngine;
 
 namespace TenGo.Screens
 {
-    /// Boutique (BoutiqueScene.swift) : une seule page défilante, classée par
-    /// sections (« Sans pub », Thèmes, Matières, Tracés, Boosters, Pièces).
-    /// Achat avec les pièces gagnées, sélection du cosmétique actif ; les achats
-    /// en vraie monnaie passent par `IAdFreeStore` / `ICoinStore` (simulés
-    /// jusqu'à l'étape 7). Ouverte depuis une partie, un bouton de retour
-    /// remplace les onglets. Mode guidé : premier achat d'un indice, remboursé.
+    /// Boutique (BoutiqueScene.swift), refaite pour la 4.0
+    /// (`design/refonte/04_boutique`) : en-tête fixe (titre, solde) et
+    /// pastilles de rubrique qui font défiler jusqu'à la section ; « Sans
+    /// pub » en bandeau sobre ; thèmes en grille avec un vrai aperçu de grille
+    /// 4 × 2 aux couleurs du thème (le thème équipé cerclé d'encre) ; matières,
+    /// tracés et boosters en listes compactes (prix grisé si les pièces
+    /// manquent) ; packs de pièces en grille. Achat avec les pièces gagnées,
+    /// sélection du cosmétique actif ; les achats en vraie monnaie passent par
+    /// `IAdFreeStore` / `ICoinStore`. Ouverte depuis une partie, un bouton de
+    /// retour en haut à gauche remplace les onglets. Mode guidé : premier
+    /// achat d'un indice, remboursé.
     public sealed class ShopScreen : ScreenBase
     {
         const int Z = 20;
-        const float CardH = 150;
-        static readonly Color GoldInk = new(0.45f, 0.34f, 0.10f, 1f);
+        static readonly string[] SectionKeys = { "themes", "bubbles", "trails", "boosters", "coins" };
+        static readonly string[] SectionTitles = { "shop.tab_themes", "shop.tab_bubbles", "shop.tab_trails", "shop.tab_boosters", "shop.tab_coins" };
 
         readonly bool _returnToGame;
         bool _guided;
-        float _cardW = 280;
+        float _cw;
         float _viewportBottom;
         readonly Dictionary<string, float> _sectionTops = new();
+        readonly List<(ShapeView bg, ShapeView hair, TenGoText label)> _pills = new();
+        int _activePill = -1;
         Vector2 _balanceChipCenter;
         bool _attemptedProductLoad;
         bool _isLoadingProducts;
@@ -42,6 +51,8 @@ namespace TenGo.Screens
         /// Dernier message de la bulle d'information (tests).
         public string LastToast { get; private set; }
         public bool ReturnToGame => _returnToGame;
+
+        static float Pt(float v) => Design.Pt(v);
 
         public ShopScreen(AppRoot app, bool returnToGame, bool guided) : base(app, "ShopScreen", themedBackground: false)
         {
@@ -59,6 +70,7 @@ namespace TenGo.Screens
         public void ScrollToSection(string key)
         {
             if (_sectionTops.TryGetValue(key, out float top)) Scroll.ScrollTo(top);
+            UpdatePills();
         }
 
         public IReadOnlyDictionary<string, float> SectionTops => _sectionTops;
@@ -72,47 +84,99 @@ namespace TenGo.Screens
             float previousOffset = Scroll?.Offset ?? 0;
             for (int i = Root.childCount - 1; i >= 0; i--) RenderShared.Destroy(Root.GetChild(i).gameObject);
             Targets.Clear();
+            _pills.Clear();
+            _activePill = -1;
             _purchaseGuide = null;
             _guideLater = null;
             _toast = null;
             TabBarNode = null;
 
-            var theme = Look.Theme;
             App.SetBackground(Look.Background);
-            ThemeBackground.Make(Root, theme, SceneSize);
+            ThemeBackground.Make(Root, Look.Theme, SceneSize);
 
-            float usableW = UsableW;
-            _cardW = usableW / 2 - 16;
-            float topY = HalfH - TopInset - 26;
-            float bottomY = -HalfH;
+            float w = UsableW;
+            _cw = w - 2 * Pt(Design.Gutter);
+            float left = -_cw / 2, right = _cw / 2;
+            float rowY = HalfH - TopInset - Pt(32);
 
-            var title = TenGoText.Create(Root, Loc.T("shop.title"), Fonts.AvenirHeavy, 38, Look.Logo,
-                Units.P(-usableW / 2 + 24, topY - 14), Z + 10, horizontal: HorizontalAlignmentOptions.Left);
-            float chipW = AddBalanceChip(topY - 14);
-            title.ShrinkToFit(usableW - 48 - chipW - 16);
+            // En-tête fixe : retour (depuis une partie), titre, solde.
+            float titleX = left;
+            if (_returnToGame)
+            {
+                var back = Design.IconButton("shopBack", Root, new Vector2(left + Pt(22), rowY), VectorIconName.LineBack, Z + 12);
+                AddTarget("shopBack", back, Design.Pt(48, 48), GoBack, animate: false);
+                titleX = left + Pt(44 + 12);
+            }
+            float chipW = AddBalanceChip(right, rowY);
+            Design.Text(Root, Loc.T("shop.title"), NunitoWeight.Black, 32, Design.Ink, new Vector2(titleX, rowY), Z + 12,
+                HorizontalAlignmentOptions.Left).ShrinkToFit(right - chipW - Pt(12) - titleX);
+
+            // Pastilles de rubrique.
+            float pillsY = rowY - Pt(32 + 14 + 20);
+            AddSectionPills(left, pillsY);
+            float barBottom = pillsY - Pt(20 + 12);
+            ShapeView.Rect("HeaderBg", Root, Units.P(0, (HalfH + barBottom) / 2 + Pt(40)), new Vector2(w + 40, HalfH - barBottom + Pt(80)), 0,
+                Design.Bg, default, 0, Z + 8);
+            ShapeView.Rect("HeaderLine", Root, Units.P(0, barBottom), new Vector2(w + 40, Pt(1)), 0, Design.Line, default, 0, Z + 9);
 
             // Ouverte depuis l'accueil, la boutique EST l'onglet Boutique ; depuis
             // une partie, elle garde son bouton de retour (les onglets abandonneraient la grille).
-            float bottomChromeH;
             if (!_returnToGame)
             {
                 AddTabBar(Tab.Shop);
-                bottomChromeH = BottomInset + TabBar.Height;
+                _viewportBottom = TabBarTop;
             }
-            else
-            {
-                AddBackButton(bottomY + 64);
-                bottomChromeH = 88;
-            }
+            else _viewportBottom = -HalfH + BottomInset;
 
-            float viewportTop = topY - 56;
-            _viewportBottom = bottomY + bottomChromeH + 16;
-            Scroll = new ScrollArea(Root, viewportTop, _viewportBottom, -usableW / 2, usableW / 2);
+            Scroll = new ScrollArea(Root, barBottom, _viewportBottom, -w / 2, w / 2);
             BuildContent();
             Scroll.ApplyClip();
             Scroll.SetOffset(previousOffset);
+            UpdatePills();
 
             if (_guided) AttachGuide();
+        }
+
+        void AddSectionPills(float left, float y)
+        {
+            float x = left;
+            for (int i = 0; i < SectionKeys.Length; i++)
+            {
+                string key = SectionKeys[i];
+                var node = RenderShared.Node("section:" + key, Root, Units.P(0, y));
+                var label = Design.Text(node, Loc.T(SectionTitles[i]), NunitoWeight.ExtraBold, 15, Design.Ink, Vector2.zero, Z + 13);
+                float pw = label.WidthPt() + Pt(36), ph = Pt(40);
+                node.localPosition = Units.P(x + pw / 2, y);
+                var hair = ShapeView.Rect("Hair", node, Units.P(0, -Pt(1)), new Vector2(pw, ph), ph / 2, Design.Hair, default, 0, Z + 10);
+                var bg = ShapeView.Rect("Bg", node, Vector2.zero, new Vector2(pw, ph), ph / 2, Design.Card, default, 0, Z + 11);
+                _pills.Add((bg, hair, label));
+                AddTarget("section:" + key, node, new Vector2(pw, ph), () => { HapticManager.Light(); ScrollToSection(key); }, animate: false);
+                x += pw + Pt(8);
+            }
+        }
+
+        /// La pastille de la section en haut de la zone visible passe à l'encre.
+        void UpdatePills()
+        {
+            if (Scroll == null || _pills.Count == 0) return;
+            int active = 0;
+            for (int i = 0; i < SectionKeys.Length; i++)
+                if (_sectionTops.TryGetValue(SectionKeys[i], out float top) && -top <= Scroll.Offset + Pt(40)) active = i;
+            if (active == _activePill) return;
+            _activePill = active;
+            for (int i = 0; i < _pills.Count; i++)
+            {
+                bool on = i == active;
+                _pills[i].bg.Fill = on ? Design.Ink : Design.Card;
+                _pills[i].hair.Fill = on ? Design.Ink : Design.Hair;
+                _pills[i].label.Color = on ? Design.Bg : Design.Ink;
+            }
+        }
+
+        public override void Tick(float dt)
+        {
+            base.Tick(dt);
+            UpdatePills();
         }
 
         void AttachGuide()
@@ -131,7 +195,7 @@ namespace TenGo.Screens
 
         void AddGuideLaterButton()
         {
-            var label = TenGoText.Create(Root, Loc.T("guide.shop_later"), Fonts.AvenirDemiBold, 16, Colors.White(0.98f, 0.9f),
+            var label = TenGoText.Create(Root, Loc.T("guide.shop_later"), NunitoWeight.ExtraBold, Pt(16), Colors.White(0.98f, 0.9f),
                 Units.P(0, -UsableH / 2 + 168), 960);
             _guideLater = label.transform;
         }
@@ -161,82 +225,70 @@ namespace TenGo.Screens
         {
             _sectionTops.Clear();
             var content = Scroll.Content;
-            float cursor = 0;
-            float colCenter = UsableW / 4;
-            float[] colX = { -colCenter, colCenter };
-            const float rowGap = 18, sectionGap = 34;
+            float cursor = -Pt(16);
+            float left = -_cw / 2;
 
-            void Header(string text, string key)
+            void Header(string key, string title, string trailing)
             {
-                _sectionTops[key] = cursor;
-                cursor -= 26;
-                TenGoText.Create(content, text, Fonts.AvenirBold, 24, Look.Logo, Units.P(-UsableW / 2 + 22, cursor), Z,
-                    horizontal: HorizontalAlignmentOptions.Left);
-                cursor -= 30;
+                _sectionTops[key] = cursor + Pt(8);
+                cursor -= Pt(16);
+                Design.Text(content, title, NunitoWeight.Black, 20, Design.Ink, new Vector2(left, cursor), Z, HorizontalAlignmentOptions.Left);
+                if (trailing != null)
+                    Design.Text(content, trailing, NunitoWeight.ExtraBold, 14, Design.Ink2, new Vector2(-left, cursor), Z, HorizontalAlignmentOptions.Right);
+                cursor -= Pt(16 + 12);
             }
-            Vector2 GridPlace(int index) => new(colX[index % 2], cursor - CardH / 2 - index / 2 * (CardH + rowGap));
-            void EndGrid(int count) => cursor -= (count + 1) / 2 * (CardH + rowGap) + sectionGap;
 
-            // « Sans pub » mis en avant, tout en haut.
+            // « Sans pub » en bandeau, tout en haut.
             AddNoAdsCard(ref cursor);
+            cursor -= Pt(24);
 
-            Header(Loc.T("shop.tab_themes"), "themes");
-            for (int i = 0; i < ThemeCatalog.All.Count; i++) AddThemeCard(ThemeCatalog.All[i], GridPlace(i));
-            EndGrid(ThemeCatalog.All.Count);
+            var themes = ThemeCatalog.All;
+            Header("themes", Loc.T("shop.tab_themes"), themes.Count(t => S.Themes.Owns(t.Id)) + " / " + themes.Count);
+            float cardW = (_cw - Pt(10)) / 2, cardH = Pt(172);
+            for (int i = 0; i < themes.Count; i++)
+                AddThemeCard(themes[i], new Vector2(left + cardW / 2 + (i % 2) * (cardW + Pt(10)), cursor - cardH / 2 - (i / 2) * (cardH + Pt(10))),
+                    new Vector2(cardW, cardH));
+            cursor -= (themes.Count + 1) / 2 * (cardH + Pt(10)) - Pt(10) + Pt(28);
 
-            Header(Loc.T("shop.tab_bubbles"), "bubbles");
-            var styles = CosmeticCatalog.BubbleStyles;
-            for (int i = 0; i < styles.Count; i++)
-            {
-                var s = styles[i];
-                var preview = RenderShared.Node("Preview", null);
-                BubbleView.Create(preview, 5, Vector2.zero, Z + 2, Look.ParseBubble(s.Id), 23);
-                AddCosmeticCard(s, preview, 36, GridPlace(i));
-            }
-            EndGrid(styles.Count);
+            Header("bubbles", Loc.T("shop.tab_bubbles"), null);
+            AddCosmeticList(CosmeticCatalog.BubbleStyles, ref cursor);
+            cursor -= Pt(28);
 
-            Header(Loc.T("shop.tab_trails"), "trails");
-            var trails = CosmeticCatalog.Trails;
-            for (int i = 0; i < trails.Count; i++)
-            {
-                var t = trails[i];
-                AddCosmeticCard(t, TrailPreview(t), 36, GridPlace(i));
-            }
-            EndGrid(trails.Count);
+            Header("trails", Loc.T("shop.tab_trails"), null);
+            AddCosmeticList(CosmeticCatalog.Trails, ref cursor);
+            cursor -= Pt(28);
 
-            Header(Loc.T("shop.tab_boosters"), "boosters");
-            // Rangées pleine largeur : elles portent une description.
-            foreach (var b in Boosters.All) AddBoosterRow(b, ref cursor);
-            cursor -= sectionGap - 16;
+            Header("boosters", Loc.T("shop.tab_boosters"), null);
+            AddBoosterList(ref cursor);
+            cursor -= Pt(28);
 
-            Header(Loc.T("shop.tab_coins"), "coins");
+            Header("coins", Loc.T("shop.tab_coins"), null);
             var packs = S.CoinStore.Packs;
             if (packs.Count == 0)
             {
                 // Pas de produits : on tente le chargement (celui du lancement a pu échouer).
                 if (!_attemptedProductLoad) ReloadProducts(false);
                 string msg = Loc.T(_isLoadingProducts ? "shop.coins_loading" : "shop.coins_unavailable");
-                TenGoText.Create(content, msg, Fonts.AvenirMedium, 19, Look.Logo.WithAlpha(0.7f), Units.P(0, cursor - 30), Z)
-                    .ShrinkToFit(UsableW - 40);
-                cursor -= 80;
+                Design.Text(content, msg, NunitoWeight.Bold, 15, Design.Ink2, new Vector2(0, cursor - Pt(16)), Z).ShrinkToFit(_cw);
+                cursor -= Pt(40);
                 if (!_isLoadingProducts)
                 {
-                    var retry = RenderShared.Node("productsRetry", content, Units.P(0, cursor + 8));
-                    var pill = ShapeView.Rect("Pill", retry, Vector2.zero, new Vector2(220, 44), 22, Look.Logo.WithAlpha(0.06f),
-                        Look.Logo.WithAlpha(0.18f), 1, Z);
-                    Relief.Raise(pill, 3);
-                    TenGoText.Create(retry, Loc.T("shop.retry"), Fonts.AvenirDemiBold, 17, Look.Logo, Vector2.zero, Z + 2);
-                    AddTarget("productsRetry", retry, new Vector2(220, 44), () => { HapticManager.Light(); ReloadProducts(true); }, haptic: false);
-                    cursor -= 50;
+                    var retry = Design.Button("productsRetry", content, new Vector2(0, cursor - Pt(22)), Pt(200), Loc.T("shop.retry"), false, Z,
+                        VectorIconName.LineRestart, 44);
+                    AddTarget("productsRetry", retry, new Vector2(Pt(200), Pt(44)), () => { HapticManager.Light(); ReloadProducts(true); }, haptic: false);
+                    cursor -= Pt(56);
                 }
             }
             else
             {
-                for (int i = 0; i < packs.Count; i++) AddCoinPackCard(packs[i], GridPlace(i));
-                EndGrid(packs.Count);
+                float pw = (_cw - Pt(10)) / 2, ph = Pt(132);
+                for (int i = 0; i < packs.Count; i++)
+                    AddCoinPackCard(packs[i], i, new Vector2(left + pw / 2 + (i % 2) * (pw + Pt(10)), cursor - ph / 2 - (i / 2) * (ph + Pt(10))),
+                        new Vector2(pw, ph));
+                cursor -= (packs.Count + 1) / 2 * (ph + Pt(10)) - Pt(10);
             }
 
-            Scroll.ContentHeight = -cursor + 8;
+            Scroll.ContentHeight = -cursor + Pt(24);
         }
 
         void ReloadProducts(bool rebuildFirst)
@@ -252,247 +304,261 @@ namespace TenGo.Screens
             });
         }
 
+        // MARK: - Briques
+
+        /// Prix en pièces : capsule creusée, chiffre grisé si le solde ne suffit pas.
+        Transform PricePill(Transform parent, Vector2 pos, int price, bool large = true, string prefix = null)
+        {
+            bool affordable = S.Economy.Balance >= price;
+            var node = RenderShared.Node("Price", parent, Units.P(pos.x, pos.y));
+            var label = Design.Text(node, (prefix ?? "") + price, NunitoWeight.Black, large ? 16 : 14, affordable ? Design.Ink : Design.Ink3,
+                Vector2.zero, Z + 4, HorizontalAlignmentOptions.Left);
+            float coin = large ? 20 : 16;
+            float content = Pt(coin + 6) + label.WidthPt();
+            float w = content + Pt(large ? 28 : 22), h = Pt(large ? 40 : 32);
+            ShapeView.Rect("Bg", node, Units.P(-w / 2, 0), new Vector2(w, h), h / 2, Design.Sunk, default, 0, Z + 2);
+            var c = Design.Coin(node, new Vector2(-w / 2 - content / 2 + Pt(coin / 2), 0), coin, Z + 3);
+            if (!affordable) FxAlpha.Of(c.gameObject).Alpha = 0.5f;
+            label.transform.localPosition = Units.P(-w / 2 - content / 2 + Pt(coin + 6), 0);
+            node.name = "PricePill";
+            // Le nœud est ancré par son bord droit : `pos` = bord droit.
+            return node;
+        }
+
+        static float PillWidth(Transform pill)
+        {
+            var bg = pill.Find("Bg")?.GetComponent<ShapeView>();
+            return bg != null ? bg.SizePt.x : 0;
+        }
+
+        /// « ✓ Équipé » (bord droit en `rightX`).
+        void Equipped(Transform parent, float rightX, float y)
+        {
+            var color = Look.Theme.IsDefault ? Design.SeedGreen : Design.Ink;
+            var l = Design.Text(parent, Loc.T("ui.shop.equipped"), NunitoWeight.Black, 15, color, new Vector2(rightX, y), Z + 4,
+                HorizontalAlignmentOptions.Right);
+            VectorIcon.Create(parent, VectorIconName.LineCheck, Units.P(rightX - l.WidthPt() - Pt(12), y), Pt(16), color, Z + 4);
+        }
+
+        /// « Choisir » : déjà possédé, pas équipé.
+        void Select(Transform parent, float rightX, float y)
+        {
+            var l = Design.Text(parent, Loc.T("shop.select"), NunitoWeight.ExtraBold, 14, Design.Ink, Vector2.zero, Z + 4);
+            float w = l.WidthPt() + Pt(24), h = Pt(34);
+            var pos = Units.P(rightX - w / 2, y);
+            ShapeView.Rect("Select", parent, pos, new Vector2(w, h), h / 2, Color.clear, Design.Line, Pt(1.5f), Z + 3);
+            l.transform.localPosition = pos;
+        }
+
         // MARK: - Cartes
 
-        /// Carte « Sans pub » : fond accentué et halo pulsant tant que non achetée.
+        /// « Sans pub » : bandeau blanc, prix du store dans une capsule accent.
         void AddNoAdsCard(ref float cursor)
         {
-            var theme = Look.Theme;
             bool purchased = S.AdFree.IsPurchased;
-            float h = purchased ? 116 : 132;
-            float w = UsableW - 32;
-            var accent = Look.Accent;
-            var ink = accent.ReadableInk();
+            float h = Pt(purchased ? 72 : 88);
             var card = RenderShared.Node("noAds", Scroll.Content, Units.P(0, cursor - h / 2));
+            Design.Surface("Bg", card, Vector2.zero, new Vector2(_cw, h), Pt(Design.CardRadius), Z);
+            float x = -_cw / 2 + Pt(16);
+            Design.IconChip(card, new Vector2(x + Pt(22), 0), 44, 14, Design.Sunk, VectorIconName.LineNoads, Z + 1, Design.Ink, 24, 1f);
 
-            if (!purchased)
+            float right = _cw / 2 - Pt(16);
+            float statusW;
+            if (purchased)
             {
-                var halo = ShapeView.Rect("Halo", card, Vector2.zero, new Vector2(w + 12, h + 12), 32, accent.WithAlpha(0.35f), default, 0, Z - 2);
-                var hgo = halo.gameObject;
-                FxAlpha.Of(hgo);
-                Tw.Run(hgo, Tw.Forever(Tw.Seq(
-                    Tw.Par(Tw.Scale(halo.transform, 1.03f, 1.1f), Tw.Fade(hgo, 0.5f, 1.1f)),
-                    Tw.Par(Tw.Scale(halo.transform, 1f, 1.1f), Tw.Fade(hgo, 1f, 1.1f)))));
+                Equipped(card, right, 0);
+                statusW = Pt(110);
             }
-            ShapeView.Rect("Shadow", card, Units.P(0, -5), new Vector2(w, h), 26, Colors.White(0, 0.08f), default, 0, Z - 1);
-            var bg = ShapeView.Rect("Bg", card, Vector2.zero, new Vector2(w, h), 26, accent, Look.Logo.WithAlpha(0.25f), purchased ? 3 : 1.5f, Z);
-            Relief.Raise(bg, 6);
-
-            // Pictogramme « écran publicitaire barré ».
-            var picto = Units.P(-w / 2 + 48, 0);
-            Relief.IconChip(card, picto, 32, accent, Z + 1);
-            ShapeView.Rect("Screen", card, picto, new Vector2(34, 24), 5, Color.clear, ink.WithAlpha(0.85f), 2.5f, Z + 2);
-            StrokeView.Create("Slash", card, new[] { picto + Units.P(-19, -14), picto + Units.P(19, 14) }, ink.WithAlpha(0.85f), 3, Z + 3);
-
-            float textX = -w / 2 + 86;
-            float priceW = purchased ? 96 : 110;
-            float textMax = w - 86 - priceW - 40;
-            TenGoText.Create(card, Loc.T("menu.remove_ads"), Fonts.AvenirBold, 23, ink, Units.P(textX, purchased ? 12 : 22), Z + 2,
-                horizontal: HorizontalAlignmentOptions.Left).ShrinkToFit(textMax);
-            TenGoText.Create(card, Loc.T("shop.no_ads_desc"), Fonts.AvenirMedium, 14, ink.WithAlpha(0.75f), Units.P(textX, purchased ? -14 : -2), Z + 2,
-                horizontal: HorizontalAlignmentOptions.Left).ShrinkToFit(textMax);
-
-            if (!purchased)
+            else
             {
+                // Prix du store uniquement ; « … » tant qu'il n'est pas chargé (achat alors inactif).
+                var price = Design.Text(card, S.AdFreeStore.DisplayPrice ?? "…", NunitoWeight.Black, 16, Design.OnAccent, Vector2.zero, Z + 4);
+                float pw = Mathf.Max(Pt(76), price.WidthPt() + Pt(28)), ph = Pt(44);
+                var pos = Units.P(right - pw / 2, 0);
+                ShapeView.Rect("Price", card, pos, new Vector2(pw, ph), ph / 2, Design.Accent, default, 0, Z + 2);
+                price.transform.localPosition = pos;
+                statusW = pw;
+            }
+            float textX = x + Pt(44 + 14);
+            float textW = right - statusW - Pt(12) - textX;
+            Design.Text(card, Loc.T("menu.remove_ads"), NunitoWeight.Black, 17, Design.Ink, new Vector2(textX, purchased ? Pt(9) : Pt(16)), Z + 3,
+                HorizontalAlignmentOptions.Left).ShrinkToFit(textW);
+            if (purchased)
+                Design.Text(card, Loc.T("shop.no_ads_desc"), NunitoWeight.Bold, 13, Design.Ink2, new Vector2(textX, -Pt(11)), Z + 3,
+                    HorizontalAlignmentOptions.Left).ShrinkToFit(textW);
+            else
+            {
+                var sub = Design.Text(card, Loc.T("ui.shop.noads_sub"), NunitoWeight.Bold, 13, Design.Ink2, new Vector2(textX, -Pt(4)), Z + 3,
+                    HorizontalAlignmentOptions.Left);
+                sub.ShrinkToFit(textW);
                 // Bonus de bienvenue : 500 pièces offertes avec l'achat.
-                CoinIcon.Make(card, Units.P(-w / 2 + 94, -26), 8, Z + 2);
-                TenGoText.Create(card, Loc.T("shop.no_ads_bonus"), Fonts.AvenirBold, 14, GoldInk, Units.P(-w / 2 + 108, -26), Z + 2,
-                    horizontal: HorizontalAlignmentOptions.Left).ShrinkToFit(textMax - 22);
+                var bonus = Design.Text(card, "+" + StoreCatalog.AdFreeBonusCoins, NunitoWeight.Black, 13, Design.Ink2,
+                    new Vector2(textX, -Pt(22)), Z + 3, HorizontalAlignmentOptions.Left);
+                Design.Coin(card, new Vector2(textX + bonus.WidthPt() + Pt(11), -Pt(22)), 14, Z + 3);
+            }
+            AddTarget("noAds", card, new Vector2(_cw, h), HandleNoAds, animate: false, haptic: false);
+            cursor -= h;
+        }
+
+        /// Thème : aperçu 4 × 2 sur le fond du thème, nom et état ; le thème équipé est cerclé d'encre.
+        void AddThemeCard(Theme theme, Vector2 pos, Vector2 size)
+        {
+            bool isActive = S.Themes.ActiveId == theme.Id;
+            bool owned = S.Themes.Owns(theme.Id);
+            string name = "item:theme:" + theme.Id;
+            var card = RenderShared.Node(name, Scroll.Content, Units.P(pos.x, pos.y));
+            float r = Pt(Design.CardRadius);
+            if (isActive)
+                ShapeView.Rect("Ring", card, Vector2.zero, size + Design.Pt(5, 5), r + Pt(2.5f), Design.Ink, default, 0, Z - 1);
+            Design.Surface("Bg", card, Vector2.zero, size, r, Z, hair: !isActive);
+
+            // Aperçu : les huit premières bulles du thème, sur son fond (coins du haut arrondis).
+            float previewH = Pt(112);
+            float py = size.y / 2 - previewH / 2;
+            var bgColor = Colors.FromRgb(theme.Background);
+            ShapeView.Rect("PreviewTop", card, Units.P(0, py), new Vector2(size.x, previewH), r, bgColor, default, 0, Z + 1);
+            ShapeView.Rect("PreviewFill", card, Units.P(0, py - previewH / 4), new Vector2(size.x, previewH / 2), 0, bgColor, default, 0, Z + 1);
+            float cell = Mathf.Min((size.x - Pt(20)) / 4, (previewH - Pt(16)) / 2);
+            float d = cell - Pt(6);
+            var digit = Colors.FromRgb(theme.Digit);
+            for (int i = 0; i < 8; i++)
+            {
+                var c = Units.P(-cell * 1.5f + (i % 4) * cell, py + cell / 2 - (i / 4) * cell);
+                ShapeView.Circle("B", card, c, d / 2, Colors.FromRgb(theme.ColorForValue(i + 1)), default, 0, Z + 2);
+                TenGoText.Create(card, (i + 1).ToString(), NunitoWeight.Bold, d * 0.5f, digit, c, Z + 3);
             }
 
-            var pillPos = Units.P(w / 2 - (purchased ? 70 : 74), 0);
-            var pill = ShapeView.Rect("Price", card, pillPos, new Vector2(priceW, 36), 18, Look.Background, default, 0, Z + 1);
-            if (!purchased) Relief.Raise(pill, 3);
-            // Prix du store uniquement ; « … » tant qu'il n'est pas chargé (achat alors inactif).
-            string priceText = purchased ? Loc.T("shop.active") : S.AdFreeStore.DisplayPrice ?? "…";
-            TenGoText.Create(card, priceText, Fonts.AvenirBold, purchased ? 15 : 16, Look.Logo, pillPos, Z + 3).ShrinkToFit(priceW - 12);
-
-            AddTarget("noAds", card, new Vector2(w, h), HandleNoAds, animate: false, haptic: false);
-            cursor -= h + 18;
+            float rowY = -size.y / 2 + Pt(30);
+            float lx = -size.x / 2 + Pt(14), rx = size.x / 2 - Pt(12);
+            float statusW;
+            if (isActive) { Equipped(card, rx, rowY); statusW = Pt(84); }
+            else if (owned) { Select(card, rx, rowY); statusW = Pt(80); }
+            else statusW = PillWidth(PricePill(card, new Vector2(rx, rowY), theme.Price));
+            Design.Text(card, Loc.T(theme.NameKey), NunitoWeight.Black, 16, Design.Ink, new Vector2(lx, rowY), Z + 4, HorizontalAlignmentOptions.Left)
+                .ShrinkToFit(rx - statusW - Pt(8) - lx);
+            AddTarget(name, card, size, () => HandleTheme(theme, card), animate: false, haptic: false);
         }
 
-        /// Rangée d'un booster : icône, nom, description, stock, prix unité / lot.
-        void AddBoosterRow(Booster booster, ref float cursor)
+        /// Matières ou tracés : une carte, une ligne par objet (aperçu, nom, état).
+        void AddCosmeticList(IReadOnlyList<CosmeticStyle> styles, ref float cursor)
         {
-            const float h = 112;
-            float w = UsableW - 32;
-            var logo = Look.Logo;
-            var card = RenderShared.Node("booster:" + booster.Id(), Scroll.Content, Units.P(0, cursor - h / 2));
-            ShapeView.Rect("Shadow", card, Units.P(0, -5), new Vector2(w, h), 26, Colors.White(0, 0.08f), default, 0, Z - 1);
-            var bg = ShapeView.Rect("Bg", card, Vector2.zero, new Vector2(w, h), 26, new Color(0.99f, 0.97f, 0.94f), logo.WithAlpha(0.18f), 1.5f, Z);
-            Relief.Raise(bg, 5);
-
-            int index = 0;
-            for (int i = 0; i < Boosters.All.Count; i++) if (Boosters.All[i] == booster) index = i;
-            var chipPos = Units.P(-w / 2 + 48, 0);
-            ShapeView.Circle("Chip", card, chipPos, 30, Look.BubbleColor(new[] { 3, 5, 7 }[index % 3]).MixedWithWhite(0.35f), default, 0, Z + 1);
-            VectorIcon.Create(card, IconOf(booster), chipPos, 36, Colors.White(0.22f), Z + 2);
-
-            float textX = -w / 2 + 86;
-            float textWidth = w - 86 - 176;
-            TenGoText.Create(card, Loc.T(booster.TitleKey()), Fonts.AvenirBold, 22, logo, Units.P(textX, 30), Z + 2,
-                horizontal: HorizontalAlignmentOptions.Left).ShrinkToFit(textWidth);
-            var desc = TenGoText.Create(card, Loc.T(booster.DetailsKey()), Fonts.AvenirMedium, 14, Colors.White(0.32f), Units.P(textX, 2), Z + 2,
-                horizontal: HorizontalAlignmentOptions.Left);
-            desc.Wrap(textWidth);
-            TenGoText.Create(card, Loc.F("shop.booster_stock", S.Economy.BoosterCount(booster)), Fonts.AvenirMedium, 13, Colors.White(0.45f),
-                Units.P(textX, -34), Z + 2, horizontal: HorizontalAlignmentOptions.Left).ShrinkToFit(textWidth);
-
-            AddTarget("booster:" + booster.Id(), card, new Vector2(w, h), () => HandleBoosterPurchase(booster, 1), animate: false, haptic: false);
-            // Deux achats : l'unité (celle du tutoriel) et le lot remisé.
-            AddBoosterPricePill(card, booster, 1, booster.Price(), new Vector2(w / 2 - 74, 24));
-            AddBoosterPricePill(card, booster, booster.BundleQuantity(), booster.BundlePrice(), new Vector2(w / 2 - 74, -24));
-            cursor -= h + 16;
+            float rowH = Pt(64);
+            var list = RenderShared.Node("List", Scroll.Content, Units.P(0, cursor - styles.Count * rowH / 2));
+            Design.Surface("Bg", list, Vector2.zero, new Vector2(_cw, styles.Count * rowH), Pt(Design.CardRadius), Z);
+            for (int i = 0; i < styles.Count; i++)
+            {
+                var style = styles[i];
+                var kind = style.Kind;
+                bool isActive = S.Cosmetics.ActiveId(kind) == style.Id;
+                bool owned = S.Cosmetics.Owns(kind, style.Id);
+                string prefix = kind == CosmeticKind.BubbleStyle ? "bubbleStyle" : "trail";
+                string name = $"item:{prefix}:{style.Id}";
+                var row = RenderShared.Node(name, list, Units.P(0, styles.Count * rowH / 2 - rowH * (i + 0.5f)));
+                if (i > 0) ShapeView.Rect("Sep", row, Units.P(0, rowH / 2), new Vector2(_cw, Pt(1)), 0, Design.Line, default, 0, Z + 1);
+                float x = -_cw / 2 + Pt(16);
+                if (kind == CosmeticKind.BubbleStyle)
+                    BubbleView.Create(row, 5, Units.P(x + Pt(18), 0), Z + 2, Look.ParseBubble(style.Id), Pt(18));
+                else
+                {
+                    var pts = new List<Vector2>();
+                    foreach (var (px, py) in new[] { (-16f, -6f), (-5f, 7f), (5f, -7f), (16f, 6f) }) pts.Add(Units.P(x + Pt(18) + Pt(px), Pt(py)));
+                    Rendering.TrailRenderer.Make(row, pts, Look.ParseTrail(style.Id), Design.Accent, 0, Z + 2);
+                }
+                float rx = _cw / 2 - Pt(16);
+                float statusW;
+                if (isActive) { Equipped(row, rx, 0); statusW = Pt(90); }
+                else if (owned) { Select(row, rx, 0); statusW = Pt(84); }
+                else statusW = PillWidth(PricePill(row, new Vector2(rx, 0), style.Price));
+                float textX = x + Pt(36 + 14);
+                Design.Text(row, Loc.T(style.NameKey), NunitoWeight.ExtraBold, 16, Design.Ink, new Vector2(textX, 0), Z + 3,
+                    HorizontalAlignmentOptions.Left).ShrinkToFit(rx - statusW - Pt(10) - textX);
+                AddTarget(name, row, new Vector2(_cw, rowH), () => HandleCosmetic(style, row), animate: false, haptic: false);
+            }
+            cursor -= styles.Count * rowH;
         }
 
-        void AddBoosterPricePill(Transform card, Booster booster, int quantity, int price, Vector2 pos)
+        /// Boosters : icône, nom, stock ; à droite le lot remisé puis l'unité (celle du tutoriel).
+        void AddBoosterList(ref float cursor)
         {
-            string name = $"booster:{booster.Id()}:{quantity}";
-            bool affordable = S.Economy.Balance >= price;
-            var node = RenderShared.Node(name, card, Units.P(pos.x, pos.y));
-            var accent = Look.Accent;
-            var pill = ShapeView.Rect("Pill", node, Vector2.zero, new Vector2(124, 38), 19, affordable ? accent : Colors.White(0.90f), default, 0, Z + 1);
-            Relief.Raise(pill, 3);
-            var ink = affordable ? accent.ReadableInk() : Colors.White(0.45f);
-            TenGoText.Create(node, "×" + quantity, Fonts.AvenirBold, 15, ink, Units.P(-46, 0), Z + 3, horizontal: HorizontalAlignmentOptions.Left);
-            CoinIcon.Make(node, Units.P(2, 0), 8, Z + 3);
-            TenGoText.Create(node, price.ToString(), Fonts.AvenirBold, 16, ink, Units.P(14, 0), Z + 3, horizontal: HorizontalAlignmentOptions.Left);
-            AddTarget(name, node, new Vector2(124, 38), () => HandleBoosterPurchase(booster, quantity), animate: false, haptic: false);
+            var all = Boosters.All;
+            float rowH = Pt(68);
+            var list = RenderShared.Node("Boosters", Scroll.Content, Units.P(0, cursor - all.Count * rowH / 2));
+            Design.Surface("Bg", list, Vector2.zero, new Vector2(_cw, all.Count * rowH), Pt(Design.CardRadius), Z);
+            for (int i = 0; i < all.Count; i++)
+            {
+                var booster = all[i];
+                var row = RenderShared.Node("booster:" + booster.Id(), list, Units.P(0, all.Count * rowH / 2 - rowH * (i + 0.5f)));
+                if (i > 0) ShapeView.Rect("Sep", row, Units.P(0, rowH / 2), new Vector2(_cw, Pt(1)), 0, Design.Line, default, 0, Z + 1);
+                float x = -_cw / 2 + Pt(16);
+                Design.IconChip(row, new Vector2(x + Pt(20), 0), 40, 13, Design.Sunk, IconOf(booster), Z + 1, Design.Ink, 22, 1f);
+                AddTarget("booster:" + booster.Id(), row, new Vector2(_cw, rowH), () => HandleBoosterPurchase(booster, 1), animate: false, haptic: false);
+
+                // Deux achats : l'unité (celle du tutoriel) au bord, le lot remisé à sa gauche.
+                float rx = _cw / 2 - Pt(14);
+                var unit = PricePill(row, new Vector2(rx, 0), booster.Price());
+                float unitW = PillWidth(unit);
+                unit.name = $"booster:{booster.Id()}:1";
+                AddTarget(unit.name, unit, new Vector2(unitW, Pt(40)), () => HandleBoosterPurchase(booster, 1), animate: false, haptic: false,
+                    offsetPt: new Vector2(-unitW / 2, 0));
+                int q = booster.BundleQuantity();
+                var bundle = PricePill(row, new Vector2(rx - unitW - Pt(6), 0), booster.BundlePrice(), false, "×" + q + "  ");
+                float bundleW = PillWidth(bundle);
+                bundle.name = $"booster:{booster.Id()}:{q}";
+                AddTarget(bundle.name, bundle, new Vector2(bundleW, Pt(36)), () => HandleBoosterPurchase(booster, q), animate: false, haptic: false,
+                    offsetPt: new Vector2(-bundleW / 2, 0));
+
+                float textX = x + Pt(40 + 14);
+                float textW = rx - unitW - Pt(6) - bundleW - Pt(10) - textX;
+                Design.Text(row, Loc.T(booster.TitleKey()), NunitoWeight.ExtraBold, 16, Design.Ink, new Vector2(textX, Pt(9)), Z + 3,
+                    HorizontalAlignmentOptions.Left).ShrinkToFit(textW);
+                string stock = Loc.F("shop.booster_stock", S.Economy.BoosterCount(booster));
+                if (stock.Length > 0) stock = char.ToUpper(stock[0]) + stock.Substring(1);
+                Design.Text(row, stock, NunitoWeight.Bold, 13, Design.Ink2, new Vector2(textX, -Pt(11)), Z + 3, HorizontalAlignmentOptions.Left)
+                    .ShrinkToFit(textW);
+            }
+            cursor -= all.Count * rowH;
         }
 
         static VectorIconName IconOf(Booster b) => b switch
         {
-            Booster.Hint => VectorIconName.BoosterHint,
-            Booster.Shuffle => VectorIconName.BoosterShuffle,
-            _ => VectorIconName.BoosterHammer,
+            Booster.Hint => VectorIconName.LineBulb,
+            Booster.Shuffle => VectorIconName.LineShuffle,
+            _ => VectorIconName.LineHammer,
         };
 
-        /// Pack de pièces (achat en vraie monnaie).
-        void AddCoinPackCard(CoinPack pack, Vector2 pos)
+        /// Pack de pièces (achat en vraie monnaie) : pile de pièces, montant, prix du store.
+        void AddCoinPackCard(CoinPack pack, int index, Vector2 pos, Vector2 size)
         {
-            var preview = RenderShared.Node("Preview", null);
-            CoinIcon.Make(preview, Vector2.zero, 24, Z + 2);
-            var card = AddCardFrame("pack:" + pack.ProductId, Look.Background, Look.Logo.WithAlpha(0.18f), 1, pack.Coins.ToString(), Look.Logo,
-                preview, 40, pos);
-            var accent = Look.Accent;
-            var pill = ShapeView.Rect("Pill", card, Units.P(0, -48), new Vector2(110, 34), 17, accent, default, 0, Z + 1);
-            Relief.Raise(pill, 3);
-            TenGoText.Create(card, pack.DisplayPrice, Fonts.AvenirBold, 16, accent.ReadableInk(), Units.P(0, -48), Z + 3).ShrinkToFit(100);
-            AddTarget("pack:" + pack.ProductId, card, new Vector2(_cardW, CardH), () => HandleCoinPack(pack), animate: false, haptic: false);
+            var card = RenderShared.Node("pack:" + pack.ProductId, Scroll.Content, Units.P(pos.x, pos.y));
+            Design.Surface("Bg", card, Vector2.zero, size, Pt(Design.CardRadius), Z);
+            int coins = Mathf.Clamp(index + 1, 1, 3);
+            float iy = size.y / 2 - Pt(34);
+            for (int c = 0; c < coins; c++)
+                Design.Coin(card, new Vector2((c - (coins - 1) / 2f) * Pt(18), iy), 36, Z + 2 + c);
+            Design.Text(card, "+" + Design.Number(pack.Coins), NunitoWeight.Black, 18, Design.Ink, new Vector2(0, Pt(2)), Z + 3).ShrinkToFit(size.x - Pt(16));
+            var price = Design.Text(card, pack.DisplayPrice, NunitoWeight.Black, 15, Design.OnAccent, Vector2.zero, Z + 4);
+            float pw = Mathf.Min(size.x - Pt(24), Mathf.Max(Pt(84), price.WidthPt() + Pt(28))), ph = Pt(36);
+            var pp = Units.P(0, -size.y / 2 + Pt(30));
+            ShapeView.Rect("Price", card, pp, new Vector2(pw, ph), ph / 2, Design.Accent, default, 0, Z + 2);
+            price.transform.localPosition = pp;
+            price.ShrinkToFit(pw - Pt(12));
+            AddTarget("pack:" + pack.ProductId, card, size, () => HandleCoinPack(pack), animate: false, haptic: false);
         }
 
-        void AddThemeCard(Theme theme, Vector2 pos)
-        {
-            bool isActive = S.Themes.ActiveId == theme.Id;
-            bool owned = S.Themes.Owns(theme.Id);
-            // Aperçu : cinq bulles de la palette.
-            var preview = RenderShared.Node("Preview", null);
-            int[] values = { 1, 3, 5, 7, 9 };
-            float spacing = Mathf.Min(42, (_cardW - 56) / (values.Length - 1));
-            float totalW = (values.Length - 1) * spacing;
-            for (int i = 0; i < values.Length; i++)
-                ShapeView.Circle("Dot", preview, Units.P(-totalW / 2 + i * spacing, 0), 16, Colors.FromRgb(theme.ColorForValue(values[i])),
-                    Colors.White(1, 0.22f), 1, Z + 2);
-            var accent = Colors.FromRgb(theme.Accent);
-            var logo = Colors.FromRgb(theme.Logo);
-            string name = "item:theme:" + theme.Id;
-            var card = AddCardFrame(name, Colors.FromRgb(theme.Background), isActive ? accent : logo.WithAlpha(0.18f), isActive ? 3 : 1,
-                Loc.T(theme.NameKey), logo, preview, 42, pos);
-            AddStatusBadge(card, accent, logo, isActive, owned, -48, owned ? (int?)null : theme.Price);
-            AddTarget(name, card, new Vector2(_cardW, CardH), () => HandleTheme(theme, card), animate: false, haptic: false);
-        }
-
-        void AddCosmeticCard(CosmeticStyle style, Transform preview, float previewY, Vector2 pos)
-        {
-            var kind = style.Kind;
-            bool isActive = S.Cosmetics.ActiveId(kind) == style.Id;
-            bool owned = S.Cosmetics.Owns(kind, style.Id);
-            string prefix = kind == CosmeticKind.BubbleStyle ? "bubbleStyle" : "trail";
-            string name = $"item:{prefix}:{style.Id}";
-            var card = AddCardFrame(name, Look.Background, isActive ? Look.Accent : Look.Logo.WithAlpha(0.18f), isActive ? 3 : 1,
-                Loc.T(style.NameKey), Look.Logo, preview, previewY, pos);
-            AddStatusBadge(card, Look.Accent, Look.Logo, isActive, owned, -48, owned ? (int?)null : style.Price);
-            AddTarget(name, card, new Vector2(_cardW, CardH), () => HandleCosmetic(style, card), animate: false, haptic: false);
-        }
-
-        Transform TrailPreview(CosmeticStyle style)
-        {
-            var node = RenderShared.Node("Preview", null);
-            var pts = new List<Vector2>();
-            foreach (var (x, y) in new[] { (-58f, -8f), (-29f, 12f), (0f, -12f), (29f, 12f), (58f, -8f) }) pts.Add(Units.P(x, y));
-            Rendering.TrailRenderer.Make(node, pts, Look.ParseTrail(style.Id), Look.Accent, 0, Z + 2);
-            return node;
-        }
-
-        /// Cadre commun (ombre, fond, aperçu, titre).
-        Transform AddCardFrame(string name, Color background, Color border, float borderWidth, string title, Color titleColor,
-            Transform preview, float previewY, Vector2 pos)
-        {
-            var card = RenderShared.Node(name, Scroll.Content, Units.P(pos.x, pos.y));
-            var size = new Vector2(_cardW, CardH);
-            ShapeView.Rect("Shadow", card, Units.P(0, -5), size, 26, Colors.White(0, 0.08f), default, 0, Z - 1);
-            var bg = ShapeView.Rect("Bg", card, Vector2.zero, size, 26, background, border, borderWidth, Z);
-            Relief.Raise(bg, 5);
-            preview.SetParent(card, false);
-            preview.localPosition = Units.P(0, previewY);
-            TenGoText.Create(card, title, Fonts.AvenirDemiBold, 22, titleColor, Units.P(0, -6), Z + 2).ShrinkToFit(_cardW - 20);
-            return card;
-        }
-
-        void AddStatusBadge(Transform card, Color accent, Color logo, bool isActive, bool owned, float y, int? price)
-        {
-            var pos = Units.P(0, y);
-            if (isActive)
-            {
-                var pill = ShapeView.Rect("Badge", card, pos, new Vector2(96, 32), 16, accent, default, 0, Z + 1);
-                Relief.Raise(pill, 3);
-                TenGoText.Create(card, Loc.T("shop.active"), Fonts.AvenirBold, 15, accent.ReadableInk(), pos, Z + 3).ShrinkToFit(88);
-            }
-            else if (owned)
-            {
-                ShapeView.Rect("Badge", card, pos, new Vector2(108, 32), 16, Color.clear, logo.WithAlpha(0.5f), 1.5f, Z + 1);
-                TenGoText.Create(card, Loc.T("shop.select"), Fonts.AvenirMedium, 15, logo, pos, Z + 3).ShrinkToFit(100);
-            }
-            else
-            {
-                var label = TenGoText.Create(card, (price ?? 0).ToString(), Fonts.AvenirBold, 17, logo, Vector2.zero, Z + 3,
-                    horizontal: HorizontalAlignmentOptions.Left);
-                const float gap = 6;
-                float contentW = 18 + gap + label.WidthPt();
-                ShapeView.Rect("Badge", card, pos, new Vector2(contentW + 28, 32), 16, logo.WithAlpha(0.06f), logo.WithAlpha(0.18f), 1, Z + 1);
-                float startX = -contentW / 2;
-                CoinIcon.Make(card, Units.P(startX + 9, y), 9, Z + 3);
-                label.transform.localPosition = Units.P(startX + 18 + gap, y);
-            }
-        }
-
-        /// Solde, ancré par son bord droit ; renvoie sa largeur.
-        float AddBalanceChip(float y)
+        /// Solde : capsule blanche ancrée par son bord droit ; renvoie sa largeur.
+        float AddBalanceChip(float rightX, float y)
         {
             var container = RenderShared.Node("balanceChip", Root);
-            var label = TenGoText.Create(container, S.Economy.Balance.ToString(), Fonts.AvenirDemiBold, 24, GoldInk, Vector2.zero, Z + 12,
-                horizontal: HorizontalAlignmentOptions.Left);
-            const float gap = 9;
-            float contentW = 24 + gap + label.WidthPt();
-            float w = contentW + 44;
-            container.localPosition = Units.P(UsableW / 2 - 24 - w / 2, y);
+            float height = Pt(44);
+            var number = Design.Text(container, S.Economy.Balance.ToString(), NunitoWeight.Black, 17, Design.Ink, Vector2.zero, Z + 13,
+                HorizontalAlignmentOptions.Left);
+            float width = Pt(10 + 20 + 8) + number.WidthPt() + Pt(14);
+            Design.Surface("Bg", container, Vector2.zero, new Vector2(width, height), height / 2, Z + 11);
+            Design.Coin(container, new Vector2(-width / 2 + Pt(20), 0), 20, Z + 12);
+            number.transform.localPosition = Units.P(-width / 2 + Pt(38), 0);
+            container.localPosition = Units.P(rightX - width / 2, y);
             _balanceChipCenter = Units.ToPoints(1) * (Vector2)container.localPosition;
-            var pill = ShapeView.Rect("Pill", container, Vector2.zero, new Vector2(w, 46), 23, new Color(0.98f, 0.92f, 0.74f, 0.95f),
-                new Color(0.84f, 0.64f, 0.28f, 0.4f), 1, Z + 10);
-            Relief.Raise(pill, 4);
-            float startX = -contentW / 2;
-            CoinIcon.Make(container, Units.P(startX + 12, 0), 12, Z + 11);
-            label.transform.localPosition = Units.P(startX + 24 + gap, 0);
-            return w;
-        }
-
-        void AddBackButton(float y)
-        {
-            var node = RenderShared.Node("shopBack", Root, Units.P(0, y));
-            var bg = ShapeView.Rect("Bg", node, Vector2.zero, new Vector2(210, 56), 28, Colors.White(0.96f, 0.95f), Colors.White(0.68f, 0.35f), 1, Z + 10);
-            Relief.Raise(bg, 5);
-            TenGoText.Create(node, Loc.T("shop.back"), Fonts.AvenirMedium, 19, Colors.White(0.32f), Vector2.zero, Z + 12).ShrinkToFit(190);
-            AddTarget("shopBack", node, new Vector2(210, 56), GoBack, animate: false);
+            return width;
         }
 
         // MARK: - Actions
@@ -621,26 +687,26 @@ namespace TenGo.Screens
         /// « +500 » doré qui s'élève depuis le solde.
         void ShowBonusFeedback(int amount)
         {
-            var popup = TenGoText.Create(Root, "+" + amount, Fonts.AvenirHeavy, 26, new Color(0.85f, 0.60f, 0.15f),
-                Units.P(_balanceChipCenter.x, _balanceChipCenter.y - 40), 300);
+            var popup = TenGoText.Create(Root, "+" + amount, NunitoWeight.Black, Pt(20), Design.GoldRim,
+                Units.P(_balanceChipCenter.x, _balanceChipCenter.y - Pt(30)), 300);
             var go = popup.gameObject;
             FxAlpha.Of(go);
             Tw.Run(go, Tw.Seq(Tw.Par(Tw.MoveBy(popup.transform, Units.P(0, 52), 0.8f),
                 Tw.Seq(Tw.Wait(0.4f), Tw.FadeOut(go, 0.4f))), Tw.Remove(go)));
         }
 
-        /// Message temporaire au-dessus du pied d'écran, sur fond opaque.
+        /// Message temporaire au-dessus du pied d'écran : capsule d'encre.
         void ShowToast(string text)
         {
             LastToast = text;
             if (_toast != null) RenderShared.Destroy(_toast.gameObject);
-            var color = new Color(0.35f, 0.55f, 0.40f);
-            var node = RenderShared.Node("Toast", Root, Units.P(0, _viewportBottom + 46));
+            var node = RenderShared.Node("Toast", Root, Units.P(0, _viewportBottom + Pt(40)));
             var go = node.gameObject;
             FxAlpha.Of(go).Alpha = 0;
-            var label = TenGoText.Create(node, text, Fonts.AvenirDemiBold, 19, color, Vector2.zero, 402).Wrap(UsableW - 96);
-            ShapeView.Rect("Bg", node, Vector2.zero, new Vector2(Mathf.Min(UsableW - 96, label.WidthPt()) + 44, label.HeightPt() + 26), 18,
-                Colors.White(1, 0.96f), color.WithAlpha(0.35f), 1, 400);
+            float maxW = _cw - Pt(32);
+            var label = Design.Text(node, text, NunitoWeight.ExtraBold, 15, Design.Bg, Vector2.zero, 402).Wrap(maxW);
+            ShapeView.Rect("Bg", node, Vector2.zero, new Vector2(Mathf.Min(maxW, label.WidthPt()) + Pt(32), label.HeightPt() + Pt(22)), Pt(16),
+                Design.Ink, default, 0, 400);
             _toast = node;
             Tw.Run(go, Tw.Seq(Tw.FadeIn(go, 0.2f), Tw.Wait(2.2f), Tw.FadeOut(go, 0.4f), Tw.Remove(go)));
         }

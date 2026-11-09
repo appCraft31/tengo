@@ -188,7 +188,7 @@ namespace TenGo.Screens
             var size = new Vector2(_w, height);
             Design.Surface("Bg", node, Vector2.zero, size, Pt(22), Z, Design.Accent, hair: false);
             var ink = Design.OnAccent;
-            var score = Label(node, FormatNumber(saved.Score) + " " + Loc.T("game.points_label"), NunitoWeight.Bold, Pt(14),
+            var score = Label(node, Design.Number(saved.Score) + " " + Loc.T("game.points_label"), NunitoWeight.Bold, Pt(14),
                 ink.WithAlpha(0.75f), new Vector2(_w / 2 - Pt(18), 0), Z + 3, HorizontalAlignmentOptions.Right);
             Label(node, Loc.T("ui.menu.resume"), NunitoWeight.Black, Pt(22), ink, new Vector2(-_w / 2 + Pt(18), 0), Z + 3,
                 HorizontalAlignmentOptions.Left).ShrinkToFit(_w - score.WidthPt() - Pt(52));
@@ -312,23 +312,8 @@ namespace TenGo.Screens
             var level = S.Level.Breakdown;
             float r = Pt(22);
             var discPos = new Vector2(r, 0);
-            Design.Disc("Disc", container, discPos, r, Z);
-            // Anneau : piste claire, progression en bulle 8 (arc partant du haut, sens horaire).
-            float ringR = Pt(23), ringW = Pt(3);
-            ShapeView.Circle("Track", container, Units.P(discPos.x, 0), ringR, Color.clear, Design.Line, ringW, Z + 1);
+            Design.LevelRing(container, discPos, level, 22, 23, 3, Z);
             int into = level.XpIntoLevel, forNext = level.XpForNext;
-            float ratio = forNext > 0 ? Mathf.Clamp01(into / (float)forNext) : 1f;
-            if (ratio > 0.005f)
-            {
-                var arc = new List<Vector2>();
-                int n = Mathf.Max(2, Mathf.CeilToInt(ratio * (StrokeView.MaxPoints - 1)));
-                for (int i = 0; i <= n; i++)
-                {
-                    float a = Mathf.PI / 2f - ratio * Mathf.PI * 2f * i / n;
-                    arc.Add(Units.P(discPos.x + Mathf.Cos(a) * ringR, Mathf.Sin(a) * ringR));
-                }
-                StrokeView.Create("Arc", container, arc, Look.BubbleColor(8), ringW, Z + 2);
-            }
             Label(container, level.Level.ToString(), NunitoWeight.Black, Pt(16), Design.Ink, discPos, Z + 3).ShrinkToFit(r * 1.5f);
 
             float textX = Pt(44 + 10);
@@ -385,17 +370,6 @@ namespace TenGo.Screens
             go.transform.localPosition = Units.P(x0 + wTen + gap * 2 + dot, y);
             var dotNode = RenderShared.Node("LogoDot", Root, Units.P(x0 + wTen + gap + dot / 2, y - Pt(2)));
             ShapeView.Circle("Dot", dotNode, Vector2.zero, dot / 2, Design.Accent, default, 0, Z + 3);
-        }
-
-        /// Nombre groupé par milliers (« 1 240 »), espace simple pour les langues à espace insécable.
-        static string FormatNumber(int v)
-        {
-            string sep;
-            try { sep = new System.Globalization.CultureInfo(Loc.Language).NumberFormat.NumberGroupSeparator; }
-            catch (System.Globalization.CultureNotFoundException) { sep = " "; }
-            if (sep == " " || sep == " " || string.IsNullOrEmpty(sep)) sep = " ";
-            var nfi = new System.Globalization.NumberFormatInfo { NumberGroupSeparator = sep, NumberGroupSizes = new[] { 3 } };
-            return v.ToString("#,0", nfi);
         }
 
         // MARK: - Actions

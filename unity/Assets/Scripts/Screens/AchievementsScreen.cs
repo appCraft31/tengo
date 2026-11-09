@@ -2,6 +2,7 @@ using TenGo.App;
 using TenGo.Core;
 using TenGo.Fx;
 using TenGo.Rendering;
+using TenGo.Ui;
 using UnityEngine;
 
 namespace TenGo.Screens
@@ -22,7 +23,6 @@ namespace TenGo.Screens
         /// Le défilement de la liste (tests).
         public ScrollArea List => Scroll;
 
-        static Vector2 P(float x, float y) => Units.P(x, y);
 
         public AchievementsScreen(AppRoot app) : base(app, "AchievementsScreen")
         {
@@ -49,89 +49,83 @@ namespace TenGo.Screens
             SetupUI();
         }
 
+        static float Pt(float v) => Design.Pt(v);
+
+        /// Refonte 4.0 : retour en haut à gauche avec la complétion à droite,
+        /// catégories en contrôle segmenté, liste compacte dans une carte
+        /// (débloqué = pastille colorée + coche, sinon cadenas, barre et compteur).
         void SetupUI()
         {
-            float topY = SceneSize.y / 2;
-            float bottomY = -HalfH + Geo.SafeBottomPx / Geo.PixelsPerScene;
-            _cardWidth = Mathf.Min(UsableW - 48, 600);
+            _cardWidth = ContentW;
+            AddBackHeader(Loc.T("achievements.title"), S.Achievements.UnlockedCount + " / " + S.Achievements.TotalCount, () => App.ShowMenu(), _ui);
 
-            TenGoText.Create(_ui, Loc.T("achievements.title"), Fonts.AvenirHeavy, 36, MissionsScreen.TitleColor, P(0, topY - 110), Z)
-                .ShrinkToFit(UsableW - 40);
-            bool light = Look.Background.PerceivedLuminance() > 0.5f;
-            TenGoText.Create(_ui, Loc.F("achievements.completion", S.Achievements.UnlockedCount, S.Achievements.TotalCount),
-                Fonts.AvenirMedium, 15, light ? Colors.White(0.42f) : Look.Logo.WithAlpha(0.7f), P(0, topY - 142), Z);
-
-            AddCategoryTabs(topY - 190);
+            float segY = HeaderBottom - Pt(10 + 20);
+            var labels = new string[TabOrder.Length];
+            for (int i = 0; i < TabOrder.Length; i++) labels[i] = Loc.T(TabOrder[i].TitleKey());
+            var segs = Design.Segmented(_ui, new Vector2(0, segY), _cardWidth, labels, System.Array.IndexOf(TabOrder, Category), Z);
+            float segW = (_cardWidth - Pt(8)) / TabOrder.Length;
+            for (int i = 0; i < TabOrder.Length; i++)
+            {
+                var c = TabOrder[i];
+                segs[i].name = "category_" + c.Id();
+                AddTarget("category_" + c.Id(), segs[i], new Vector2(segW, Pt(40)), () => SelectCategory(c), animate: false);
+            }
 
             var items = S.Achievements.Achievements(Category);
-            float listTop = topY - 250;
-            float listBottom = bottomY + 150;
-            float available = Mathf.Max(0, listTop - listBottom);
-            const float gap = 12;
-            int count = Mathf.Max(1, items.Count);
-            float rowH = Mathf.Max(56, Mathf.Min(130, available / count - gap));
-            float blockH = rowH * items.Count + gap * Mathf.Max(0, items.Count - 1);
-
-            // Liste dans une zone défilante (marge pour le relief et l'ombre des cartes).
-            const float pad = 8;
-            Scroll = new ScrollArea(_ui, listTop + pad, listBottom - pad, -UsableW / 2, UsableW / 2);
-            Scroll.ContentHeight = blockH + pad * 2;
-            float cursorY = -pad - Mathf.Max(0, (available - blockH) / 2) - rowH / 2;
-            foreach (var item in items)
+            float listTop = segY - Pt(20 + 12);
+            Scroll = new ScrollArea(_ui, listTop, -HalfH + BottomInset, -UsableW / 2, UsableW / 2);
+            float rowH = Pt(72);
+            float cardH = rowH * items.Count;
+            if (items.Count > 0)
             {
-                AddAchievementRow(item, cursorY, rowH);
-                cursorY -= rowH + gap;
+                var card = RenderShared.Node("List", Scroll.Content, Units.P(0, -Pt(4) - cardH / 2));
+                Design.Surface("Bg", card, Vector2.zero, new Vector2(_cardWidth, cardH), Pt(Design.CardRadius), Z);
+                for (int i = 0; i < items.Count; i++)
+                    AddAchievementRow(card, items[i], cardH / 2 - rowH * (i + 0.5f), rowH, i > 0);
             }
+            Scroll.ContentHeight = cardH + Pt(24);
             Scroll.ApplyClip();
-
-            var back = ProgressUi.BackButton(_ui, bottomY + 90, Z + 10);
-            AddTarget("back", back, new Vector2(80, 80), () => App.ShowMenu());
         }
 
-        void AddCategoryTabs(float y)
+        static readonly System.Collections.Generic.Dictionary<AchievementCategory, int> CategoryTint = new()
         {
-            const float gap = 10;
-            float tabW = (_cardWidth - gap * (TabOrder.Length - 1)) / TabOrder.Length;
-            float x = -_cardWidth / 2 + tabW / 2;
-            foreach (var cat in TabOrder)
-            {
-                bool selected = cat == Category;
-                var tab = RenderShared.Node("category_" + cat.Id(), _ui, P(x, y));
-                var bg = ShapeView.Rect("Bg", tab, Vector2.zero, new Vector2(tabW, 46), 23,
-                    selected ? Look.Accent : Colors.White(0.9f, 0.7f), Colors.White(0.68f, 0.3f), 1, Z);
-                Relief.Raise(bg, 3);
-                TenGoText.Create(tab, Loc.T(cat.TitleKey()), selected ? Fonts.AvenirBold : Fonts.AvenirMedium, 15,
-                    selected ? Colors.White(0.15f) : Colors.White(0.4f), Vector2.zero, Z + 2).ShrinkToFit(tabW - 12);
-                var c = cat;
-                AddTarget("category_" + cat.Id(), tab, new Vector2(tabW, 46), () => SelectCategory(c), animate: false);
-                x += tabW + gap;
-            }
-        }
+            { AchievementCategory.Chain, 3 }, { AchievementCategory.Perfect, 2 }, { AchievementCategory.Score, 9 }, { AchievementCategory.Daily, 4 },
+        };
 
-        void AddAchievementRow(DisplayAchievement item, float y, float height)
+        void AddAchievementRow(Transform card, DisplayAchievement item, float y, float height, bool separator)
         {
             var def = item.Definition;
-            float width = _cardWidth;
-            var row = RenderShared.Node("achievement_" + def.Id, Scroll.Content, P(0, y));
-            var bg = ShapeView.Rect("Bg", row, Vector2.zero, new Vector2(width, height), 20,
-                item.IsUnlocked ? new Color(0.85f, 0.95f, 0.87f, 0.95f) : new Color(0.97f, 0.95f, 0.92f, 0.9f),
-                Colors.White(0.70f, 0.3f), 1, Z);
-            Relief.Raise(bg, 3);
-
-            float iconR = Mathf.Min(26, height * 0.28f);
-            float iconX = -width / 2 + 22 + iconR;
-            ShapeView.Circle("IconBg", row, P(iconX, 0), iconR, Look.Accent.WithAlpha(item.IsUnlocked ? 0.9f : 0.35f), default, 0, Z + 2);
-            ProgressUi.CategoryIcon(row, new Vector2(iconX, 0), def.Category, iconR * 1.25f, Color.white, Z + 3);
-
-            float textLeft = -width / 2 + 44 + iconR * 2;
-            string statusText = item.IsUnlocked ? Loc.T("achievements.unlocked") : item.CurrentValue + " / " + def.Target;
-            var status = ProgressUi.Right(row, statusText, Fonts.AvenirBold, 15,
-                item.IsUnlocked ? new Color(0.32f, 0.58f, 0.38f) : Colors.White(0.45f), width / 2 - 16, height * 0.18f, Z + 2);
-            float titleMax = width / 2 - 16 - status.WidthPt() - 12 - textLeft;
-            ProgressUi.Left(row, ProgressUi.AchievementTitle(def), Fonts.AvenirDemiBold, 19, Colors.White(0.24f),
-                textLeft, height * 0.18f, Z + 2, titleMax);
-            ProgressUi.Left(row, ProgressUi.AchievementDescription(def), Fonts.AvenirMedium, 14, Colors.White(0.42f),
-                textLeft, -height * 0.17f, Z + 2, width / 2 - 16 - textLeft);
+            float w = _cardWidth;
+            var row = RenderShared.Node("achievement_" + def.Id, card, Units.P(0, y));
+            if (separator) ShapeView.Rect("Sep", row, Units.P(0, height / 2), new Vector2(w, Pt(1)), 0, Design.Line, default, 0, Z + 1);
+            float lx = -w / 2 + Pt(14), rx = w / 2 - Pt(14);
+            bool ok = item.IsUnlocked;
+            Design.IconChip(row, new Vector2(lx + Pt(20), 0), 40, 13, ok ? Look.BubbleColor(CategoryTint[def.Category]) : Design.Sunk,
+                ok ? ProfileScreen.CategoryIcon(def.Category) : VectorIconName.LineLock, Z + 2, ok ? Design.Ink : Design.Ink3, 21, ok ? 0.55f : 1f);
+            float textX = lx + Pt(40 + 12);
+            float statusW;
+            if (ok)
+            {
+                VectorIcon.Create(row, VectorIconName.LineCheck, Units.P(rx - Pt(10), 0), Pt(20), Design.SeedGreen, Z + 2);
+                statusW = Pt(20);
+            }
+            else
+            {
+                var v = Design.Text(row, item.CurrentValue + " / " + def.Target, NunitoWeight.Black, 12, Design.Ink3, new Vector2(rx, 0), Z + 2,
+                    TMPro.HorizontalAlignmentOptions.Right);
+                statusW = v.WidthPt();
+            }
+            float textW = rx - statusW - Pt(10) - textX;
+            float ty = ok ? Pt(9) : Pt(15);
+            Design.Text(row, ProgressUi.AchievementTitle(def), NunitoWeight.Black, 15, Design.Ink, new Vector2(textX, ty), Z + 2,
+                TMPro.HorizontalAlignmentOptions.Left).ShrinkToFit(textW);
+            Design.Text(row, ProgressUi.AchievementDescription(def), NunitoWeight.Bold, 12, Design.Ink2, new Vector2(textX, ty - Pt(19)), Z + 2,
+                TMPro.HorizontalAlignmentOptions.Left).ShrinkToFit(textW);
+            if (!ok)
+            {
+                float ratio = def.Target > 0 ? Mathf.Clamp01(item.CurrentValue / (float)def.Target) : 0;
+                Design.Bar(row, new Vector2(textX, ty - Pt(36)), 120, 6, ratio, Design.Ink, Z + 2);
+            }
         }
 
         public override void Back() => App.ShowMenu();

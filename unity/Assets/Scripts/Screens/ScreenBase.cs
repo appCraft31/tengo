@@ -78,6 +78,28 @@ namespace TenGo.Screens
         public float TopRowY => HalfH - TopInset - 26f;
         public Vector2 SceneSize => new(750, 1334);
 
+        // MARK: - Refonte 4.0 : gabarit des écrans
+
+        /// Largeur du contenu : visible moins 16 pt de chaque côté (unités de scène).
+        protected float ContentW => UsableW - 2 * Design.Pt(Design.Gutter);
+        /// Centre de la rangée du haut (titre, boutons ronds de 44 pt).
+        protected float HeaderRowY => HalfH - TopInset - Design.Pt(32);
+        /// Bas de la rangée du haut : le contenu commence dessous.
+        protected float HeaderBottom => HalfH - TopInset - Design.Pt(64);
+
+        /// En-tête d'un sous-écran : retour rond en haut à gauche (cible « back »), titre, texte annexe à droite.
+        protected TenGoText AddBackHeader(string title, string trailing, Action back, Transform parent = null)
+        {
+            var node = Design.BackHeader(parent ?? Root, -ContentW / 2, ContentW / 2, HeaderRowY, title, trailing, 30, out var label);
+            AddTarget("back", node, Design.Pt(48, 48), back);
+            return label;
+        }
+
+        /// En-tête d'un écran d'onglet : grand titre à gauche.
+        protected TenGoText AddTabTitle(string title, float maxW, Transform parent = null) =>
+            Design.Text(parent ?? Root, title, NunitoWeight.Black, 32, Design.Ink, new Vector2(-ContentW / 2, HeaderRowY), 30,
+                TMPro.HorizontalAlignmentOptions.Left).ShrinkToFit(maxW);
+
         protected ScreenBase(AppRoot app, string name, bool themedBackground = true)
         {
             App = app;

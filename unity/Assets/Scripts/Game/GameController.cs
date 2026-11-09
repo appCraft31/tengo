@@ -354,6 +354,9 @@ namespace TenGo.Game
         {
             if (root == null) return null;
             foreach (Transform c in root) if (c.name == name) return c;
+            // La fiche de fin range ses boutons dans un sous-nœud « Content ».
+            foreach (Transform c in root)
+                if (c.name == "Content" && FindNamed(c, name) is Transform found) return found;
             return null;
         }
 

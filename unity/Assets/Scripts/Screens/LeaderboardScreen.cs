@@ -1,159 +1,169 @@
+using System.Collections.Generic;
 using TenGo.App;
 using TenGo.Core;
 using TenGo.Fx;
 using TenGo.Rendering;
 using TenGo.Services;
+using TenGo.Ui;
+using TMPro;
 using UnityEngine;
 
 namespace TenGo.Screens
 {
-    /// Classement local (LeaderboardScene.swift) : fond crème fixe à bulles
-    /// pastel flottantes, grande bulle du meilleur score, pilules des rangs 2
-    /// à 7, puis les classements en ligne (Défi du jour, Mondial, Rush).
-    /// Cibles : « dailyLeaderboard », « worldLeaderboard », « rushLeaderboard », « back ».
+    /// Classement (LeaderboardScene.swift), refait pour la 4.0
+    /// (`design/refonte/06_autres`) : retour en haut à gauche, contrôle
+    /// segmenté Mondial / Défi du jour / Rush, carte « ton meilleur », liste
+    /// des meilleures parties locales (la première surlignée), puis le
+    /// classement en ligne en bouton secondaire. Le rang mondial et la date
+    /// des parties ne sont pas connus localement : ils ne sont pas affichés.
+    ///
+    /// Cibles : « board_world|daily|rush » (segments), « worldLeaderboard »,
+    /// « dailyLeaderboard », « rushLeaderboard » (ouvre le classement en
+    /// ligne du segment, une fois Game Center / Play Jeux connecté), « back ».
     public sealed class LeaderboardScreen : ScreenBase
     {
         const int Z = 20;
-        static readonly Color Cream = new(0.97f, 0.95f, 0.92f);
+        static readonly Leaderboard[] Boards = { Leaderboard.Normal, Leaderboard.Daily, Leaderboard.Rush };
+        static readonly string[] BoardIds = { "world", "daily", "rush" };
+        static readonly string[] OnlineTargets = { "worldLeaderboard", "dailyLeaderboard", "rushLeaderboard" };
 
-        static readonly Color[] BubbleColors =
+        Transform _ui;
+        int _board;
+        bool _buttonsShown;
+        bool _listening;
+
+        static float Pt(float v) => Design.Pt(v);
+
+        /// Segment affiché (0 mondial, 1 défi du jour, 2 Rush).
+        public int Board => _board;
+        /// Bouton du classement en ligne affiché (connexion Game Center / Play Games faite).
+        public bool LeaderboardButtonsShown => _buttonsShown;
+
+        public LeaderboardScreen(AppRoot app) : base(app, "LeaderboardScreen")
         {
-            new(0.98f, 0.72f, 0.68f), new(0.99f, 0.84f, 0.70f), new(0.99f, 0.95f, 0.72f),
-            new(0.78f, 0.94f, 0.82f), new(0.72f, 0.88f, 0.98f), new(0.82f, 0.78f, 0.97f),
-            new(0.98f, 0.78f, 0.88f), new(0.80f, 0.91f, 0.80f), new(0.76f, 0.82f, 0.97f),
-        };
-
-        /// Arc-en-ciel pastel par rang : rose, ciel, menthe, jaune, lavande, pêche, sauge.
-        static readonly Color[] RankColors =
-        {
-            new(0.98f, 0.78f, 0.88f), new(0.72f, 0.88f, 0.98f), new(0.78f, 0.94f, 0.82f), new(0.99f, 0.95f, 0.72f),
-            new(0.82f, 0.78f, 0.97f), new(0.99f, 0.84f, 0.70f), new(0.80f, 0.91f, 0.80f),
-        };
-
-        static Vector2 P(float x, float y) => Units.P(x, y);
-
-        public LeaderboardScreen(AppRoot app) : base(app, "LeaderboardScreen", themedBackground: false)
-        {
-            App.SetBackground(Cream);
-            SetupBackground();
-            SetupUI();
+            TapOnRelease = true;
+            Rebuild();
         }
 
-        void SetupBackground()
+        public void SelectBoard(int index)
         {
-            ShapeView.Rect("Backdrop", Root, Vector2.zero, new Vector2(SceneSize.x + 200, SceneSize.y + 200), 0, Cream, default, 0, -100);
-            var configs = new (float radius, float x, float y, int color, float duration)[]
-            {
-                (88, -280, 480, 0, 7.2f), (62, 260, 350, 4, 9.5f), (110, -180, -150, 6, 11.0f),
-                (74, 310, -320, 1, 8.3f), (96, -60, 560, 3, 10.1f), (54, 200, -500, 7, 6.8f),
-                (80, -320, -480, 2, 12.4f), (68, 80, 200, 5, 9.0f), (50, -200, -30, 8, 7.6f),
-            };
-            foreach (var c in configs)
-            {
-                var bubble = ShapeView.Circle("Bubble", Root, P(c.x, c.y), c.radius, BubbleColors[c.color].WithAlpha(0.18f), default, 0, -90);
-                var t = bubble.transform;
-                Tw.Run(bubble.gameObject, Tw.Forever(Tw.Seq(
-                    new MoveByTween(t, P(0, 18), c.duration, TwEase.EaseInEaseOut),
-                    new MoveByTween(t, P(0, -18), c.duration, TwEase.EaseInEaseOut))), "float");
-            }
+            if (index == _board || index < 0 || index >= Boards.Length) return;
+            _board = index;
+            Rebuild();
+        }
+
+        void Rebuild()
+        {
+            if (_ui != null) RenderShared.Destroy(_ui.gameObject);
+            Targets.Clear();
+            _ui = RenderShared.Node("LeaderboardUI", Root);
+            _buttonsShown = false;
+            SetupUI();
         }
 
         void SetupUI()
         {
-            float topY = SceneSize.y / 2;
-            float bottomY = -HalfH + Geo.SafeBottomPx / Geo.PixelsPerScene;
+            float cw = ContentW, left = -cw / 2;
+            AddBackHeader(Loc.T("leaderboard.title"), null, () => App.ShowMenu(), _ui);
 
-            TenGoText.Create(Root, Loc.T("leaderboard.title"), Fonts.AvenirHeavy, 44, Colors.White(0.28f), P(0, topY - 110), Z)
-                .ShrinkToFit(UsableW - 40);
-
-            var scores = S.Games.HighScores;
-            if (scores.Count == 0)
+            float cursor = HeaderBottom - Pt(10);
+            var labels = new[] { Loc.T("ui.leaderboard.world"), Loc.T("leaderboard.daily_button"), Loc.T("leaderboard.rush_button") };
+            var segs = Design.Segmented(_ui, new Vector2(0, cursor - Pt(20)), cw, labels, _board, Z);
+            float segW = (cw - Pt(8)) / labels.Length;
+            for (int i = 0; i < segs.Length; i++)
             {
-                ProgressUi.Sparkle(Root, new Vector2(0, 60), 36, Colors.White(0.65f), Z);
-                TenGoText.Create(Root, Loc.T("leaderboard.empty_title"), Fonts.AvenirMedium, 22, Colors.White(0.32f), P(0, 0), Z)
-                    .ShrinkToFit(UsableW - 40);
-                TenGoText.Create(Root, Loc.T("leaderboard.empty_subtitle"), Fonts.AvenirMedium, 17, Colors.White(0.55f), P(0, -34), Z)
-                    .ShrinkToFit(UsableW - 40);
+                int b = i;
+                segs[i].name = "board_" + BoardIds[i];
+                AddTarget(segs[i].name, segs[i], new Vector2(segW, Pt(40)), () => SelectBoard(b), animate: false);
             }
-            else
-            {
-                AddTopScore(scores[0], topY - 230);
-                int restCount = Mathf.Min(6, scores.Count - 1);
-                for (int i = 0; i < restCount; i++) AddScorePill(scores[i + 1], i, topY - 410 - i * (52 + 14));
-            }
+            cursor -= Pt(40 + 14);
 
-            var back = ProgressUi.BackButton(Root, bottomY + 90, Z + 10);
-            AddTarget("back", back, new Vector2(80, 80), () => App.ShowMenu());
+            // Carte « ton meilleur ».
+            int best = _board switch { 0 => S.Games.BestScore, 2 => S.Games.RushBest, _ => S.Streak.Current };
+            string caption = _board == 1 ? Loc.T("profile.daily_streak") : Loc.T("ui.leaderboard.your_best");
+            float meH = Pt(84);
+            var me = RenderShared.Node("me", _ui, Units.P(0, cursor - meH / 2));
+            Design.Surface("Bg", me, Vector2.zero, new Vector2(cw, meH), Pt(Design.CardRadius), Z);
+            var icon = _board == 1 ? VectorIconName.LineFlame : VectorIconName.LineTrophy;
+            Design.IconChip(me, new Vector2(left + Pt(16 + 26), 0), 52, 17, Look.BubbleColor(3), icon, Z + 1, Design.Ink, 24, 0.5f);
+            float tx = left + Pt(16 + 52 + 14);
+            Design.Text(me, Design.Number(best), NunitoWeight.Black, 26, Design.Ink, new Vector2(tx, Pt(10)), Z + 2, HorizontalAlignmentOptions.Left);
+            Design.Text(me, caption, NunitoWeight.Bold, 13, Design.Ink2, new Vector2(tx, -Pt(16)), Z + 2, HorizontalAlignmentOptions.Left)
+                .ShrinkToFit(-left - Pt(16) - tx);
+            cursor -= meH + Pt(22);
+
+            // Meilleures parties locales (Normal et Rush).
+            IReadOnlyList<int> scores = _board switch { 0 => S.Games.HighScores, 2 => S.Games.RushHighScores, _ => null };
+            if (scores != null)
+            {
+                Design.Text(_ui, Loc.T("ui.leaderboard.best_games"), NunitoWeight.Black, 17, Design.Ink, new Vector2(left, cursor), Z + 2,
+                    HorizontalAlignmentOptions.Left);
+                cursor -= Pt(10 + 12);
+                if (scores.Count == 0)
+                {
+                    Design.Text(_ui, Loc.T("leaderboard.empty_title"), NunitoWeight.ExtraBold, 16, Design.Ink, new Vector2(0, cursor - Pt(20)), Z + 2)
+                        .ShrinkToFit(cw);
+                    Design.Text(_ui, Loc.T("leaderboard.empty_subtitle"), NunitoWeight.Bold, 13, Design.Ink2, new Vector2(0, cursor - Pt(44)), Z + 2)
+                        .ShrinkToFit(cw);
+                }
+                else
+                {
+                    float rowH = Pt(48);
+                    float bottomLimit = -HalfH + BottomInset + Pt(12 + 56 + 16);
+                    int n = Mathf.Min(scores.Count, Mathf.Max(1, (int)((cursor - bottomLimit) / rowH)), 7);
+                    float cardH = rowH * n;
+                    var card = RenderShared.Node("Ranks", _ui, Units.P(0, cursor - cardH / 2));
+                    Design.Surface("Bg", card, Vector2.zero, new Vector2(cw, cardH), Pt(Design.CardRadius), Z);
+                    for (int i = 0; i < n; i++)
+                    {
+                        float y = cardH / 2 - rowH * (i + 0.5f);
+                        if (i == 0)
+                        {
+                            // Première ligne surlignée (coins du haut arrondis).
+                            var hl = Design.Tint(Design.Accent, 0.12f);
+                            ShapeView.Rect("You", card, Units.P(0, y), new Vector2(cw, rowH), Pt(Design.CardRadius), hl, default, 0, Z + 1);
+                            if (n > 1) ShapeView.Rect("YouFill", card, Units.P(0, y - rowH / 4), new Vector2(cw, rowH / 2), 0, hl, default, 0, Z + 1);
+                        }
+                        else ShapeView.Rect("Sep", card, Units.P(0, y + rowH / 2), new Vector2(cw, Pt(1)), 0, Design.Line, default, 0, Z + 1);
+                        Design.Text(card, (i + 1).ToString(), NunitoWeight.Black, 14, Design.Ink3, new Vector2(left + Pt(16), y), Z + 2,
+                            HorizontalAlignmentOptions.Left);
+                        Design.Text(card, Loc.F("ui.leaderboard.game_n", i + 1), NunitoWeight.ExtraBold, 15, Design.Ink, new Vector2(left + Pt(52), y), Z + 2,
+                            HorizontalAlignmentOptions.Left);
+                        Design.Text(card, Design.Number(scores[i]), NunitoWeight.Black, 15, Design.Ink, new Vector2(-left - Pt(16), y), Z + 2,
+                            HorizontalAlignmentOptions.Right);
+                    }
+                }
+            }
 
             // iOS ne les montre qu'une fois Game Center connecté : s'il ne l'est
-            // pas encore, ils apparaissent dès que la connexion aboutit.
-            _buttonsY = bottomY;
-            if (S.Play.ShowsLeaderboardButtons) AddLeaderboardButtons();
-            else S.Play.SignInChanged += OnSignInChanged;
+            // pas encore, le bouton apparaît dès que la connexion aboutit.
+            if (S.Play.ShowsLeaderboardButtons) AddOnlineButton();
+            else if (!_listening) { S.Play.SignInChanged += OnSignInChanged; _listening = true; }
         }
-
-        float _buttonsY;
-        bool _buttonsShown;
-
-        /// Boutons de classement affichés (connexion Game Center / Play Games faite).
-        public bool LeaderboardButtonsShown => _buttonsShown;
 
         void OnSignInChanged()
         {
-            if (S.Play.ShowsLeaderboardButtons) AddLeaderboardButtons();
+            if (S.Play.ShowsLeaderboardButtons) AddOnlineButton();
         }
 
-        void AddLeaderboardButtons()
+        /// « Voir dans Game Center / Google Play Games » : le classement en ligne du segment.
+        void AddOnlineButton()
         {
-            if (_buttonsShown) return;
+            if (_buttonsShown || _ui == null) return;
             _buttonsShown = true;
-            float bottomY = _buttonsY;
-            AddLeaderboardButton("dailyLeaderboard", Loc.T("leaderboard.daily_button"), new Color(0.86f, 0.82f, 0.97f),
-                new Vector2(-100, bottomY + 190), Leaderboard.Daily);
-            AddLeaderboardButton("worldLeaderboard", Loc.T("leaderboard.world_button"), new Color(0.72f, 0.88f, 0.98f),
-                new Vector2(100, bottomY + 190), Leaderboard.Normal);
-            AddLeaderboardButton("rushLeaderboard", Loc.T("leaderboard.rush_button"), new Color(0.99f, 0.84f, 0.70f),
-                new Vector2(0, bottomY + 250), Leaderboard.Rush);
+            float cw = ContentW;
+            string service = Application.platform == RuntimePlatform.Android ? "Google Play Games" : "Game Center";
+            float y = -HalfH + BottomInset + Pt(12 + 28);
+            string name = OnlineTargets[_board];
+            var board = Boards[_board];
+            var btn = Design.Button(name, _ui, new Vector2(0, y), cw, Loc.F("ui.leaderboard.open", service), false, Z, VectorIconName.LineTrophy);
+            AddTarget(name, btn, new Vector2(cw, Pt(56)), () => S.Play.ShowLeaderboard(board));
         }
 
         public override void Dispose()
         {
-            S.Play.SignInChanged -= OnSignInChanged;
+            if (_listening) S.Play.SignInChanged -= OnSignInChanged;
             base.Dispose();
-        }
-
-        void AddTopScore(int score, float y)
-        {
-            const float radius = 70;
-            ShapeView.Circle("Halo", Root, P(0, y), radius + 6, RankColors[0].WithAlpha(0.55f), default, 0, Z);
-            ShapeView.Circle("Top", Root, P(0, y), radius, new Color(0.96f, 0.93f, 0.90f), Colors.White(0.70f, 0.50f), 1.5f, Z + 1);
-            ShapeView.Circle("Dot", Root, P(0, y + radius - 12), 10, BubbleColors[6], default, 0, Z + 3);
-            TenGoText.Create(Root, Loc.T("game.points_label"), Fonts.AvenirMedium, 14, Colors.White(0.58f), P(0, y + 20), Z + 3)
-                .ShrinkToFit(radius * 1.6f);
-            TenGoText.Create(Root, score.ToString(), Fonts.AvenirHeavy, 42, Colors.White(0.28f), P(0, y - 12), Z + 3)
-                .ShrinkToFit(radius * 1.8f);
-        }
-
-        void AddScorePill(int score, int index, float y)
-        {
-            const float pillW = 300, pillH = 52;
-            var pill = RenderShared.Node("Rank" + (index + 2), Root, P(0, y));
-            var bg = ShapeView.Rect("Bg", pill, Vector2.zero, new Vector2(pillW, pillH), pillH / 2,
-                RankColors[Mathf.Min(index + 1, RankColors.Length - 1)], Colors.White(0.68f, 0.35f), 1, Z);
-            Relief.Raise(bg, 3);
-            ProgressUi.Left(pill, "#" + (index + 2), Fonts.AvenirMedium, 15, Colors.White(0.60f), -pillW / 2 + 24, 0, Z + 2);
-            ProgressUi.Right(pill, score + " " + Loc.T("game.points_label"), Fonts.AvenirMedium, 20, Colors.White(0.30f),
-                pillW / 2 - 24, 0, Z + 2, pillW - 100);
-        }
-
-        void AddLeaderboardButton(string name, string title, Color color, Vector2 pos, Leaderboard board)
-        {
-            const float pillW = 165, pillH = 52;
-            var btn = RenderShared.Node(name, Root, P(pos.x, pos.y));
-            var bg = ShapeView.Rect("Bg", btn, Vector2.zero, new Vector2(pillW, pillH), pillH / 2, color, Colors.White(0.60f, 0.35f), 1, Z);
-            Relief.Raise(bg, 5);
-            TenGoText.Create(btn, title, Fonts.AvenirMedium, 17, Colors.White(0.25f), Vector2.zero, Z + 2).ShrinkToFit(pillW - 20);
-            AddTarget(name, btn, new Vector2(pillW, pillH), () => S.Play.ShowLeaderboard(board));
         }
 
         public override void Back() => App.ShowMenu();

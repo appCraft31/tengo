@@ -11,17 +11,16 @@ using UnityEngine;
 
 namespace TenGo.Screens
 {
-    /// Réglages (SettingsOverlay.swift), sur l'accueil comme en partie : son,
-    /// retours haptiques, effets réduits (grisé si Reduce Motion système),
-    /// revoir le tutoriel, notifications, confidentialité, restauration des
-    /// achats, noter, partager, support, fermer. Un tap hors d'une ligne ferme.
+    /// Réglages (SettingsOverlay.swift), sur l'accueil comme en partie.
+    /// Refonte 4.0 (`design/refonte/06_autres`) : plein écran opaque au lieu
+    /// d'une modale, retour en haut à gauche (« closeButton », alias
+    /// « closeBtn »), lignes groupées Jeu (son, vibrations, effets réduits —
+    /// grisé si Reduce Motion système —, notifications), Compte (restaurer
+    /// les achats, confidentialité) et Aide (revoir le tutoriel, noter,
+    /// partager, support), interrupteurs aux couleurs du système, version.
     public sealed class SettingsOverlay : IGameOverlay
     {
         const int Z = 1000;
-        const float CardW = 490, CardH = 820, RowStep = 58;
-        static readonly Color CardFill = new(0.98f, 0.96f, 0.93f);
-        static readonly Color OnColor = new(0.55f, 0.82f, 0.65f);
-        static readonly Color OffColor = Colors.White(0.82f);
 
         sealed class Toggle
         {
@@ -35,7 +34,8 @@ namespace TenGo.Screens
         {
             public string Name;
             public Transform Node;
-            public float Y;
+            public Vector2 Center;
+            public Vector2 Size;
             public Action Action;
         }
 
@@ -48,11 +48,14 @@ namespace TenGo.Screens
         Toggle _sound, _haptic, _effects;
         Transform _alert;
         bool _open = true;
+        float _w, _rowH;
 
         public bool IsOpen => _open && _root != null;
         public Transform Root => _root;
         /// Message de l'alerte de restauration affichée (tests), sinon `null`.
         public string AlertMessage { get; private set; }
+
+        static float Pt(float v) => Design.Pt(v);
 
         public SettingsOverlay(AppRoot app, Transform parent, Action replayTutorial)
         {
@@ -61,162 +64,130 @@ namespace TenGo.Screens
             _replayTutorial = replayTutorial;
             _root = RenderShared.Node("SettingsOverlay", parent);
             FxAlpha.Of(_root.gameObject).Alpha = 0;
-            ShapeView.Rect("Dim", _root, Vector2.zero, new Vector2(750 * 2.5f, 1334 * 2.5f), 0, Colors.White(0, 0.55f), default, 0, Z);
+            ShapeView.Rect("Bg", _root, Vector2.zero, new Vector2(750 * 2.5f, 1334 * 2.5f), 0, Design.Bg, default, 0, Z);
             _card = RenderShared.Node("Card", _root);
             BuildUI();
-            // `present(in:)` : fondu de 0,18 s, carte de 0,92 à 1 en 0,22 s.
+            // Entrée : fondu de 0,18 s et léger glissement depuis la droite.
             Tw.Run(_root.gameObject, Tw.FadeIn(_root.gameObject, 0.18f));
-            _card.localScale = Vector3.one * 0.92f;
-            Tw.Run(_card.gameObject, Tw.Scale(_card, 1f, 0.22f));
+            _card.localPosition = Units.P(Pt(24), 0);
+            Tw.Run(_card.gameObject, Tw.MoveTo(_card, Vector3.zero, 0.22f).Ease(TwEase.EaseOut));
         }
 
         // MARK: - Construction
 
         void BuildUI()
         {
-            ShapeView.Rect("Bg", _card, Vector2.zero, new Vector2(CardW, CardH), 28, CardFill, default, 0, Z + 1);
-            TenGoText.Create(_card, Loc.T("settings.title"), Fonts.AvenirHeavy, 30, Colors.White(0.25f), Units.P(0, CardH / 2 - 48), Z + 4)
-                .ShrinkToFit(CardW - 140);
+            var geo = _app.Geometry;
+            float usableW = Mathf.Min(geo.VisibleWidth, SceneGeometry.RefWidth);
+            float halfH = Mathf.Min(geo.VisibleHeight, SceneGeometry.RefHeight) / 2f;
+            float bottomInset = Mathf.Max(geo.SafeBottomPx, 20f * geo.PixelsPerPoint) / geo.PixelsPerScene;
+            _w = usableW - 2 * Pt(Design.Gutter);
+            float left = -_w / 2;
 
-            var close = RenderShared.Node("closeBtn", _card, Units.P(CardW / 2 - 32, CardH / 2 - 32));
-            ShapeView.Circle("Bg", close, Vector2.zero, 18, Color.white, default, 0, Z + 3);
-            TenGoText.Create(close, "×", Fonts.AvenirMedium, 28, Colors.White(0.40f), Units.P(0, 1), Z + 4);
-            _rows.Add(new Row { Name = "closeBtn", Node = close, Y = CardH / 2 - 32, Action = Dismiss });
+            float rowY = halfH - geo.TopInset - Pt(32);
+            var back = Design.BackHeader(_card, left, -left, rowY, Loc.T("settings.title"), null, Z + 4, out _);
+            back.name = "closeButton";
+            AddRow("closeButton", back, new Vector2(left + Pt(22), rowY), Design.Pt(52, 52), Dismiss);
+            AddRow("closeBtn", back, new Vector2(left + Pt(22), rowY), Design.Pt(52, 52), Dismiss);
 
-            float y = CardH / 2 - 110;
-            _sound = AddToggleRow("row_sound", Loc.T("settings.sound"), y, SettingsIcon.Speaker, new Color(1.00f, 0.96f, 0.62f), ToggleSound);
-            y -= RowStep;
-            _haptic = AddToggleRow("row_haptic", Loc.T("settings.haptics"), y, SettingsIcon.Phone, new Color(1.00f, 0.72f, 0.86f), ToggleHaptic);
-            y -= RowStep;
-            _effects = AddToggleRow("row_effects", Loc.T("settings.reduced_effects"), y, SettingsIcon.Sparkles, new Color(0.62f, 0.86f, 1.00f), ToggleEffects);
-            y -= RowStep;
-            y -= 10;
+            // Hauteur des lignes : 56 pt, tassée si l'écran est court.
+            float top = halfH - geo.TopInset - Pt(64);
+            float bottom = -halfH + bottomInset + Pt(24);
+            float fixedH = 3 * Pt(36) + 2 * Pt(10) + Pt(4);
+            _rowH = Mathf.Clamp((top - bottom - fixedH) / 10f, Pt(44), Pt(56));
+            float y = top;
 
-            AddActionRow("row_tutorial", Loc.T("settings.replay_tutorial"), y, () =>
+            y = Group("ui.settings.group_game", y);
+            float cardTop = y;
+            _sound = AddToggleRow("row_sound", Loc.T("settings.sound"), ref y, VectorIconName.LineBolt, 3, ToggleSound);
+            _haptic = AddToggleRow("row_haptic", Loc.T("settings.haptics"), ref y, VectorIconName.LineStar, 9, ToggleHaptic);
+            _effects = AddToggleRow("row_effects", Loc.T("settings.reduced_effects"), ref y, VectorIconName.LineSeed, 4, ToggleEffects);
+            AddActionRow("row_notifications", Loc.T("settings.notifications"), ref y, VectorIconName.LineCalendar, 8, () => _s.Play.OpenSystemSettings());
+            GroupCard(cardTop, y);
+
+            y = Group("ui.settings.group_account", y - Pt(10));
+            cardTop = y;
+            // Restauration des achats : exigée par Apple pour le mod « sans pub » (3.1.1).
+            AddActionRow("row_restore", Loc.T("settings.restore_purchases"), ref y, VectorIconName.LineShop, 5, RestorePurchases);
+            AddActionRow("row_privacy", Loc.T("settings.privacy_options"), ref y, VectorIconName.LineLock, 7, () => _s.Consent.ShowPrivacyOptions());
+            GroupCard(cardTop, y);
+
+            y = Group("ui.settings.group_help", y - Pt(10));
+            cardTop = y;
+            AddActionRow("row_tutorial", Loc.T("settings.replay_tutorial"), ref y, VectorIconName.LinePlay, 2, () =>
             {
                 Dismiss();
                 FxTime.AfterRealtime(0.2f, () => _replayTutorial?.Invoke());
-            }); y -= RowStep;
-            AddActionRow("row_notifications", Loc.T("settings.notifications"), y, () => _s.Play.OpenSystemSettings()); y -= RowStep;
-            AddActionRow("row_privacy", Loc.T("settings.privacy_options"), y, () => _s.Consent.ShowPrivacyOptions()); y -= RowStep;
-            // Restauration des achats : exigée par Apple pour le mod « sans pub » (3.1.1).
-            AddActionRow("row_restore", Loc.T("settings.restore_purchases"), y, RestorePurchases); y -= RowStep;
-            y -= 10;
-            AddActionRow("row_rate", Loc.T("settings.rate_app"), y, () => _s.Play.RequestReview()); y -= RowStep;
-            AddActionRow("row_share", Loc.T("settings.share_tengo"), y, () => _s.Play.ShareApp()); y -= RowStep;
-            AddActionRow("row_support", Loc.T("settings.contact_support"), y, () => _s.Play.OpenSupportMail());
+            });
+            AddActionRow("row_rate", Loc.T("settings.rate_app"), ref y, VectorIconName.LineStar, 3, () => _s.Play.RequestReview());
+            AddActionRow("row_share", Loc.T("settings.share_tengo"), ref y, VectorIconName.LineShare, 6, () => _s.Play.ShareApp());
+            AddActionRow("row_support", Loc.T("settings.contact_support"), ref y, VectorIconName.LineVideo, 1, () => _s.Play.OpenSupportMail());
+            GroupCard(cardTop, y);
 
-            // Fermeture explicite en bas de carte.
-            var accent = Look.BubbleColor(4);
-            var closeButton = RenderShared.Node("closeButton", _card, Units.P(0, -CardH / 2 + 88));
-            var cbg = ShapeView.Rect("Bg", closeButton, Vector2.zero, new Vector2(CardW - 40, 54), 27, accent, default, 0, Z + 3);
-            Relief.Raise(cbg, 4);
-            TenGoText.Create(closeButton, Loc.T("settings.close"), Fonts.AvenirBold, 19, accent.ReadableInk(), Vector2.zero, Z + 5)
-                .ShrinkToFit(CardW - 80);
-            _rows.Add(new Row { Name = "closeButton", Node = closeButton, Y = -CardH / 2 + 88, Action = Dismiss });
-
-            TenGoText.Create(_card, Loc.F("app.version_label", Application.version), Fonts.AvenirMedium, 13, Colors.White(0.55f),
-                Units.P(0, -CardH / 2 + 24), Z + 4);
+            Design.Text(_card, Loc.F("app.version_label", Application.version), NunitoWeight.Bold, 12, Design.Ink3,
+                new Vector2(0, Mathf.Max(bottom - Pt(8), y - Pt(18))), Z + 4);
 
             UpdateSound(false);
             UpdateHaptic(false);
             UpdateEffects(false);
         }
 
-        Transform AddRowPlate(string name, float y)
+        /// Titre de groupe en petites capitales ; renvoie le haut de la carte du groupe.
+        float Group(string key, float y)
         {
-            var node = RenderShared.Node(name, _card, Units.P(0, y));
+            Design.Text(_card, Loc.T(key).ToUpperInvariant(), NunitoWeight.Black, 12, Design.Ink2, new Vector2(-_w / 2 + Pt(4), y - Pt(18)), Z + 4,
+                HorizontalAlignmentOptions.Left);
+            return y - Pt(36);
+        }
+
+        void GroupCard(float top, float bottom) =>
+            Design.Surface("Group", _card, new Vector2(0, (top + bottom) / 2), new Vector2(_w, top - bottom), Pt(Design.CardRadius), Z + 1);
+
+        void AddRow(string name, Transform node, Vector2 center, Vector2 size, Action action) =>
+            _rows.Add(new Row { Name = name, Node = node, Center = center, Size = size, Action = action });
+
+        /// Ligne : pastille d'icône teintée et libellé (`label`) ; renvoie le nœud.
+        Transform RowPlate(string name, string title, ref float y, VectorIconName icon, int tint, bool separator, out TenGoText label)
+        {
+            float cy = y - _rowH / 2;
+            var node = RenderShared.Node(name, _card, Units.P(0, cy));
             FxAlpha.Of(node.gameObject);
-            var size = new Vector2(CardW - 40, 50);
-            ShapeView.Rect("Ledge", node, Units.P(0, -3), size, 20, new Color(0.90f, 0.87f, 0.82f), default, 0, Z + 2);
-            ShapeView.Rect("Plate", node, Vector2.zero, size, 20, Color.white, default, 0, Z + 3);
+            if (separator) ShapeView.Rect("Sep", node, Units.P(0, _rowH / 2), new Vector2(_w, Pt(1)), 0, Design.Line, default, 0, Z + 3);
+            float lx = -_w / 2 + Pt(14);
+            Design.IconChip(node, new Vector2(lx + Pt(17), 0), 34, 11, Look.BubbleColor(tint), icon, Z + 3, Design.Ink, 18);
+            label = Design.Text(node, title, NunitoWeight.ExtraBold, 16, Design.Ink, new Vector2(lx + Pt(34 + 12), 0), Z + 4,
+                HorizontalAlignmentOptions.Left);
+            y -= _rowH;
             return node;
         }
 
-        Toggle AddToggleRow(string name, string title, float y, SettingsIcon icon, Color tint, Action action)
+        Toggle AddToggleRow(string name, string title, ref float y, VectorIconName icon, int tint, Action action)
         {
-            var node = AddRowPlate(name, y);
-            float chipX = -CardW / 2 + 50;
-            ShapeView.Circle("Chip", node, Units.P(chipX, 0), 17, tint, default, 0, Z + 4);
-            DrawIcon(node, icon, Units.P(chipX, 0), Colors.White(0.24f), Z + 5);
-            var label = TenGoText.Create(node, title, Fonts.AvenirDemiBold, 19, Colors.White(0.26f), Units.P(chipX + 28, 0), Z + 5,
-                horizontal: HorizontalAlignmentOptions.Left);
-            label.ShrinkToFit(CardW / 2 - 114 + CardW / 2 - chipX - 28 - 70);
+            bool first = name == "row_sound";
+            float cy = y - _rowH / 2;
+            var node = RowPlate(name, title, ref y, icon, tint, !first, out var label);
+            float lx = -_w / 2 + Pt(14 + 34 + 12), rx = _w / 2 - Pt(14);
+            label.ShrinkToFit(rx - Pt(51 + 12) - lx);
 
-            var container = RenderShared.Node(name + "_toggle", node, Units.P(CardW / 2 - 72, 0));
-            var bg = ShapeView.Rect("Bg", container, Vector2.zero, new Vector2(64, 32), 16, OffColor, default, 0, Z + 4);
+            var container = RenderShared.Node(name + "_toggle", node, Units.P(rx - Pt(25.5f), 0));
+            var bg = ShapeView.Rect("Bg", container, Vector2.zero, Design.Pt(51, 31), Pt(15.5f), Design.Line, default, 0, Z + 4);
             var knob = RenderShared.Node("Knob", container);
-            ShapeView.Circle("Knob", knob, Vector2.zero, 12, Color.white, Colors.White(0.85f), 1, Z + 5);
-            var status = TenGoText.Create(node, "", Fonts.AvenirMedium, 12, Colors.White(0.55f), Units.P(CardW / 2 - 114, 0), Z + 5,
-                horizontal: HorizontalAlignmentOptions.Right);
-            _rows.Add(new Row { Name = name, Node = node, Y = y, Action = action });
+            ShapeView.Circle("Knob", knob, Vector2.zero, Pt(13.5f), Design.Card, default, 0, Z + 5);
+            var status = Design.Text(node, "", NunitoWeight.Bold, 11, Design.Ink3, new Vector2(rx - Pt(51 + 10), 0), Z + 5,
+                HorizontalAlignmentOptions.Right);
+            AddRow(name, node, new Vector2(0, cy), new Vector2(_w, _rowH), action);
             return new Toggle { Bg = bg, Knob = knob, Status = status, Label = label };
         }
 
-        void AddActionRow(string name, string title, float y, Action action)
+        void AddActionRow(string name, string title, ref float y, VectorIconName icon, int tint, Action action)
         {
-            var node = AddRowPlate(name, y);
-            TenGoText.Create(node, title, Fonts.AvenirDemiBold, 19, Colors.White(0.26f), Units.P(-CardW / 2 + 40, 0), Z + 5,
-                horizontal: HorizontalAlignmentOptions.Left).ShrinkToFit(CardW - 120);
-            TenGoText.Create(node, "›", Fonts.AvenirMedium, 28, Colors.White(0.55f), Units.P(CardW / 2 - 40, 2), Z + 5,
-                horizontal: HorizontalAlignmentOptions.Right);
-            _rows.Add(new Row { Name = name, Node = node, Y = y, Action = () => { AnimateRow(node); action(); } });
-        }
-
-        // MARK: - Pictogrammes (SF Symbols)
-
-        enum SettingsIcon { Speaker, Phone, Sparkles }
-
-        /// `speaker.wave.2.fill`, `iphone.radiowaves.left.and.right`, `sparkles`, redessinés au trait (19 pt).
-        static void DrawIcon(Transform parent, SettingsIcon icon, Vector2 pos, Color color, int order)
-        {
-            var n = RenderShared.Node("Icon" + icon, parent, pos);
-            Vector2 P(float x, float y) => Units.P(x, y);
-            switch (icon)
-            {
-                case SettingsIcon.Speaker:
-                    ShapeView.Rect("Box", n, P(-5.5f, 0), new Vector2(4, 6), 1, color, default, 0, order);
-                    UiArt.FilledTriangle(n, new[] { P(-5, 0), P(1, 6.5f), P(1, -6.5f) }, color, order);
-                    StrokeView.Create("Wave1", n, Arc(P(1.5f, 0), 4f, -50, 50), color, 1.8f, order);
-                    StrokeView.Create("Wave2", n, Arc(P(1.5f, 0), 7.5f, -55, 55), color, 1.8f, order);
-                    break;
-                case SettingsIcon.Phone:
-                    ShapeView.Rect("Phone", n, Vector2.zero, new Vector2(7, 12), 2, Color.clear, color, 1.8f, order);
-                    StrokeView.Create("L1", n, Arc(Vector2.zero, 6.5f, 140, 220), color, 1.6f, order);
-                    StrokeView.Create("L2", n, Arc(Vector2.zero, 9f, 145, 215), color, 1.6f, order);
-                    StrokeView.Create("R1", n, Arc(Vector2.zero, 6.5f, -40, 40), color, 1.6f, order);
-                    StrokeView.Create("R2", n, Arc(Vector2.zero, 9f, -35, 35), color, 1.6f, order);
-                    break;
-                default:
-                    Sparkle(n, P(-2, -1.5f), 6.5f, color, order);
-                    Sparkle(n, P(5, 5), 3.5f, color, order);
-                    Sparkle(n, P(5.5f, -5.5f), 2.5f, color, order);
-                    break;
-            }
-        }
-
-        static List<Vector2> Arc(Vector2 c, float rPt, float fromDeg, float toDeg)
-        {
-            var pts = new List<Vector2>();
-            for (int i = 0; i <= 10; i++)
-            {
-                float a = Mathf.Deg2Rad * Mathf.Lerp(fromDeg, toDeg, i / 10f);
-                pts.Add(c + Units.P(Mathf.Cos(a) * rPt, Mathf.Sin(a) * rPt));
-            }
-            return pts;
-        }
-
-        /// Étincelle à quatre branches incurvées (`sparkles`).
-        static void Sparkle(Transform parent, Vector2 c, float r, Color color, int order)
-        {
-            var pts = new List<Vector2>();
-            for (int i = 0; i <= 8; i++)
-            {
-                float a = i * Mathf.PI / 4f + Mathf.PI / 2f;
-                float rr = i % 2 == 0 ? r : r * 0.28f;
-                pts.Add(c + Units.P(Mathf.Cos(a) * rr, Mathf.Sin(a) * rr));
-            }
-            StrokeView.Create("Sparkle", parent, pts, color, Mathf.Max(1.2f, r * 0.42f), order);
+            bool first = name == "row_restore" || name == "row_tutorial";
+            float cy = y - _rowH / 2;
+            var node = RowPlate(name, title, ref y, icon, tint, !first, out var label);
+            float lx = -_w / 2 + Pt(14 + 34 + 12), rx = _w / 2 - Pt(14);
+            label.ShrinkToFit(rx - Pt(30) - lx);
+            Design.Chevron(node, new Vector2(rx - Pt(9), 0), Z + 4, 18, Design.Ink3);
+            AddRow(name, node, new Vector2(0, cy), new Vector2(_w, _rowH), () => { AnimateRow(node); action(); });
         }
 
         // MARK: - Toucher
@@ -235,16 +206,12 @@ namespace TenGo.Screens
             var local = (pt - (Vector2)_card.position * Units.PointsPerUnit) / Mathf.Max(0.01f, _card.lossyScale.x);
             foreach (var row in _rows)
             {
-                bool hit = row.Name == "closeBtn"
-                    ? (local - new Vector2(CardW / 2 - 32, CardH / 2 - 32)).magnitude <= 24
-                    : Mathf.Abs(local.x) <= (CardW - 40) / 2 && Mathf.Abs(local.y - row.Y) <= (row.Name == "closeButton" ? 27 : 25);
-                if (!hit) continue;
+                if (Mathf.Abs(local.x - row.Center.x) > row.Size.x / 2 || Mathf.Abs(local.y - row.Center.y) > row.Size.y / 2) continue;
                 TapFeedback.Play();
                 row.Action?.Invoke();
                 return;
             }
-            // Ailleurs (voile ou fond de carte) : on ferme, comme iOS.
-            Dismiss();
+            // Plein écran : un tap hors d'une ligne ne ferme plus.
         }
 
         /// Tap sur une ligne nommée (tests) ; faux si elle n'existe pas.
@@ -298,31 +265,33 @@ namespace TenGo.Screens
             UpdateEffects(true);
         }
 
+        static Color OnColor => Design.Accent;
+        static Color OffColor => Design.Line;
+
         void UpdateSound(bool animated)
         {
             bool muted = _s.Settings.SoundMuted;
-            Apply(_sound, muted ? OffColor : OnColor, !muted, Loc.T(muted ? "settings.toggle_off" : "settings.toggle_on"), animated);
+            Apply(_sound, muted ? OffColor : OnColor, !muted, "", animated);
         }
 
         void UpdateHaptic(bool animated)
         {
             bool on = _s.Settings.HapticsEnabled;
-            Apply(_haptic, on ? OnColor : OffColor, on, Loc.T(on ? "settings.toggle_on" : "settings.toggle_off"), animated);
+            Apply(_haptic, on ? OnColor : OffColor, on, "", animated);
         }
 
         void UpdateEffects(bool animated)
         {
             bool forced = JuiceSettings.IsForcedBySystem;
             bool reduced = forced || _s.Settings.ReducedEffects;
-            var color = forced ? Colors.White(0.72f) : reduced ? OnColor : OffColor;
-            string text = forced ? Loc.T("settings.system_managed") : Loc.T(reduced ? "settings.toggle_on" : "settings.toggle_off");
-            _effects.Label.Color = forced ? Colors.White(0.55f) : Colors.White(0.30f);
-            Apply(_effects, color, reduced, text, animated);
+            var color = forced ? Design.Tint(Design.Accent, 0.45f) : reduced ? OnColor : OffColor;
+            _effects.Label.Color = forced ? Design.Ink3 : Design.Ink;
+            Apply(_effects, color, reduced, forced ? Loc.T("settings.system_managed") : "", animated);
         }
 
         static void Apply(Toggle t, Color color, bool on, string status, bool animated)
         {
-            float knobX = on ? 16 : -16;
+            float knobX = Design.Pt(on ? 10 : -10);
             if (!animated)
             {
                 t.Bg.Fill = color;
@@ -356,16 +325,16 @@ namespace TenGo.Screens
             _alert = RenderShared.Node("Alert", _root);
             FxAlpha.Of(_alert.gameObject).Alpha = 0;
             const int z = Z + 20;
-            ShapeView.Rect("Dim", _alert, Vector2.zero, new Vector2(1900, 3400), 0, Colors.White(0, 0.25f), default, 0, z);
-            var msg = TenGoText.Create(_alert, message, Fonts.AvenirMedium, 17, Colors.White(0.30f), Vector2.zero, z + 3).Wrap(340);
+            ShapeView.Rect("Dim", _alert, Vector2.zero, new Vector2(1900, 3400), 0, Design.Ink.WithAlpha(0.25f), default, 0, z);
+            var msg = TenGoText.Create(_alert, message, NunitoWeight.Bold, 17, Design.Ink2, Vector2.zero, z + 3).Wrap(340);
             float mh = msg.HeightPt();
             float h = 70 + mh + 30 + 56;
             var w = 400f;
-            ShapeView.Rect("Bg", _alert, Vector2.zero, new Vector2(w, h), 24, Color.white, default, 0, z + 1);
-            TenGoText.Create(_alert, title, Fonts.AvenirBold, 20, Colors.White(0.20f), Units.P(0, h / 2 - 36), z + 3).ShrinkToFit(w - 40);
+            ShapeView.Rect("Bg", _alert, Vector2.zero, new Vector2(w, h), 28, Design.Card, default, 0, z + 1);
+            TenGoText.Create(_alert, title, NunitoWeight.Black, 20, Design.Ink, Units.P(0, h / 2 - 36), z + 3).ShrinkToFit(w - 40);
             msg.transform.localPosition = Units.P(0, h / 2 - 70 - mh / 2);
-            ShapeView.Rect("Sep", _alert, Units.P(0, -h / 2 + 56), new Vector2(w, 1), 0, Colors.White(0.85f), default, 0, z + 2);
-            TenGoText.Create(_alert, "OK", Fonts.AvenirBold, 19, Look.BubbleColor(4).Darkened(0.35f), Units.P(0, -h / 2 + 28), z + 3);
+            ShapeView.Rect("Sep", _alert, Units.P(0, -h / 2 + 56), new Vector2(w, 1), 0, Design.Line, default, 0, z + 2);
+            TenGoText.Create(_alert, "OK", NunitoWeight.Black, 19, Design.SeedGreen, Units.P(0, -h / 2 + 28), z + 3);
             Tw.Run(_alert.gameObject, Tw.FadeIn(_alert.gameObject, 0.15f));
         }
     }

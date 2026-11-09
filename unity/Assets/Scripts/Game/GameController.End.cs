@@ -81,23 +81,16 @@ namespace TenGo.Game
         {
             if (_duelStatusLabel == null) return;
             _duelStatusLabel.Text = text;
-            _duelStatusLabel.ShrinkToFit(440);
+            _duelStatusLabel.ShrinkToFit(_primaryWidth > 0 ? _primaryWidth : 440);
         }
 
         void AddDuelShareButton(string code)
         {
             if (_gameOverPanel == null || FindNamed(_gameOverPanel, "duelShareBtn") != null) return;
-            var fill = Look.BubbleColor(4);
-            var ink = fill.ReadableInk();
-            var button = RenderShared.Node("duelShareBtn", _gameOverPanel, P(0, -184));
-            FxAlpha.Of(button.gameObject);
-            Relief.Raise(ShapeView.Rect("Bg", button, Vector2.zero, new Vector2(320, 68), 34, fill, Colors.White(0.68f, 0.30f), 1, PanelZ + 2), 5);
-            var label = Label(button, Loc.T("duel.share_button"), Fonts.AvenirDemiBold, 22, ink, Vector2.zero, PanelZ + 5, TMPro.HorizontalAlignmentOptions.Left);
-            const float iconSize = 24, inner = 12;
-            float contentW = iconSize + inner + label.WidthPt();
-            VectorIcon.Create(button, VectorIconName.IconShare, P(-contentW / 2 + iconSize / 2, 0), iconSize, ink, PanelZ + 5);
-            label.transform.localPosition = P(-contentW / 2 + iconSize + inner, 0);
-            AddZone("duelShareBtn", button, new Vector2(320, 68));
+            var content = FindNamed(_gameOverPanel, "Content") ?? _gameOverPanel;
+            var button = Ui.Design.Button("duelShareBtn", content, _primarySlot, _primaryWidth, Loc.T("duel.share_button"), true,
+                PanelZ + 2, VectorIconName.LineShare);
+            AddZone("duelShareBtn", button, new Vector2(_primaryWidth, Ui.Design.Pt(56)));
             _duelShareCode = code;
             button.localScale = Vector3.one * 0.85f;
             FxAlpha.Of(button.gameObject).Alpha = 0;

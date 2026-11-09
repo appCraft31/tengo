@@ -2,21 +2,20 @@ using System.Linq;
 using TenGo.App;
 using TenGo.Core;
 using TenGo.Rendering;
+using TenGo.Ui;
 using UnityEngine;
 
 namespace TenGo.Screens
 {
     /// « Ton cerveau » (MirrorScene.swift) : les quatre aptitudes du miroir
     /// cognitif comparées à la semaine précédente, puis le carnet des 41 façons
-    /// de faire 10. iOS tasse le contenu pour qu'il tienne ; ici il défile
-    /// (même mise en page à l'échelle 1). Cible : « back ».
+    /// de faire 10 (`design/refonte/05_profil`). Le contenu défile. Cible : « back ».
     public sealed class MirrorScreen : ScreenBase
     {
         const int Z = 20;
         static readonly MirrorSkill[] Skills = { MirrorSkill.Look, MirrorSkill.Vision, MirrorSkill.Anticipation, MirrorSkill.Repertoire };
         float _cardWidth = 340;
 
-        static Vector2 P(float x, float y) => Units.P(x, y);
         /// Le défilement du contenu (tests).
         public ScrollArea Content => Scroll;
 
@@ -27,74 +26,67 @@ namespace TenGo.Screens
             S.Analytics.MirrorOpened(S.Mirror.GamesMeasured, S.Mirror.RepertoireCount);
         }
 
+        static float Pt(float v) => Design.Pt(v);
+
+        /// Refonte 4.0 : retour en haut à gauche, sous-titre, quatre mesures en
+        /// cartes blanches (la pastille colorée sert de repère), carnet des 10 en
+        /// rangées de points par longueur. Le tout défile.
         void SetupUI()
         {
-            var logo = Look.Logo;
-            float halfH = HalfH;
-            float safeTop = Mathf.Max(TopInset, 47);
-            float bottomY = -halfH + Geo.SafeBottomPx / Geo.PixelsPerScene;
-            _cardWidth = Mathf.Min(UsableW - 48, 600);
-
-            float titleY = halfH - safeTop - 36;
-            TenGoText.Create(Root, Loc.T("mirror.title"), Fonts.AvenirHeavy, 36, logo, P(0, titleY), Z).ShrinkToFit(UsableW - 40);
+            _cardWidth = ContentW;
+            AddBackHeader(Loc.T("mirror.title"), null, () => App.ShowProfile());
+            Scroll = new ScrollArea(Root, HeaderBottom, -HalfH + BottomInset, -UsableW / 2, UsableW / 2);
+            var content = Scroll.Content;
+            float left = -_cardWidth / 2;
+            float cursor = -Pt(10);
 
             var mirror = S.Mirror;
             string subtitle = mirror.GamesMeasured == 0 ? Loc.T("mirror.calibrating") : Loc.F("mirror.subtitle", mirror.GamesMeasured);
-            var sub = TenGoText.Create(Root, subtitle, Fonts.AvenirMedium, 15, logo.WithAlpha(0.7f), P(0, titleY - 40), Z);
-            sub.Wrap(_cardWidth);
+            var sub = Design.Text(content, subtitle, NunitoWeight.Bold, 14, Design.Ink2, new Vector2(left, cursor), Z,
+                TMPro.HorizontalAlignmentOptions.Left).Wrap(_cardWidth);
+            sub.transform.localPosition = Units.P(left, cursor - sub.HeightPt() / 2);
+            cursor -= sub.HeightPt() + Pt(14);
 
-            var back = ProgressUi.BackButton(Root, bottomY + 70, Z + 10);
-            AddTarget("back", back, new Vector2(80, 80), () => App.ShowProfile());
-
-            float top = titleY - 76;
-            float bottom = bottomY + 120;
-            const float pad = 10;
-            Scroll = new ScrollArea(Root, top + pad, bottom - pad, -UsableW / 2, UsableW / 2);
-            var content = Scroll.Content;
-            float cursor = -pad;
-
-            const float gap = 14, cardH = 156;
+            float gap = Pt(10), cardH = Pt(136);
             float cardW = (_cardWidth - gap) / 2;
             for (int i = 0; i < Skills.Length; i++)
             {
                 int column = i % 2, row = i / 2;
-                var center = new Vector2((column == 0 ? -1 : 1) * (cardW + gap) / 2, cursor - cardH / 2 - row * (cardH + gap));
+                var center = new Vector2(left + cardW / 2 + column * (cardW + gap), cursor - cardH / 2 - row * (cardH + gap));
                 AddSkillCard(Skills[i], i, center, new Vector2(cardW, cardH), content);
             }
-            cursor -= 2 * cardH + gap + 34;
+            cursor -= 2 * cardH + gap + Pt(22);
             cursor = AddNotebook(content, cursor);
 
-            float height = -cursor + pad;
-            float available = Scroll.Top - Scroll.Bottom;
-            Scroll.ContentHeight = height;
-            // Contenu plus court que la zone : centré verticalement, comme iOS.
-            if (height < available)
-                foreach (Transform child in content) child.localPosition += (Vector3)P(0, -(available - height) / 2);
+            Scroll.ContentHeight = -cursor + Pt(24);
             Scroll.ApplyClip();
         }
+
+        static readonly int[] SkillTints = { 3, 7, 9, 8 };
 
         void AddSkillCard(MirrorSkill skill, int index, Vector2 center, Vector2 size, Transform parent)
         {
             var reading = S.Mirror.WeeklyReading(skill);
-            var tint = Look.BubbleColor(new[] { 3, 5, 7, 9 }[index]);
-            var fill = tint.MixedWithWhite(0.55f);
-            var ink = fill.ReadableInk();
-
-            var card = ShapeView.Rect("Skill_" + ProgressUi.SkillId(skill), parent, P(center.x, center.y), size, 24, fill, default, 0, Z);
-            Relief.Raise(card, 4);
-
-            float left = center.x - size.x / 2 + 20;
-            float maxW = size.x - 36;
-            ProgressUi.Left(parent, Loc.T("mirror.skill." + ProgressUi.SkillId(skill)), Fonts.AvenirBold, 18, ink, left, center.y + 50, Z + 2, maxW);
-            ProgressUi.Left(parent, ProgressUi.DisplayValue(skill, reading.Value), Fonts.AvenirHeavy, 34, ink, left, center.y + 12, Z + 2, maxW);
+            string id = ProgressUi.SkillId(skill);
+            var card = RenderShared.Node("Skill_" + id, parent, Units.P(center.x, center.y));
+            Design.Surface("Bg", card, Vector2.zero, size, Pt(Design.CardRadius), Z);
+            float lx = -size.x / 2 + Pt(14), maxW = size.x - Pt(28);
+            float top = size.y / 2;
+            ShapeView.Circle("Dot", card, Units.P(lx + Pt(5), top - Pt(24)), Pt(5), Look.BubbleColor(SkillTints[index]), default, 0, Z + 1);
+            Design.Text(card, Loc.T("mirror.skill." + id), NunitoWeight.ExtraBold, 13, Design.Ink2, new Vector2(lx + Pt(18), top - Pt(24)), Z + 2,
+                TMPro.HorizontalAlignmentOptions.Left).ShrinkToFit(maxW - Pt(18));
+            Design.Text(card, ProgressUi.DisplayValue(skill, reading.Value), NunitoWeight.Black, 30, Design.Ink, new Vector2(lx, top - Pt(58)), Z + 2,
+                TMPro.HorizontalAlignmentOptions.Left).ShrinkToFit(maxW);
             var (text, positive, arrow) = Trend(skill, reading);
-            var trendColor = ink.WithAlpha(positive ? 1 : 0.62f);
-            float textX = left;
+            var trendColor = positive ? Design.SeedGreen : Design.Ink3;
+            float textX = lx;
+            float ty = top - Pt(90);
             if (arrow != 0)
-                textX += ProgressUi.Arrow(parent, new Vector2(left + 15 * 0.22f, center.y - 26), 15, trendColor, arrow > 0, Z + 2);
-            ProgressUi.Left(parent, text, Fonts.AvenirDemiBold, 15, trendColor, textX, center.y - 26, Z + 2, maxW - (textX - left));
-            ProgressUi.Left(parent, Loc.T("mirror.skill." + ProgressUi.SkillId(skill) + ".explain"), Fonts.AvenirMedium, 13,
-                ink.WithAlpha(0.72f), left, center.y - 54, Z + 2, maxW);
+                textX += ProgressUi.Arrow(card, new Vector2(lx + Pt(12) * 0.22f, ty), Pt(12), trendColor, arrow > 0, Z + 2);
+            Design.Text(card, text, NunitoWeight.Black, 12, trendColor, new Vector2(textX, ty), Z + 2, TMPro.HorizontalAlignmentOptions.Left)
+                .ShrinkToFit(maxW - (textX - lx));
+            Design.Text(card, Loc.T("mirror.skill." + id + ".explain"), NunitoWeight.Bold, 11, Design.Ink3, new Vector2(lx, top - Pt(110)), Z + 2,
+                TMPro.HorizontalAlignmentOptions.Left).ShrinkToFit(maxW);
         }
 
         /// Évolution lisible (`trendText`) ; la flèche « ↑ / ↓ » est redessinée (absente de Nunito).
@@ -121,56 +113,43 @@ namespace TenGo.Screens
             return (text, better, better ? 1 : -1);
         }
 
-        /// Carnet des 10 : les 41 décompositions, groupées par nombre de bulles.
+        /// Carnet des 10 : une rangée par longueur, un point par décomposition (plein = trouvée).
         float AddNotebook(Transform parent, float top)
         {
             var mirror = S.Mirror;
             var discovered = mirror.Data.Discovered;
-            var logo = Look.Logo;
+            float left = -_cardWidth / 2;
             float cursor = top;
+            var head = RenderShared.Node("notebook", parent, Units.P(0, cursor));
+            Design.Text(head, Loc.T("mirror.notebook"), NunitoWeight.Black, 17, Design.Ink, new Vector2(left, 0), Z + 2,
+                TMPro.HorizontalAlignmentOptions.Left);
+            Design.Text(head, mirror.RepertoireCount + " / " + Partition.Total, NunitoWeight.ExtraBold, 13, Design.Ink3,
+                new Vector2(-left, 0), Z + 2, TMPro.HorizontalAlignmentOptions.Right);
+            cursor -= Pt(22);
 
-            ProgressUi.Left(parent, Loc.T("mirror.notebook"), Fonts.AvenirBold, 22, logo, -_cardWidth / 2 + 4, cursor, Z + 2);
-            ProgressUi.Right(parent, mirror.RepertoireCount + " / " + Partition.Total, Fonts.AvenirDemiBold, 18, logo.WithAlpha(0.7f),
-                _cardWidth / 2 - 4, cursor, Z + 2);
-            cursor -= 36;
-
-            const float chipH = 30, chipGap = 8, labelW = 92;
-            float flowLeft = -_cardWidth / 2 + labelW;
-            float flowRight = _cardWidth / 2;
-            var accent = Look.Accent;
-            var foundFill = accent.MixedWithWhite(0.35f);
-            var foundInk = foundFill.ReadableInk();
-
-            foreach (var group in Partition.All.GroupBy(p => p.Count).OrderBy(g => g.Key))
+            var groups = Partition.All.GroupBy(p => p.Count).OrderBy(g => g.Key).ToList();
+            float rowH = Pt(39), padY = Pt(6);
+            float cardH = groups.Count * rowH + 2 * padY;
+            var card = RenderShared.Node("NotebookCard", parent, Units.P(0, cursor - cardH / 2));
+            Design.Surface("Bg", card, Vector2.zero, new Vector2(_cardWidth, cardH), Pt(Design.CardRadius), Z);
+            float lx = left + Pt(14), rx = -left - Pt(14);
+            float dotsX = lx + Pt(72), dot = Pt(12), dotGap = Pt(4);
+            for (int i = 0; i < groups.Count; i++)
             {
-                var parts = group.ToList();
+                var parts = groups[i].ToList();
                 int found = parts.Count(p => discovered.ContainsKey(Partition.Key(p)));
-                ProgressUi.Left(parent, Loc.F("mirror.notebook.group", group.Key), Fonts.AvenirDemiBold, 14,
-                    logo.WithAlpha(found == parts.Count ? 1 : 0.7f), -_cardWidth / 2 + 4, cursor - chipH / 2, Z + 2, labelW - 10);
-
-                float x = flowLeft;
-                float rowY = cursor - chipH / 2;
-                foreach (var part in parts)
-                {
-                    bool isFound = discovered.ContainsKey(Partition.Key(part));
-                    string text = isFound ? string.Join("+", part) : string.Join("+", Enumerable.Repeat("?", part.Count));
-                    var label = TenGoText.Create(parent, text, isFound ? Fonts.AvenirBold : Fonts.AvenirMedium, 14,
-                        isFound ? foundInk : logo.WithAlpha(0.4f), Vector2.zero, Z + 4);
-                    float width = label.WidthPt() + 18;
-                    if (x + width > flowRight)
-                    {
-                        x = flowLeft;
-                        rowY -= chipH + chipGap;
-                    }
-                    var pos = new Vector2(x + width / 2, rowY);
-                    ShapeView.Rect("Chip", parent, P(pos.x, pos.y), new Vector2(width, chipH), chipH / 2,
-                        isFound ? foundFill : Colors.White(1, 0.45f), isFound ? default : logo.WithAlpha(0.18f), isFound ? 0 : 1, Z + 2);
-                    label.transform.localPosition = P(pos.x, pos.y);
-                    x += width + chipGap;
-                }
-                cursor = rowY - chipH / 2 - 14;
+                float y = cardH / 2 - padY - rowH * (i + 0.5f);
+                if (i > 0) ShapeView.Rect("Sep", card, Units.P(0, y + rowH / 2), new Vector2(_cardWidth - Pt(28), Pt(1)), 0, Design.Line, default, 0, Z + 1);
+                Design.Text(card, Loc.F("mirror.notebook.group", groups[i].Key), NunitoWeight.ExtraBold, 12, Design.Ink2, new Vector2(lx, y), Z + 2,
+                    TMPro.HorizontalAlignmentOptions.Left).ShrinkToFit(Pt(66));
+                // Trouvées d'abord, à gauche.
+                for (int k = 0; k < parts.Count; k++)
+                    ShapeView.Circle("Dot", card, Units.P(dotsX + dot / 2 + k * (dot + dotGap), y), dot / 2, k < found ? Design.Accent : Design.Sunk,
+                        default, 0, Z + 2);
+                Design.Text(card, found + " / " + parts.Count, NunitoWeight.Black, 12, Design.Ink, new Vector2(rx, y), Z + 2,
+                    TMPro.HorizontalAlignmentOptions.Right);
             }
-            return cursor;
+            return cursor - cardH;
         }
 
         public override void Back() => App.ShowProfile();

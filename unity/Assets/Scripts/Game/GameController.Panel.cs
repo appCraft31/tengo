@@ -5,29 +5,42 @@ using TenGo.Fx;
 using TenGo.Haptics;
 using TenGo.Rendering;
 using TenGo.Services;
+using TenGo.Ui;
 using TMPro;
 using UnityEngine;
 
 namespace TenGo.Game
 {
-    // MARK: - Panneau de fin de partie, offre « sans pub »
+    // MARK: - Fiche de fin de partie, offre « sans pub »
+    //
+    // Refonte 4.0 (`design/refonte/03_fin_de_partie`) : une fiche crème monte
+    // du bas sur la grille voilée. Le score d'abord, en très grand (pastille
+    // or « Nouveau record » le cas échéant), puis les gains (pièces, XP et
+    // sa barre), les faits marquants en liste sobre (chaîne max, miroir,
+    // graine), et une seule action principale : la seconde chance tant
+    // qu'elle est proposée, sinon Rejouer (ou l'action du mode), Accueil en lien.
     public sealed partial class GameController
     {
         const int OverlayZ = 380;
         const int PanelZ = 400;
-        const float PanelW = 500, PanelH = 680;
 
-        static readonly Color ReplayGreen = new(0.82f, 0.95f, 0.88f, 1);
-        static readonly Color DailyLavender = new(0.86f, 0.82f, 0.97f, 1);
-        static readonly Color RushPeach = new(1.0f, 0.89f, 0.78f, 1);
-        static readonly Color HomeBeige = new(0.94f, 0.91f, 0.88f, 1);
-        static readonly Color BtnStroke = Colors.White(0.68f, 0.30f);
+        static readonly Color RecordFill = Design.Hex(0xFBEBC4);
+        static readonly Color RecordInk = Design.Hex(0x7A5A12);
 
         Transform _noAdsOffer;
         double _noAdsOfferShownAt = double.NegativeInfinity;
         const double NoAdsOfferTapGuard = 0.7;
-        static readonly Vector2 NoAdsCardSize = new(500, 76);
-        static readonly Rect NoAdsDeclineRect = new(-110, -102, 220, 50);
+        Vector2 _noAdsCardSize = new(500, 100);
+        Rect _noAdsDeclineRect = new(-110, -102, 220, 50);
+        Rect NoAdsDeclineRect => _noAdsDeclineRect;
+
+        /// Haut de la fiche (unités de scène) : l'offre « sans pub » se pose au-dessus.
+        float _sheetTopY;
+        /// Emplacement de l'action principale (bouton de partage du duel, posé plus tard).
+        Vector2 _primarySlot;
+        float _primaryWidth;
+
+        static float D(float pt) => Design.Pt(pt);
 
         string EncouragementText(bool isNewRecord, bool nearMiss)
         {
@@ -36,6 +49,19 @@ namespace TenGo.Game
             if (nearMiss) return Loc.T("game_over.encourage_close");
             int seed = _lastResult?.TotalChainsMade ?? _s.Stats.TotalChainsMade;
             return Loc.T(seed % 2 == 0 ? "game_over.encourage_progress" : "game_over.encourage_again");
+        }
+
+        /// Une ligne des faits marquants.
+        sealed class FactRow
+        {
+            public VectorIconName Icon;
+            public Color Tint;
+            public float TintAlpha = 0.45f;
+            public Color IconColor = Design.InkHex;
+            public string Title;
+            public string Subtitle;
+            public string Value;
+            public IReadOnlyList<int> Minis;
         }
 
         void ShowGameOverPanel()
@@ -49,203 +75,229 @@ namespace TenGo.Game
             if (_boosterBar != null) _boosterBar.gameObject.SetActive(false);
             DismissHintOffer();
             var result = _lastResult;
+            var g = _geometry;
 
-            // Voile plein écran.
+            // Voile crème sur la grille.
             _gameOverOverlay = RenderShared.Node("GameOverOverlay", Root);
-            var dim = ShapeView.Rect("Dim", _gameOverOverlay, Vector2.zero, SceneSize * 2, 0, Colors.White(0, 0.32f), default, 0, OverlayZ);
+            ShapeView.Rect("Dim", _gameOverOverlay, Vector2.zero, SceneSize * 2, 0, Design.Bg.WithAlpha(0.72f), default, 0, OverlayZ);
             FxAlpha.Of(_gameOverOverlay.gameObject).Alpha = 0;
             Tw.Run(_gameOverOverlay.gameObject, Tw.Fade(_gameOverOverlay.gameObject, 1, 0.3f));
 
             var panel = RenderShared.Node("GameOverPanel", Root);
-            FxAlpha.Of(panel.gameObject).Alpha = 0;
             _gameOverPanel = panel;
+            var content = RenderShared.Node("Content", panel);
+            float sheetW = g.VisibleWidth + 4;
+            float cw = Mathf.Min(g.VisibleWidth, D(480)) - 2 * D(20);
+            float left = -cw / 2, right = cw / 2;
+            int z = PanelZ + 2;
+            float cursor = -D(12);
 
-            ShapeView.Rect("Shadow", panel, P(3, -8), new Vector2(PanelW + 6, PanelH + 6), 36, Colors.White(0, 0.14f), default, 0, PanelZ - 1);
-            ShapeView.Rect("Bg", panel, Vector2.zero, new Vector2(PanelW, PanelH), 36, new Color(0.97f, 0.95f, 0.92f, 0.99f), Colors.White(0.72f, 0.30f), 1, PanelZ);
+            // Poignée.
+            ShapeView.Rect("Grab", content, P(0, cursor - D(2.5f)), new Vector2(D(40), D(5)), D(2.5f), Design.Line, default, 0, z);
+            cursor -= D(5 + 18);
 
-            string titleText = Kind switch
+            bool isNewRecord = result?.IsNewRecord ?? false;
+            int? nearMiss = result?.NearMissGap;
+            bool puzzleStars = Kind == GameModeKind.Puzzle || _demoPuzzle != null;
+            bool showRecord = isNewRecord && !puzzleStars && Kind != GameModeKind.Duel;
+
+            // En-tête : pastille « Nouveau record », ou le titre du mode en surtitre.
+            if (showRecord)
             {
-                GameModeKind.Duel => Loc.T("duel.finished_title"),
-                GameModeKind.Puzzle => Loc.T(_isWinState ? "puzzle.solved_title" : "puzzle.stuck_title"),
-                GameModeKind.Rush => Loc.T("rush.time_up_title"),
-                _ => Loc.T(_isWinState ? "game_over.perfect_title" : "game_over.game_over_title"),
-            };
-            Label(panel, titleText, Fonts.AvenirHeavy, 44, Colors.White(0.24f, 1), P(0, 278), PanelZ + 3).ShrinkToFit(PanelW - 40);
+                var pill = RenderShared.Node("Record", content, P(0, cursor - D(15)));
+                var text = Design.Text(pill, Loc.T("ui.end.new_record"), NunitoWeight.Black, 14, RecordInk, Vector2.zero, z + 3,
+                    HorizontalAlignmentOptions.Left);
+                float w = D(16 + 6) + text.WidthPt();
+                ShapeView.Rect("Bg", pill, Vector2.zero, new Vector2(w + D(24), D(30)), D(15), RecordFill, default, 0, z + 1);
+                VectorIcon.Create(pill, VectorIconName.LineTrophy, P(-w / 2 + D(8), 0), D(16), RecordInk, z + 2);
+                text.transform.localPosition = P(-w / 2 + D(22), 0);
+                pill.localScale = Vector3.one * 0.6f;
+                FxAlpha.Of(pill.gameObject).Alpha = 0;
+                Tw.Run(pill.gameObject, Tw.Seq(Tw.Wait(0.45f), Tw.Par(Tw.FadeIn(pill.gameObject, 0.2f), Tw.Scale(pill, 1f, 0.28f))));
+                PopEffects.MakeBurst(content, P(0, cursor - D(15)), Design.Gold, PopTier.Medium);
+                cursor -= D(30 + 6);
+            }
+            else
+            {
+                string kicker = Kind switch
+                {
+                    GameModeKind.Duel => Loc.T("duel.finished_title"),
+                    GameModeKind.Puzzle => Loc.T(_isWinState ? "puzzle.solved_title" : "puzzle.stuck_title"),
+                    GameModeKind.Rush => Loc.T("rush.time_up_title"),
+                    _ => _isWinState ? Loc.T("game_over.perfect_title") : Loc.T("puzzle.stuck_title"),
+                };
+                Design.Text(content, kicker, NunitoWeight.ExtraBold, 15, Design.Ink2, new Vector2(0, cursor - D(10)), z + 3).ShrinkToFit(cw);
+                cursor -= D(22);
+            }
 
-            var scoreDisplay = Label(panel, "0 " + Loc.T("game.points_label"), Fonts.AvenirHeavy, 64, Colors.White(0.26f, 1), P(0, 130), PanelZ + 3);
-            AnimateScoreCountUp(scoreDisplay, _score);
+            var scoreDisplay = Design.Text(content, "0", NunitoWeight.Black, 64, Design.Ink, new Vector2(0, cursor - D(34)), z + 3);
+            scoreDisplay.Tmp.characterSpacing = -3f;
+            AnimateScoreCountUp(scoreDisplay, _score, cw);
+            cursor -= D(70);
 
-            // Pièces et XP gagnées, sur une ligne.
+            // Sous le score : étoiles du puzzle, statut du duel, ancien record, écart ou meilleur score.
+            if (puzzleStars)
+            {
+                int stars = result?.PuzzleStars ?? 0;
+                for (int i = 0; i < 3; i++)
+                    Glyphs.Star(content, P((i - 1) * D(30), cursor - D(14)), D(26), i < stars ? Design.Gold : Design.Line, true, z + 3);
+                cursor -= D(30);
+            }
+            else
+            {
+                string sub = null;
+                if (Kind == GameModeKind.Duel) sub = Loc.T("duel.publishing");
+                else if (isNewRecord)
+                {
+                    var board = Kind == GameModeKind.Rush ? _s.Games.RushHighScores : _s.Games.HighScores;
+                    sub = board.Count > 1 && board[1] < _score ? Loc.F("ui.end.previous_record", Design.Number(board[1]))
+                        : EncouragementText(true, false);
+                }
+                else if (nearMiss is int gap) sub = Loc.F("game_over.near_miss", gap);
+                else if (BestFor(Kind) is int best) sub = Loc.F("ui.end.best", Design.Number(best));
+                else sub = EncouragementText(false, false);
+                var subLabel = Design.Text(content, sub, NunitoWeight.Bold, 14, nearMiss != null ? Design.Flame : Design.Ink2,
+                    new Vector2(0, cursor - D(10)), z + 3);
+                subLabel.ShrinkToFit(cw);
+                if (Kind == GameModeKind.Duel) _duelStatusLabel = subLabel;
+                cursor -= D(20);
+            }
+
+            // Gains : pièces, XP (niveau et barre).
             int coins = result?.CoinsEarned ?? 0;
             int xp = result?.Xp?.XpGained ?? 0;
             if (coins > 0 || xp > 0)
             {
-                var line = RenderShared.Node("Rewards", panel, P(0, 198));
-                var pieces = new List<(Transform node, float width)>();
+                cursor -= D(18);
+                float gainH = D(64);
+                int n = (coins > 0 ? 1 : 0) + (xp > 0 ? 1 : 0);
+                float gw = (cw - D(10) * (n - 1)) / n;
+                float gx = left + gw / 2;
+                float gy = cursor - gainH / 2;
                 if (coins > 0)
                 {
-                    var g = RenderShared.Node("Coins", line);
-                    var l = Label(g, "+" + coins, Fonts.AvenirBold, 19, new Color(0.45f, 0.34f, 0.10f, 1), Vector2.zero, PanelZ + 5, HorizontalAlignmentOptions.Left);
-                    const float gap = 8;
-                    float content = 22 + gap + l.WidthPt();
-                    float width = content + 32;
-                    ShapeView.Rect("Chip", g, Vector2.zero, new Vector2(width, 40), 20, new Color(0.99f, 0.95f, 0.80f, 1), default, 0, PanelZ + 2);
-                    CoinIcon.Make(g, P(-content / 2 + 11, 0), 11, PanelZ + 3);
-                    l.transform.localPosition = P(-content / 2 + 22 + gap, 0);
-                    pieces.Add((g, width));
+                    var card = RenderShared.Node("Coins", content, P(gx, gy));
+                    Design.Surface("Bg", card, Vector2.zero, new Vector2(gw, gainH), D(Design.CardRadius), z);
+                    float x = -gw / 2 + D(14);
+                    Design.Coin(card, new Vector2(x + D(14), 0), 28, z + 2);
+                    Design.Text(card, "+" + coins, NunitoWeight.Black, 18, Design.Ink, new Vector2(x + D(38), D(8)), z + 3, HorizontalAlignmentOptions.Left);
+                    Design.Text(card, Loc.T("ui.end.coins"), NunitoWeight.Bold, 12, Design.Ink2, new Vector2(x + D(38), -D(11)), z + 3,
+                        HorizontalAlignmentOptions.Left).ShrinkToFit(gw - D(66));
+                    gx += gw + D(10);
                 }
                 if (xp > 0)
                 {
-                    var g = RenderShared.Node("Xp", line);
-                    var l = Label(g, Loc.F("game_over.xp_gained", xp), Fonts.AvenirBold, 19, new Color(0.20f, 0.34f, 0.68f, 1), Vector2.zero, PanelZ + 5);
-                    float width = l.WidthPt() + 32;
-                    ShapeView.Rect("Chip", g, Vector2.zero, new Vector2(width, 40), 20, new Color(0.89f, 0.92f, 1.00f, 1), default, 0, PanelZ + 2);
-                    pieces.Add((g, width));
+                    var card = RenderShared.Node("Xp", content, P(gx, gy));
+                    Design.Surface("Bg", card, Vector2.zero, new Vector2(gw, gainH), D(Design.CardRadius), z);
+                    var level = _s.Level.Breakdown;
+                    float x = -gw / 2 + D(14);
+                    var tint = Look.BubbleColor(8);
+                    var disc = ShapeView.Circle("Level", card, P(x + D(14), 0), D(14), Design.Tint(tint, 0.5f), default, 0, z + 1);
+                    Design.Text(card, level.Level.ToString(), NunitoWeight.Black, 11, Design.Ink, new Vector2(x + D(14), 0), z + 3);
+                    Design.Text(card, Loc.F("game_over.xp_gained", xp), NunitoWeight.Black, 18, Design.Ink, new Vector2(x + D(38), D(9)), z + 3,
+                        HorizontalAlignmentOptions.Left).ShrinkToFit(gw - D(66));
+                    float ratio = level.XpForNext > 0 ? level.XpIntoLevel / (float)level.XpForNext : 1f;
+                    Design.Bar(card, new Vector2(x + D(38), -D(11)), Mathf.Min(100, (gw - D(66)) / Design.Scale), 6, ratio, tint, z + 2);
+                    if (result.Xp is GainResult gr && gr.LeveledUp)
+                    {
+                        PopEffects.MakeBurst(card, P(x + D(14), 0), tint, PopTier.Small);
+                        Tw.Run(disc.gameObject, Tw.Seq(Tw.Wait(0.5f), Tw.Scale(disc.transform, 1.25f, 0.15f), Tw.Scale(disc.transform, 1f, 0.2f)));
+                    }
                 }
-                const float interGap = 12;
-                float total = interGap * Mathf.Max(0, pieces.Count - 1);
-                foreach (var p in pieces) total += p.width;
-                float cursor = -total / 2;
-                foreach (var p in pieces)
+                cursor -= gainH;
+            }
+
+            // Faits marquants.
+            var rows = new List<FactRow>
+            {
+                new()
                 {
-                    p.node.localPosition = P(cursor + p.width / 2, 0);
-                    cursor += p.width + interGap;
-                }
-            }
-
-            // Passage de niveau.
-            bool leveledUp = result?.Xp is GainResult gain && gain.LeveledUp;
-            if (leveledUp)
-            {
-                var gr = result.Xp.Value;
-                PopEffects.MakeBurst(panel, P(0, 240), Look.Accent, PopTier.Small);
-                string text = Loc.T("game_over.level_up") + " " + Loc.F("game_over.new_level", gr.NewLevel, Loc.T(LevelCurve.TitleKey(gr.NewLevel)));
-                Label(panel, text, Fonts.AvenirBold, 16, new Color(0.31f, 0.52f, 0.85f, 1), P(0, 240), PanelZ + 6).ShrinkToFit(PanelW - 40);
-            }
-
-            if (Kind == GameModeKind.Duel)
-            {
-                _duelStatusLabel = Label(panel, Loc.T("duel.publishing"), Fonts.AvenirDemiBold, 17, Colors.White(0.32f, 1), P(0, 86), PanelZ + 3);
-                // Le réseau a pu répondre avant l'ouverture du panneau.
-                if (_pendingDuel != null) { var d = _pendingDuel; _pendingDuel = null; UpdateDuelStatus(d); }
-            }
-
-            bool puzzleStars = Kind == GameModeKind.Puzzle || _demoPuzzle != null;
-            if (puzzleStars)
-            {
-                int stars = result?.PuzzleStars ?? 0;
-                var color = _isWinState ? new Color(0.95f, 0.72f, 0.20f, 1) : Colors.White(0.60f, 1);
-                for (int i = 0; i < 3; i++)
-                    Glyphs.Star(panel, P((i - 1) * 36, 90), 34, color, i < stars, PanelZ + 3);
-            }
-
-            bool isNewRecord = result?.IsNewRecord ?? false;
-            int? nearMiss = result?.NearMissGap;
-            if (puzzleStars || Kind == GameModeKind.Duel) { }
-            else if (isNewRecord)
-            {
-                PopEffects.MakeBurst(panel, P(0, 84), new Color(0.96f, 0.78f, 0.28f, 1), PopTier.Medium);
-                var record = Label(panel, Loc.T("game_over.new_record"), Fonts.AvenirHeavy, 27, new Color(0.88f, 0.60f, 0.14f, 1), P(0, 84), PanelZ + 6);
-                record.ShrinkToFit(PanelW - 40);
-                float s = record.transform.localScale.x;
-                record.transform.localScale = Vector3.one * 0.6f * s;
-                FxAlpha.Of(record.gameObject).Alpha = 0;
-                Tw.Run(record.gameObject, Tw.Seq(Tw.Wait(0.45f), Tw.Par(Tw.FadeIn(record.gameObject, 0.2f), Tw.Scale(record.transform, s, 0.28f))));
-            }
-            else if (nearMiss is int gap)
-            {
-                Label(panel, Loc.F("game_over.near_miss", gap), Fonts.AvenirBold, 21, new Color(0.88f, 0.45f, 0.24f, 1), P(0, 84), PanelZ + 3).ShrinkToFit(PanelW - 40);
-            }
-            else if (BestFor(Kind) is int best)
-            {
-                Label(panel, Loc.F("game_over.best_score", best), Fonts.AvenirMedium, 19, Colors.White(0.38f, 1), P(0, 84), PanelZ + 3);
-            }
-
-            if (!leveledUp)
-                Label(panel, EncouragementText(isNewRecord, nearMiss != null), Fonts.AvenirMedium, 18, Colors.White(0.44f, 1), P(0, 240), PanelZ + 3).Wrap(PanelW - 70);
-
-            // Tuiles de statistiques.
-            var stats = new[]
-            {
-                (Loc.F("game_over.longest_chain", _longestChain), Look.BubbleColor(6)),
-                (Loc.F("game_over.combos_created", _combosCreated), Look.BubbleColor(4)),
+                    Icon = VectorIconName.LineBolt, Tint = Look.BubbleColor(3), Title = Loc.T("ui.end.longest_chain"),
+                    Subtitle = Loc.F("game_over.combos_created", _combosCreated), Value = Loc.F("mirror.notebook.group", _longestChain),
+                },
             };
-            const float statW = 216, statH = 56;
-            for (int i = 0; i < stats.Length; i++)
-            {
-                var pos = P((i == 0 ? -1 : 1) * (statW / 2 + 6), 10);
-                ShapeView.Rect("Stat", panel, pos, new Vector2(statW, statH), 20, stats[i].Item2.MixedWithWhite(0.62f), default, 0, PanelZ + 2);
-                Label(panel, stats[i].Item1, Fonts.AvenirDemiBold, 15, Colors.White(0.26f, 1), pos, PanelZ + 3).ShrinkToFit(statW - 20);
-            }
+            if (MirrorRow() is FactRow mr) rows.Add(mr);
+            if (SeedRow() is FactRow sr) rows.Add(sr);
+            cursor -= D(10);
+            float rowH = D(60);
+            var list = RenderShared.Node("Facts", content, P(0, cursor - rows.Count * rowH / 2));
+            Design.Surface("Bg", list, Vector2.zero, new Vector2(cw, rows.Count * rowH), D(Design.CardRadius), z);
+            for (int i = 0; i < rows.Count; i++)
+                AddFactRow(list, rows[i], rows.Count * rowH / 2 - rowH * (i + 0.5f), cw, rowH, i > 0, z);
+            cursor -= rows.Count * rowH;
 
-            AddMirrorCard(panel, PanelW - 56, -84);
-
+            // Actions.
+            cursor -= D(16);
             PuzzleLevel nextPuzzle = null;
             if (Kind == GameModeKind.Puzzle && _isWinState && _demoPuzzle == null && _puzzleLevel != null)
                 nextPuzzle = _s.Catalog.Level(_puzzleLevel.World, _puzzleLevel.Index + 1);
             bool offerContinue = Kind == GameModeKind.Normal && _secondChanceGrid != null;
-
+            float primaryH = offerContinue ? 62 : 56;
+            _primarySlot = new Vector2(0, cursor - D(primaryH / 2));
+            _primaryWidth = cw;
             if (offerContinue)
-            {
-                var btn = PanelButton(panel, "continueBtn", P(0, -184), new Vector2(320, 68), Look.Accent, 6);
-                var ink = Look.Accent.ReadableInk();
-                var title = Label(btn, Loc.T("game_over.continue"), Fonts.AvenirBold, 22, ink, Vector2.zero, PanelZ + 5, HorizontalAlignmentOptions.Left);
-                float rowW = 22 + 8 + title.WidthPt();
-                VectorIcon.Create(btn, VectorIconName.IconPlay, P(-rowW / 2 + 11, 9), 22, ink, PanelZ + 5);
-                title.transform.localPosition = P(-rowW / 2 + 30, 9);
-                Label(btn, Loc.T("game_over.continue_hint"), Fonts.AvenirDemiBold, 12, ink.WithAlpha(0.75f), P(0, -16), PanelZ + 5).ShrinkToFit(290);
-            }
+                PanelButton(content, "continueBtn", _primarySlot, cw, Loc.T("ui.end.second_chance"), true, VectorIconName.LineVideo,
+                    primaryH, Loc.T("game_over.continue_hint"));
             else if (Kind == GameModeKind.Normal || Kind == GameModeKind.Rush || Kind == GameModeKind.Puzzle || _demoPuzzle != null)
             {
-                var btn = PanelButton(panel, nextPuzzle == null ? "replayBtn" : "nextPuzzleBtn", P(0, -184), new Vector2(320, 68), ReplayGreen, 6);
-                string text = nextPuzzle != null ? Loc.T("tutorial.next_button") : Loc.T(nearMiss != null ? "game_over.beat_record" : "game_over.replay");
-                var ink = Colors.White(0.22f, 1);
-                var label = Label(btn, text, Fonts.AvenirBold, 24, ink, Vector2.zero, PanelZ + 5, HorizontalAlignmentOptions.Left);
-                float iconW = nextPuzzle == null ? 20 : 0, iconGap = nextPuzzle == null ? 12 : 0;
-                float contentW = iconW + iconGap + label.WidthPt();
-                if (contentW > 290) { label.ShrinkToFit(290 - iconW - iconGap); contentW = 290; }
-                if (nextPuzzle == null) VectorIcon.Create(btn, VectorIconName.LineRestart, P(-contentW / 2 + iconW / 2, 1), 28, ink, PanelZ + 5);
-                label.transform.localPosition = P(-contentW / 2 + iconW + iconGap, 0);
+                if (nextPuzzle != null)
+                    PanelButton(content, "nextPuzzleBtn", _primarySlot, cw, Loc.F("puzzle.level_label", nextPuzzle.Index), true, VectorIconName.LinePlay);
+                else
+                    PanelButton(content, "replayBtn", _primarySlot, cw, Loc.T(nearMiss != null ? "game_over.beat_record" : "game_over.replay"),
+                        true, VectorIconName.LineRestart);
             }
             else if (Kind == GameModeKind.Duel)
             {
                 // Le bouton de partage n'apparaît qu'une fois le code connu (UpdateDuelStatus).
             }
             else
-            {
-                var btn = PanelButton(panel, "dailyLeaderboardBtn", P(0, -184), new Vector2(320, 68), DailyLavender, 6);
-                Label(btn, Loc.T("game_over.daily_leaderboard"), Fonts.AvenirMedium, 22, Colors.White(0.26f, 1), Vector2.zero, PanelZ + 5).ShrinkToFit(290);
-            }
+                PanelButton(content, "dailyLeaderboardBtn", _primarySlot, cw, Loc.T("game_over.daily_leaderboard"), true, VectorIconName.LineTrophy);
+            cursor -= D(primaryH + 10);
 
-            // Ligne du bas : Accueil, et la relance contextuelle.
-            (string name, string title, Color color, bool replayGlyph)? nextUp = null;
-            if (offerContinue) nextUp = ("replayBtn", Loc.T("game_over.replay"), ReplayGreen, true);
+            // Ligne du bas : Accueil (lien discret, ou bouton à côté de la relance contextuelle).
+            (string name, string title, VectorIconName icon)? nextUp = null;
+            if (offerContinue) nextUp = ("replayBtn", Loc.T("game_over.replay"), VectorIconName.LineRestart);
             else if (result != null && Kind != GameModeKind.Demo)
             {
-                if (result.Suggestion == NextSuggestion.NextDaily) nextUp = ("nextDailyBtn", Loc.T("menu.daily"), DailyLavender, false);
-                else if (result.Suggestion == NextSuggestion.NextRush) nextUp = ("nextRushBtn", Loc.T("menu.rush"), RushPeach, false);
+                if (result.Suggestion == NextSuggestion.NextDaily) nextUp = ("nextDailyBtn", Loc.T("menu.daily"), VectorIconName.LineCalendar);
+                else if (result.Suggestion == NextSuggestion.NextRush) nextUp = ("nextRushBtn", Loc.T("menu.rush"), VectorIconName.LineBolt);
             }
-            float homeW = nextUp == null ? 200 : 152;
-            float homeX = nextUp == null ? 0 : -84;
-            var home = PanelButton(panel, "homePanelBtn", P(homeX, -262), new Vector2(homeW, 52), HomeBeige, 4);
-            Label(home, Loc.T("game_over.home"), Fonts.AvenirMedium, 19, Colors.White(0.42f, 1), Vector2.zero, PanelZ + 5).ShrinkToFit(homeW - 20);
             if (nextUp is { } nu)
             {
-                var next = PanelButton(panel, nu.name, P(84, -262), new Vector2(152, 52), nu.color, 4);
-                var ink = Colors.White(0.26f, 1);
-                var l = Label(next, nu.title, Fonts.AvenirDemiBold, 17, ink, Vector2.zero, PanelZ + 5, nu.replayGlyph ? HorizontalAlignmentOptions.Left : HorizontalAlignmentOptions.Center);
-                if (nu.replayGlyph)
-                {
-                    l.ShrinkToFit(100);
-                    float w = 16 + 10 + l.WidthPt() * l.transform.localScale.x;
-                    VectorIcon.Create(next, VectorIconName.LineRestart, P(-w / 2 + 8, 0), 20, ink, PanelZ + 5);
-                    l.transform.localPosition = P(-w / 2 + 26, 0);
-                }
-                else l.ShrinkToFit(136);
+                float half = (cw - D(10)) / 2;
+                PanelButton(content, "homePanelBtn", new Vector2(left + half / 2, cursor - D(28)), half, Loc.T("game_over.home"), false, null);
+                PanelButton(content, nu.name, new Vector2(right - half / 2, cursor - D(28)), half, nu.title, false, nu.icon);
+                cursor -= D(56);
             }
+            else
+            {
+                var home = RenderShared.Node("homePanelBtn", content, P(0, cursor - D(16)));
+                FxAlpha.Of(home.gameObject);
+                Design.Text(home, Loc.T("game_over.home"), NunitoWeight.ExtraBold, 15, Design.Ink2, Vector2.zero, z + 3).ShrinkToFit(cw);
+                AddZone("homePanelBtn", home, new Vector2(D(200), D(40)));
+                cursor -= D(32);
+            }
+            cursor -= Mathf.Max(D(20), g.BottomInset + D(4));
 
-            panel.localScale = Vector3.one * 0.88f;
-            Tw.Run(panel.gameObject, Tw.Par(Tw.FadeIn(panel.gameObject, 0.38f), Tw.Scale(panel, 1f, 0.38f)), "appear");
+            // La fiche est ancrée en bas de l'écran ; trop haute, elle se tasse.
+            float height = -cursor;
+            float maxH = g.VisibleHeight - g.TopInset - D(8);
+            float k = Mathf.Min(1f, maxH / height);
+            content.localScale = Vector3.one * k;
+            _sheetTopY = g.VisibleBottom + height * k;
+            content.localPosition = P(0, _sheetTopY);
+            float extra = D(60);
+            ShapeView.Rect("SheetHair", panel, P(0, _sheetTopY - height * k / 2 - extra / 2 + D(1)), new Vector2(sheetW, height * k + extra),
+                D(30), Design.Hair, default, 0, PanelZ - 1);
+            ShapeView.Rect("Sheet", panel, P(0, _sheetTopY - height * k / 2 - extra / 2), new Vector2(sheetW, height * k + extra), D(30),
+                Design.Bg, default, 0, PanelZ);
+
+            // Montée depuis le bas.
+            panel.localPosition = P(0, -height * k - D(20));
+            Tw.Run(panel.gameObject, Tw.Seq(Tw.MoveTo(panel, Vector2.zero, 0.32f)), "appear");
+
+            // Le réseau a pu répondre avant l'ouverture du panneau.
+            if (Kind == GameModeKind.Duel && _pendingDuel != null) { var d = _pendingDuel; _pendingDuel = null; UpdateDuelStatus(d); }
 
             // Interstitielle automatique 1,5 s après le panneau.
             if (Kind != GameModeKind.Demo)
@@ -265,29 +317,135 @@ namespace TenGo.Game
             return board.Count > 0 ? board[0] : (int?)null;
         }
 
-        /// Bouton du panneau : capsule en relief, zone tactile nommée.
-        Transform PanelButton(Transform panel, string name, Vector2 pos, Vector2 size, Color fill, float depth)
+        /// Bouton de la fiche (principal ou secondaire), zone tactile nommée.
+        Transform PanelButton(Transform parent, string name, Vector2 pos, float width, string label, bool primary, VectorIconName? icon,
+            float heightPt = 56, string subtitle = null)
         {
-            var node = RenderShared.Node(name, panel, pos);
-            FxAlpha.Of(node.gameObject);
-            Relief.Raise(ShapeView.Rect("Bg", node, Vector2.zero, size, size.y / 2, fill, BtnStroke, 1, PanelZ + 2), depth);
-            AddZone(name, node, size);
+            var node = Design.Button(name, parent, pos, width, label, primary, PanelZ + 2, icon, heightPt, subtitle);
+            AddZone(name, node, new Vector2(width, D(heightPt)));
             return node;
         }
 
-        void AnimateScoreCountUp(TenGoText label, int target)
+        void AddFactRow(Transform list, FactRow row, float y, float cw, float rowH, bool separator, int z)
         {
-            string pts = Loc.T("game.points_label");
+            var node = RenderShared.Node("Fact", list, P(0, y));
+            if (separator) ShapeView.Rect("Sep", node, P(0, rowH / 2), new Vector2(cw, D(1)), 0, Design.Line, default, 0, z + 1);
+            float x = -cw / 2 + D(14);
+            Design.IconChip(node, new Vector2(x + D(18), 0), 36, 12, row.Tint, row.Icon, z + 1, row.IconColor, 20, row.TintAlpha);
+            float textX = x + D(36 + 12);
+            float valueW = 0;
+            float rightX = cw / 2 - D(14);
+            if (row.Minis != null && row.Minis.Count > 0)
+            {
+                int n = row.Minis.Count;
+                float d = Mathf.Min(18, (130f + 3) / n - 3);
+                valueW = D(n * (d + 3) - 3);
+                float mx = rightX - valueW + D(d / 2);
+                foreach (var v in row.Minis) { Design.MiniBubble(node, new Vector2(mx, 0), d, v, z + 2); mx += D(d + 3); }
+            }
+            else if (!string.IsNullOrEmpty(row.Value))
+            {
+                var val = Design.Text(node, row.Value, NunitoWeight.Black, 14, Design.Ink, new Vector2(rightX, 0), z + 3, HorizontalAlignmentOptions.Right);
+                valueW = val.WidthPt();
+            }
+            float textW = rightX - (valueW > 0 ? valueW + D(10) : 0) - textX;
+            if (string.IsNullOrEmpty(row.Subtitle))
+            {
+                var t = Design.Text(node, row.Title, NunitoWeight.ExtraBold, 14, Design.Ink, new Vector2(textX, 0), z + 3, HorizontalAlignmentOptions.Left);
+                if (t.WidthPt() > textW) { t.SizePt = D(13); t.Wrap(textW); }
+                return;
+            }
+            Design.Text(node, row.Title, NunitoWeight.ExtraBold, 14, Design.Ink, new Vector2(textX, D(9)), z + 3, HorizontalAlignmentOptions.Left).ShrinkToFit(textW);
+            Design.Text(node, row.Subtitle, NunitoWeight.Bold, 12, Design.Ink2, new Vector2(textX, -D(10)), z + 3, HorizontalAlignmentOptions.Left).ShrinkToFit(textW);
+        }
+
+        /// Ce que le miroir a remarqué pendant la partie (`null` : rien à dire).
+        FactRow MirrorRow()
+        {
+            if (_lastResult?.MirrorInsight is not MirrorInsight ins) return null;
+            var row = new FactRow { Icon = VectorIconName.LineBrain, Tint = Look.BubbleColor(8) };
+            string notebook = Loc.F("ui.end.notebook", _s.Mirror.RepertoireCount, Partition.Total);
+            switch (ins.Kind)
+            {
+                case MirrorInsightKind.Discovered:
+                    row.Title = Loc.T("ui.end.new_ten");
+                    row.Subtitle = Loc.F("ui.end.notebook", ins.Total, Partition.Total);
+                    var vals = new List<int>();
+                    foreach (var part in ins.Key.Split('+')) if (int.TryParse(part, out int pv)) vals.Add(pv);
+                    row.Minis = vals;
+                    break;
+                case MirrorInsightKind.NextTarget:
+                    row.Title = Loc.F("mirror.end.to_find", ins.Length);
+                    row.Subtitle = notebook;
+                    row.Minis = new int[ins.Length];
+                    break;
+                // « ↑ » d'iOS n'existe pas dans Nunito : la tendance est dite sans flèche.
+                case MirrorInsightKind.Faster:
+                    row.Title = Loc.T("mirror.skill.look");
+                    row.Subtitle = Loc.F("mirror.trend.faster", Dec(ins.Gain));
+                    row.Value = Loc.F("mirror.unit.seconds", Dec(ins.Seconds));
+                    break;
+                case MirrorInsightKind.Longer:
+                    row.Title = Loc.T("mirror.skill.vision");
+                    row.Subtitle = Loc.F("mirror.trend.more", Dec(ins.Average - ins.Usual));
+                    row.Value = Dec(ins.Average);
+                    break;
+                case MirrorInsightKind.Anticipation:
+                    row.Title = Loc.T("mirror.skill.anticipation");
+                    row.Subtitle = Loc.F("mirror.trend.points_up", ins.Percent - ins.UsualPercent);
+                    row.Value = ins.Percent + " %";
+                    break;
+                default: return null;
+            }
+            return row;
+        }
+
+        /// Sort de la graine de dix (`null` : aucune).
+        FactRow SeedRow()
+        {
+            if (_lastResult?.SeedOutcome is not SeedOutcome o) return null;
+            var row = new FactRow { Icon = VectorIconName.LineSeed, Tint = Look.BubbleColor(4), TintAlpha = 0.5f, IconColor = Design.SeedGreen };
+            switch (o.Kind)
+            {
+                case SeedOutcomeKind.Planted:
+                    row.Title = Loc.T("ui.end.seed_planted");
+                    row.Subtitle = Loc.F("ui.end.blooms_in", Remaining(o.BloomAtMs));
+                    row.Value = "×" + o.Power;
+                    break;
+                case SeedOutcomeKind.Strengthened:
+                    row.Title = Loc.T("ui.end.seed_stronger");
+                    row.Subtitle = Loc.F("ui.end.blooms_in", Remaining(o.BloomAtMs));
+                    row.Value = "×" + o.Power;
+                    break;
+                case SeedOutcomeKind.StillGrowing:
+                    row.Title = Loc.T("ui.end.seed_growing");
+                    row.Subtitle = Loc.F("ui.end.blooms_in", Remaining(o.BloomAtMs));
+                    if (_lastResult.SeedPower > 0) row.Value = "×" + _lastResult.SeedPower;
+                    break;
+                case SeedOutcomeKind.FlowerWaiting:
+                    row.Title = Loc.F("game.flower_ready", o.Power);
+                    row.Value = "×" + o.Power;
+                    break;
+                default:
+                    row.Title = Loc.F("seed.too_short", o.Minimum);
+                    row.IconColor = Design.Ink3;
+                    break;
+            }
+            return row;
+        }
+
+        void AnimateScoreCountUp(TenGoText label, int target, float maxW)
+        {
             const int steps = 24;
             const float duration = 0.55f;
             var seq = new List<Tween>();
             for (int i = 1; i <= steps; i++)
             {
                 int v = (int)((double)target * i / steps);
-                seq.Add(Tw.Call(() => { if (label != null) label.Text = v + " " + pts; }));
+                seq.Add(Tw.Call(() => { if (label != null) label.Text = Design.Number(v); }));
                 seq.Add(Tw.Wait(duration / steps));
             }
-            seq.Add(Tw.Call(() => { if (label != null) { label.Text = target + " " + pts; label.ShrinkToFit(PanelW - 30); } }));
+            seq.Add(Tw.Call(() => { if (label != null) { label.Text = Design.Number(target); label.ShrinkToFit(maxW); } }));
             Tw.Run(label.gameObject, Tw.Seq(seq.ToArray()), "countUp");
         }
 
@@ -342,131 +500,6 @@ namespace TenGo.Game
             }
         }
 
-        // MARK: - Carte « miroir » et graine
-
-        void AddMirrorCard(Transform panel, float width, float centerY)
-        {
-            var insight = _lastResult?.MirrorInsight;
-            var outcome = _lastResult?.SeedOutcome;
-            if (insight == null && outcome == null) return;
-            const float h = 108, gap = 10;
-            bool both = insight != null && outcome != null;
-            float mirrorW = both ? (width - gap) * 0.59f : width;
-            float seedW = both ? width - gap - mirrorW : width;
-            var ink = new Color(0.2f, 0.19f, 0.26f, 1);
-            int z = PanelZ + 2;
-
-            Transform Tile(float w, float x, Color color)
-            {
-                var node = RenderShared.Node("Tile", panel, P(x, centerY));
-                ShapeView.Rect("Bg", node, Vector2.zero, new Vector2(w, h), 20, color, default, 0, z);
-                return node;
-            }
-            TenGoText Text(Transform parent, string s, float size, NunitoWeight weight, Color color, float maxW, Vector2 pos,
-                HorizontalAlignmentOptions align = HorizontalAlignmentOptions.Center)
-            {
-                var l = Label(parent, s, weight, size, color, pos, z + 3, align);
-                return l.ShrinkToFit(maxW);
-            }
-
-            if (insight is MirrorInsight ins)
-            {
-                float x = both ? -width / 2 + mirrorW / 2 : 0;
-                var t = Tile(mirrorW, x, new Color(0.94f, 0.92f, 1, 1));
-                float inner = mirrorW - 24;
-                void Caption(string s) => Text(t, s, 13, Fonts.AvenirDemiBold, ink.WithAlpha(0.55f), inner, P(0, 38));
-                void Equation(IReadOnlyList<int?> values)
-                {
-                    float d = values.Count <= 4 ? 30 : values.Count <= 6 ? 24 : 18;
-                    var row = RenderShared.Node("Equation", t, P(0, 4));
-                    var eq = Label(row, "= 10", Fonts.AvenirHeavy, d * 0.55f, ink, Vector2.zero, z + 3, HorizontalAlignmentOptions.Left);
-                    float total = values.Count * (d + 3) + eq.WidthPt() + 3;
-                    row.localScale = Vector3.one * Mathf.Min(1, inner / total);
-                    float cx = -total / 2 + d / 2;
-                    foreach (var v in values)
-                    {
-                        ShapeView.Circle("B", row, P(cx, 0), d / 2, v is int iv ? Look.BubbleColor(iv) : SeedArt.GaugeEmpty, default, 0, z + 1);
-                        Label(row, v?.ToString() ?? "?", Fonts.AvenirBold, d * 0.5f, v == null ? ink.WithAlpha(0.35f) : Colors.White(0.25f, 1), P(cx, 0), z + 3);
-                        cx += d + 3;
-                    }
-                    eq.transform.localPosition = P(cx - d / 2 + 3, 0);
-                }
-                void Gauge(int found, int total)
-                {
-                    var count = Text(t, found + "/" + total, 13, Fonts.AvenirHeavy, ink.WithAlpha(0.7f), 60, P(inner / 2, -34), HorizontalAlignmentOptions.Right);
-                    float barW = inner - count.WidthPt() - 8;
-                    float step = barW / Mathf.Max(1, total);
-                    for (int i = 0; i < total; i++)
-                        ShapeView.Rect("Seg", t, P(-inner / 2 + step * (i + 0.5f), -34), new Vector2(step * 0.76f, 8), step * 0.38f,
-                            i < found ? Look.BubbleColor(i % 9 + 1) : SeedArt.GaugeEmpty, default, 0, z + 1);
-                }
-                void Metric(string title, string value, string delta)
-                {
-                    Caption(title);
-                    Text(t, value, 30, Fonts.AvenirHeavy, ink, inner, P(0, 4));
-                    Text(t, delta, 14, Fonts.AvenirBold, new Color(0.24f, 0.58f, 0.34f, 1), inner, P(0, -34));
-                }
-                switch (ins.Kind)
-                {
-                    case MirrorInsightKind.Discovered:
-                        Caption(Loc.T("mirror.end.new_way"));
-                        var vals = new List<int?>();
-                        foreach (var part in ins.Key.Split('+')) if (int.TryParse(part, out int pv)) vals.Add(pv);
-                        Equation(vals);
-                        Gauge(ins.Total, Partition.Total);
-                        break;
-                    case MirrorInsightKind.NextTarget:
-                        Caption(Loc.F("mirror.end.to_find", ins.Length));
-                        Equation(new int?[ins.Length]);
-                        Gauge(ins.Found, ins.Total);
-                        break;
-                    // « ↑ » d'iOS n'existe pas dans Nunito : la tendance est dite sans flèche.
-                    case MirrorInsightKind.Faster:
-                        Metric(Loc.T("mirror.skill.look"), Loc.F("mirror.unit.seconds", Dec(ins.Seconds)), Loc.F("mirror.trend.faster", Dec(ins.Gain)));
-                        break;
-                    case MirrorInsightKind.Longer:
-                        Metric(Loc.T("mirror.skill.vision"), Dec(ins.Average), Loc.F("mirror.trend.more", Dec(ins.Average - ins.Usual)));
-                        break;
-                    case MirrorInsightKind.Anticipation:
-                        Metric(Loc.T("mirror.skill.anticipation"), ins.Percent + " %", Loc.F("mirror.trend.points_up", ins.Percent - ins.UsualPercent));
-                        break;
-                }
-            }
-
-            if (outcome is SeedOutcome o)
-            {
-                float x = both ? width / 2 - seedW / 2 : 0;
-                var t = Tile(seedW, x, new Color(1, 0.96f, 0.86f, 1));
-                int? power = null;
-                bool bloomed = false, faded = false, pulse = false, showClock = false;
-                string bottom = null;
-                switch (o.Kind)
-                {
-                    case SeedOutcomeKind.Planted: power = o.Power; bottom = Remaining(o.BloomAtMs); showClock = true; break;
-                    case SeedOutcomeKind.Strengthened: power = o.Power; pulse = true; bottom = Remaining(o.BloomAtMs); showClock = true; break;
-                    case SeedOutcomeKind.StillGrowing: bottom = Remaining(o.BloomAtMs); showClock = true; break;
-                    case SeedOutcomeKind.FlowerWaiting: power = o.Power; bloomed = true; pulse = true; break;
-                    case SeedOutcomeKind.TooShort: faded = true; bottom = Loc.F("mirror.notebook.group", o.Minimum); break;
-                }
-                var art = RenderShared.Node("Art", t, P(0, bottom == null ? 0 : 14));
-                if (bloomed) SeedArt.Flower(art, Vector2.zero, 58, z + 1);
-                else SeedArt.Sprout(art, Vector2.zero, 56, z + 1, faded ? 0.3f : 1f);
-                if (power is int pw) SeedArt.PowerBadge(art, P(30, 24), pw, z + 4);
-                if (pulse) SeedArt.Pulse(art);
-                if (bottom != null)
-                {
-                    var l = Text(t, bottom, 15, Fonts.AvenirHeavy, ink.WithAlpha(showClock ? 0.75f : 0.6f), seedW - 40, P(0, -36),
-                        showClock ? HorizontalAlignmentOptions.Left : HorizontalAlignmentOptions.Center);
-                    if (showClock)
-                    {
-                        float total = 14 + 5 + l.WidthPt() * l.transform.localScale.x;
-                        SeedArt.Clock(t, P(-total / 2 + 7, -36), 14, ink.WithAlpha(0.55f), z + 3);
-                        l.transform.localPosition = P(-total / 2 + 19, -36);
-                    }
-                }
-            }
-        }
-
         /// `CognitiveMirror.formatDecimal` : une décimale au plus, séparateur de la langue.
         static string Dec(double v)
         {
@@ -499,34 +532,34 @@ namespace TenGo.Game
             _noAdsOfferShownAt = FxTime.RealNow;
             _s.Analytics.NoAdsOfferView("game_over", adsSeen, adsToday);
 
-            var accent = Look.Accent;
-            var ink = accent.ReadableInk();
-            var size = NoAdsCardSize;
+            // Carte blanche posée au-dessus de la fiche, « Non merci » en lien dessous.
+            float w = Mathf.Min(_geometry.VisibleWidth, D(480)) - 2 * D(20), h = D(72);
+            var size = new Vector2(w, h);
+            _noAdsCardSize = size;
+            _noAdsDeclineRect = new Rect(-D(80), -h / 2 - D(40), D(160), D(36));
             int z = PanelZ + 10;
-            var offer = RenderShared.Node("noAdsOffer", _gameOverPanel, P(0, -394));
+            var offer = RenderShared.Node("noAdsOffer", _gameOverPanel, P(0, _sheetTopY + D(14) + D(40) + h / 2));
             FxAlpha.Of(offer.gameObject).Alpha = 0;
-            ShapeView.Rect("Shadow", offer, P(2, -5), size, 26, Colors.White(0, 0.14f), default, 0, z - 3);
-            Relief.Raise(ShapeView.Rect("Bg", offer, Vector2.zero, size, 26, accent, Look.Logo.WithAlpha(0.25f), 1.5f, z), 6);
+            Design.Surface("Bg", offer, Vector2.zero, size, D(Design.CardRadius), z);
+            float x = -w / 2 + D(14);
+            Design.IconChip(offer, new Vector2(x + D(22), 0), 44, 14, Design.Sunk, VectorIconName.LineNoads, z + 1, Design.Ink, 24, 1f);
 
-            // Pictogramme « écran publicitaire barré ».
-            var picto = RenderShared.Node("Picto", offer, P(-size.x / 2 + 44, 0));
-            ShapeView.Rect("Screen", picto, Vector2.zero, new Vector2(34, 24), 5, Color.clear, ink.WithAlpha(0.85f), 2.5f, z + 2);
-            StrokeView.Create("Slash", picto, new[] { P(-19, -14), P(19, 14) }, ink.WithAlpha(0.85f), 3, z + 3);
-
-            var priceLabel = Label(offer, price, Fonts.AvenirBold, 18, Look.Logo, Vector2.zero, z + 5);
-            float pillW = Mathf.Max(104, priceLabel.WidthPt() + 30);
-            var pillPos = P(size.x / 2 - 16 - pillW / 2, 0);
-            Relief.Raise(ShapeView.Rect("Pill", offer, pillPos, new Vector2(pillW, 42), 21, Look.Background, default, 0, z + 2), 3);
+            var priceLabel = Design.Text(offer, price, NunitoWeight.Black, 16, Design.OnAccent, Vector2.zero, z + 5);
+            float pillW = Mathf.Max(D(84), priceLabel.WidthPt() + D(28));
+            var pillPos = P(w / 2 - D(14) - pillW / 2, 0);
+            ShapeView.Rect("Pill", offer, pillPos, new Vector2(pillW, D(40)), D(20), Design.Accent, default, 0, z + 2);
             priceLabel.transform.localPosition = pillPos;
 
-            float titleX = -size.x / 2 + 76;
-            float titleMaxW = size.x / 2 - 16 - pillW - 12 - titleX;
-            Label(offer, Loc.F("offer.noads_title", StoreCatalog.AdFreeBonusCoins), Fonts.AvenirBold, 22, ink, P(titleX, 11), z + 5, HorizontalAlignmentOptions.Left).ShrinkToFit(titleMaxW);
-            Label(offer, Loc.F("offer.noads_ads_today", adsToday), Fonts.AvenirDemiBold, 14, ink.WithAlpha(0.78f), P(titleX, -16), z + 5, HorizontalAlignmentOptions.Left).ShrinkToFit(titleMaxW);
+            float titleX = x + D(44 + 12);
+            float titleMaxW = w / 2 - D(14) - pillW - D(10) - titleX;
+            Design.Text(offer, Loc.F("offer.noads_title", StoreCatalog.AdFreeBonusCoins), NunitoWeight.Black, 16, Design.Ink,
+                new Vector2(titleX, D(9)), z + 5, HorizontalAlignmentOptions.Left).ShrinkToFit(titleMaxW);
+            Design.Text(offer, Loc.F("offer.noads_ads_today", adsToday), NunitoWeight.Bold, 12, Design.Ink2,
+                new Vector2(titleX, -D(10)), z + 5, HorizontalAlignmentOptions.Left).ShrinkToFit(titleMaxW);
 
-            var r = NoAdsDeclineRect;
-            Relief.Raise(ShapeView.Rect("DeclineBg", offer, P(r.center.x, r.center.y), r.size, r.height / 2, HomeBeige, BtnStroke, 1, z + 2), 4);
-            Label(offer, Loc.T("offer.noads_decline"), Fonts.AvenirMedium, 19, Colors.White(0.32f, 1), P(r.center.x, r.center.y), z + 5).ShrinkToFit(r.width - 16);
+            var r = _noAdsDeclineRect;
+            Design.Text(offer, Loc.T("offer.noads_decline"), NunitoWeight.ExtraBold, 15, Design.Ink2, new Vector2(r.center.x, r.center.y), z + 5)
+                .ShrinkToFit(r.width);
 
             _noAdsOffer = offer;
             Tw.Run(offer.gameObject, Tw.FadeIn(offer.gameObject, 0.25f), "appear");
@@ -537,7 +570,7 @@ namespace TenGo.Game
         {
             if (_noAdsOffer == null) return false;
             var local = point - WorldPt(_noAdsOffer);
-            var card = new Rect(-NoAdsCardSize.x / 2, -NoAdsCardSize.y / 2, NoAdsCardSize.x, NoAdsCardSize.y);
+            var card = new Rect(-_noAdsCardSize.x / 2, -_noAdsCardSize.y / 2, _noAdsCardSize.x, _noAdsCardSize.y);
             if (card.Contains(local))
             {
                 // Appui trop tôt : consommé, sans ouvrir l'achat.
@@ -593,10 +626,11 @@ namespace TenGo.Game
         void ShowPurchaseToast(string text)
         {
             Kill(FindNamed(Root, "purchaseToast"));
-            var toast = RenderShared.Node("purchaseToast", Root, P(0, 340));
+            var toast = RenderShared.Node("purchaseToast", Root, P(0, _geometry.VisibleTop - _geometry.TopInset - D(60)));
             FxAlpha.Of(toast.gameObject).Alpha = 0;
-            var label = Label(toast, text, Fonts.AvenirDemiBold, 19, Color.white, Vector2.zero, 602).Wrap(440);
-            ShapeView.Rect("Bg", toast, Vector2.zero, new Vector2(Mathf.Min(440, label.WidthPt()) + 48, label.HeightPt() + 30), 20, Colors.White(0.14f, 0.92f), default, 0, 600);
+            float maxW = _geometry.VisibleWidth - 2 * D(32);
+            var label = Design.Text(toast, text, NunitoWeight.ExtraBold, 15, Design.Bg, Vector2.zero, 602).Wrap(maxW);
+            ShapeView.Rect("Bg", toast, Vector2.zero, new Vector2(Mathf.Min(maxW, label.WidthPt()) + D(32), label.HeightPt() + D(22)), D(16), Design.Ink, default, 0, 600);
             Tw.Run(toast.gameObject, Tw.Seq(Tw.FadeIn(toast.gameObject, 0.2f), Tw.Wait(2.6f), Tw.FadeOut(toast.gameObject, 0.4f), Tw.Remove(toast.gameObject)));
         }
     }

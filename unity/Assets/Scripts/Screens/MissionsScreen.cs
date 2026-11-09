@@ -1,21 +1,21 @@
 using TenGo.App;
 using TenGo.Core;
 using TenGo.Haptics;
+using TenGo.Fx;
 using TenGo.Rendering;
+using TenGo.Ui;
 using UnityEngine;
 
 namespace TenGo.Screens
 {
-    /// Missions du jour (MissionsScene.swift) : quatre cartes qui remplissent la
-    /// bande disponible, progression, récompense ou bouton « Réclamer », coche
-    /// une fois réclamée. Cibles : « claim_&lt;id&gt; », « back ».
+    /// Missions du jour (MissionsScene.swift), refaites pour la 4.0
+    /// (`design/refonte/05_profil`). Cibles : « claim_&lt;id&gt; », « back ».
     public sealed class MissionsScreen : ScreenBase
     {
         const int Z = 20;
         Transform _ui;
         float _cardWidth = 340;
 
-        static Vector2 P(float x, float y) => Units.P(x, y);
 
         public MissionsScreen(AppRoot app) : base(app, "MissionsScreen")
         {
@@ -30,88 +30,82 @@ namespace TenGo.Screens
             SetupUI();
         }
 
+        static float Pt(float v) => Design.Pt(v);
+
+        /// Refonte 4.0 : retour en haut à gauche, cartes blanches empilées
+        /// (titre, récompense, compteur, barre), « Récupérer » en bouton plein
+        /// sous une mission terminée, super mission cerclée d'encre, missions
+        /// réclamées estompées. La liste défile si besoin.
         void SetupUI()
         {
-            float topY = SceneSize.y / 2;
-            float bottomY = -HalfH + Geo.SafeBottomPx / Geo.PixelsPerScene;
-            _cardWidth = Mathf.Min(UsableW - 48, 600);
-
-            // Titre gris foncé d'iOS (white 0.28) ; le logo du thème le remplace pour rester lisible de nuit.
-            TenGoText.Create(_ui, Loc.T("missions.title"), Fonts.AvenirHeavy, 40, TitleColor, P(0, topY - 110), Z)
-                .ShrinkToFit(UsableW - 40);
-
-            var missions = S.Missions.TodaysMissions;
-            float listTop = topY - 180;
-            float listBottom = bottomY + 150;
-            float available = Mathf.Max(0, listTop - listBottom);
-            const float gap = 18;
-            int count = Mathf.Max(1, missions.Count);
-            float rowH = Mathf.Max(96, Mathf.Min(150, available / count - gap));
-            float blockH = rowH * count + gap * (count - 1);
-            float cursorY = listTop - Mathf.Max(0, (available - blockH) / 2) - rowH / 2;
-            foreach (var mission in missions)
-            {
-                AddMissionRow(mission, cursorY, rowH);
-                cursorY -= rowH + gap;
-            }
-
-            var back = ProgressUi.BackButton(_ui, bottomY + 90, Z + 10);
-            AddTarget("back", back, new Vector2(80, 80), () => App.ShowMenu());
+            _cardWidth = ContentW;
+            AddBackHeader(Loc.T("missions.title"), null, () => App.ShowMenu(), _ui);
+            Scroll = new ScrollArea(_ui, HeaderBottom, -HalfH + BottomInset, -UsableW / 2, UsableW / 2);
+            float cursor = -Pt(10);
+            foreach (var mission in S.Missions.TodaysMissions)
+                cursor = AddMissionCard(mission, cursor) - Pt(12);
+            Scroll.ContentHeight = -cursor + Pt(12);
+            Scroll.ApplyClip();
         }
 
-        /// Titre : gris foncé d'iOS sur fond clair, encre du thème sur fond sombre.
-        internal static Color TitleColor =>
-            Look.Background.PerceivedLuminance() > 0.5f ? Colors.White(0.28f) : Look.Logo;
+        /// Titre des écrans Missions et Succès (encre du système).
+        internal static Color TitleColor => Design.Ink;
 
-        void AddMissionRow(DisplayMission mission, float y, float height)
+        float AddMissionCard(DisplayMission mission, float top)
         {
             var def = mission.Definition;
-            float width = _cardWidth;
-            var row = RenderShared.Node("mission_" + def.Id, _ui, P(0, y));
-            var bg = ShapeView.Rect("Bg", row, Vector2.zero, new Vector2(width, height), 22,
-                def.IsSuper ? new Color(0.94f, 0.88f, 0.98f) : new Color(0.97f, 0.95f, 0.92f), Colors.White(0.70f, 0.35f), 1, Z);
-            Relief.Raise(bg, 4);
-
-            const float rightColumnW = 150;
-            float textLeft = -width / 2 + 22;
-            float titleY = height * 0.14f;
-
-            var title = TenGoText.Create(row, ProgressUi.MissionTitle(def), Fonts.AvenirDemiBold, 19, Colors.White(0.26f),
-                P(textLeft, titleY), Z + 2, horizontal: TMPro.HorizontalAlignmentOptions.Left);
-            title.Wrap(width - rightColumnW - 44);
-
-            ProgressUi.Left(row, mission.Progress + " / " + def.Target, Fonts.AvenirMedium, 14, Colors.White(0.45f),
-                textLeft, -height * 0.16f, Z + 2);
-
-            float barW = width - 44;
-            float ratio = def.Target > 0 ? Mathf.Clamp01(mission.Progress / (float)def.Target) : 0;
-            ProgressUi.Bar(row, barW, ratio, Colors.White(0.85f),
-                mission.IsCompleted ? new Color(0.42f, 0.72f, 0.48f) : Look.Accent, -barW / 2, -height * 0.34f, Z + 2, 10, minWidth: true);
-
-            if (mission.Claimed)
-            {
-                ProgressUi.Check(row, new Vector2(width / 2 - 52, titleY), 32, new Color(0.45f, 0.62f, 0.48f), Z + 2);
-            }
-            else if (mission.IsCompleted)
-            {
-                var claim = RenderShared.Node("claim_" + def.Id, row, P(width / 2 - 76, titleY));
-                var cbg = ShapeView.Rect("Bg", claim, Vector2.zero, new Vector2(124, 52), 26, new Color(0.98f, 0.80f, 0.35f),
-                    Colors.White(0.60f, 0.35f), 1, Z + 4);
-                Relief.Raise(cbg, 4);
-                TenGoText.Create(claim, Loc.T("missions.claim"), Fonts.AvenirBold, 17, Colors.White(0.2f), Vector2.zero, Z + 6)
-                    .ShrinkToFit(112);
-                string id = def.Id;
-                AddTarget("claim_" + def.Id, claim, new Vector2(124, 52), () => Claim(id), animate: false, haptic: false);
-            }
-            else
-            {
-                CoinIcon.Make(row, P(width / 2 - 92, titleY), 12, Z + 2);
-                ProgressUi.Left(row, "+" + def.CoinReward, Fonts.AvenirDemiBold, 19, Colors.White(0.35f), width / 2 - 74, titleY, Z + 2);
-            }
-
+            float w = _cardWidth;
+            bool claimable = mission.IsCompleted && !mission.Claimed;
+            float kick = def.IsSuper ? Pt(22) : 0;
+            float h = Pt(84) + kick + (claimable ? Pt(52) : 0);
+            var card = RenderShared.Node("mission_" + def.Id, Scroll.Content, Units.P(0, top - h / 2));
+            if (mission.Claimed) FxAlpha.Of(card.gameObject).Alpha = 0.55f;
+            float r = Pt(Design.CardRadius);
             if (def.IsSuper)
-                ProgressUi.Left(row, Loc.T("missions.super_badge"), Fonts.AvenirBold, 11, new Color(0.55f, 0.35f, 0.75f),
-                    -width / 2 + 20, height / 2 - 11, Z + 2);
+                ShapeView.Rect("Ring", card, Vector2.zero, new Vector2(w + Pt(4), h + Pt(4)), r + Pt(2), Design.Ink, default, 0, Z - 1);
+            Design.Surface("Bg", card, Vector2.zero, new Vector2(w, h), r, Z, hair: !def.IsSuper);
+
+            float lx = -w / 2 + Pt(16), rx = w / 2 - Pt(16);
+            float y = h / 2 - Pt(16);
+            if (def.IsSuper)
+            {
+                VectorIcon.Create(card, VectorIconName.LineStar, Units.P(lx + Pt(7), y - Pt(4)), Pt(14), Design.Ink2, Z + 2);
+                Design.Text(card, Loc.T("missions.super_badge"), NunitoWeight.Black, 11, Design.Ink2, new Vector2(lx + Pt(20), y - Pt(4)), Z + 2,
+                    TMPro.HorizontalAlignmentOptions.Left);
+                y -= kick;
+            }
+            float titleY = y - Pt(10);
+            var reward = Design.Text(card, "+" + def.CoinReward, NunitoWeight.Black, 15, Design.Ink, new Vector2(rx, titleY), Z + 2,
+                TMPro.HorizontalAlignmentOptions.Right);
+            float rewardW = reward.WidthPt() + Pt(23);
+            Design.Coin(card, new Vector2(rx - reward.WidthPt() - Pt(14), titleY), 18, Z + 2);
+            Design.Text(card, ProgressUi.MissionTitle(def), NunitoWeight.ExtraBold, 15, Design.Ink, new Vector2(lx, titleY), Z + 2,
+                TMPro.HorizontalAlignmentOptions.Left).ShrinkToFit(rx - rewardW - Pt(10) - lx);
+
+            float subY = titleY - Pt(30);
+            Design.Text(card, Design.Number(Mathf.Min(mission.Progress, def.Target)) + " / " + Design.Number(def.Target), NunitoWeight.ExtraBold, 12,
+                Design.Ink3, new Vector2(lx, subY), Z + 2, TMPro.HorizontalAlignmentOptions.Left);
+            if (mission.Claimed)
+                Design.Text(card, Loc.T("ui.missions.claimed"), NunitoWeight.ExtraBold, 12, Design.Ink3, new Vector2(rx, subY), Z + 2,
+                    TMPro.HorizontalAlignmentOptions.Right);
+            float ratio = def.Target > 0 ? Mathf.Clamp01(mission.Progress / (float)def.Target) : 0;
+            Design.Bar(card, new Vector2(lx, subY - Pt(18)), (rx - lx) / Design.Scale, 8, ratio, claimable ? Design.Accent : Design.Ink, Z + 2);
+
+            if (claimable)
+            {
+                string id = def.Id;
+                var btnPos = new Vector2(0, -h / 2 + Pt(16 + 20));
+                var claim = RenderShared.Node("claim_" + id, card, Units.P(btnPos.x, btnPos.y));
+                ShapeView.Rect("Bg", claim, Vector2.zero, new Vector2(rx - lx, Pt(40)), Pt(14), Design.Accent, default, 0, Z + 3);
+                var label = Design.Text(claim, Loc.T("missions.claim") + "  +" + def.CoinReward, NunitoWeight.Black, 15, Design.OnAccent,
+                    Vector2.zero, Z + 5, TMPro.HorizontalAlignmentOptions.Left);
+                float total = Pt(18 + 6) + label.WidthPt() + Pt(22);
+                VectorIcon.Create(claim, VectorIconName.LineCheck, Units.P(-total / 2 + Pt(9), 0), Pt(18), Design.OnAccent, Z + 5);
+                label.transform.localPosition = Units.P(-total / 2 + Pt(24), 0);
+                Design.Coin(claim, new Vector2(-total / 2 + Pt(24) + label.WidthPt() + Pt(14), 0), 16, Z + 5);
+                AddTarget("claim_" + id, claim, new Vector2(rx - lx, Pt(40)), () => Claim(id), animate: false, haptic: false);
+            }
+            return top - h;
         }
 
         /// Réclame une mission ; vrai si des pièces ont été créditées.

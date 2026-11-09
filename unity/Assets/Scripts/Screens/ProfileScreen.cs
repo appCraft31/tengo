@@ -4,26 +4,28 @@ using TenGo.App;
 using TenGo.Core;
 using TenGo.Haptics;
 using TenGo.Rendering;
+using TenGo.Ui;
+using TMPro;
 using UnityEngine;
 
 namespace TenGo.Screens
 {
-    /// Onglet Progression (ProfileScene.swift) : carte de niveau (XP), accès à
-    /// « Ton cerveau », six tuiles de statistiques, les deux missions du jour à
-    /// mettre en avant (réclamables ici), les succès en médaillons et l'accès
-    /// au classement. Tout se tasse (`squeeze`) sur un écran trop court.
+    /// Onglet Profil (ProfileScene.swift), refait pour la 4.0
+    /// (`design/refonte/05_profil`) : niveau en tête (anneau d'XP), les six
+    /// statistiques dans une seule carte 3 × 2, puis les accès en lignes :
+    /// Ton cerveau, Missions du jour (pastille s'il y a une récompense à
+    /// réclamer), Succès en médaillons, Classement. Le contenu défile sur un
+    /// écran court. Les missions ne sont plus listées ici ; `Claim` reste pour
+    /// les appelants.
     ///
-    /// Cibles : « mirror », « missions », « claim_&lt;id&gt; », « achievements »,
-    /// « classement ».
+    /// Cibles : « settings », « mirror », « missions », « achievements », « classement ».
     public sealed class ProfileScreen : ScreenBase
     {
         const int Z = 20;
         Transform _ui;
-        float _cardWidth = 340;
-        float _squeeze = 1;
+        float _cw;
 
-        static Vector2 P(float x, float y) => Units.P(x, y);
-        static Color Tint(int v) => Look.BubbleColor(v);
+        static float Pt(float v) => Design.Pt(v);
 
         public ProfileScreen(AppRoot app) : base(app, "ProfileScreen")
         {
@@ -42,200 +44,170 @@ namespace TenGo.Screens
 
         void SetupUI()
         {
-            var logo = Look.Logo;
-            float usableWidth = UsableW;
-            float halfH = HalfH;
-            _cardWidth = Mathf.Min(usableWidth - 48, 600);
-
-            float titleY = halfH - TopInset - 36;
-            TenGoText.Create(_ui, Loc.T("profile.title"), Fonts.AvenirHeavy, 36, logo, P(0, titleY), Z).ShrinkToFit(usableWidth - 40);
+            _cw = ContentW;
+            float right = _cw / 2;
+            var gear = Design.IconButton("settings", _ui, new Vector2(right - Pt(22), HeaderRowY), VectorIconName.LineGear, Z + 10);
+            AddTarget("settings", gear, Design.Pt(48, 48), OpenSettings, animate: false);
+            AddTabTitle(Loc.T("profile.title"), _cw - Pt(60), _ui);
 
             AddTabBar(Tab.Progress);
+            Scroll = new ScrollArea(_ui, HeaderBottom, TabBarTop, -UsableW / 2, UsableW / 2);
+            var c = Scroll.Content;
+            float cursor = -Pt(10);
 
-            const float headerH = 150, tileH = 92, tileGap = 12, sectionH = 34, missionH = 88, missionGap = 12;
-            const float badgesH = 84, navH = 58, mirrorH = 96;
-            var missions = FeaturedMissions();
-            float missionsBlock = missions.Count == 0 ? 0
-                : sectionH + missions.Count * missionH + (missions.Count - 1) * missionGap + 22;
-            float nominal = headerH + 18 + mirrorH + 18 + tileH * 3 + tileGap * 2 + 22 + missionsBlock + sectionH + badgesH + 16 + navH;
+            float h = Pt(96);
+            AddLevelCard(c, cursor - h / 2, h);
+            cursor -= h + Pt(12);
 
-            float top = titleY - 48;
-            float available = top - (TabBarTop + 14);
-            _squeeze = Mathf.Min(1, available / nominal);
-            float cursor = top;
-            float Place(float h) { float c = cursor - h * _squeeze / 2; cursor -= h * _squeeze; return c; }
-            void Gap(float h) => cursor -= h * _squeeze;
+            h = Pt(160);
+            AddStats(c, cursor - h / 2, h);
+            cursor -= h + Pt(12);
 
-            AddLevelCard(Place(headerH), headerH * _squeeze);
-            Gap(18);
-            AddMirrorCard(Place(mirrorH), mirrorH * _squeeze);
-            Gap(18);
+            var mirror = S.Mirror;
+            var look = mirror.WeeklyReading(MirrorSkill.Look).Value;
+            string mirrorSub = mirror.GamesMeasured == 0
+                ? Loc.T("mirror.card_hint")
+                : Loc.F("mirror.card_summary", ProgressUi.DisplayValue(MirrorSkill.Look, look), mirror.RepertoireCount, Partition.Total);
+            h = Pt(72);
+            AddLink(c, "mirror", VectorIconName.LineBrain, Look.BubbleColor(8), Loc.T("mirror.title"), mirrorSub, cursor - h / 2, h, false,
+                () => App.ShowMirror());
+            cursor -= h + Pt(12);
 
-            var stats = new (string value, string label, Color tint)[]
-            {
-                (S.Games.BestScore.ToString(), Loc.T("profile.best_score"), Tint(3)),
-                (S.Streak.Current.ToString(), Loc.T("profile.daily_streak"), Tint(2)),
-                (S.Stats.BestChainEver.ToString(), Loc.T("profile.best_chain"), Tint(5)),
-                (S.Stats.PerfectBoardsTotal.ToString(), Loc.T("profile.perfect_count"), Tint(7)),
-                (S.Games.RushBest.ToString(), Loc.T("profile.rush_best"), Tint(4)),
-                (S.Stats.TotalChainsMade.ToString(), Loc.T("profile.total_chains"), Tint(9)),
-            };
-            float tileW = (_cardWidth - tileGap) / 2;
-            for (int row = 0; row < 3; row++)
-            {
-                float y = Place(tileH);
-                for (int column = 0; column < 2; column++)
-                {
-                    var st = stats[row * 2 + column];
-                    AddStatTile(st.value, st.label, st.tint, new Vector2((column == 0 ? -1 : 1) * (tileW + tileGap) / 2, y),
-                        new Vector2(tileW, tileH * _squeeze));
-                }
-                if (row < 2) Gap(tileGap);
-            }
-            Gap(22);
-
-            if (missions.Count > 0)
-            {
-                AddSectionHeader(Loc.T("menu.missions"), null, "missions", Place(sectionH), S.Missions.HasUnclaimedReward,
-                    () => App.ShowMissions());
-                for (int i = 0; i < missions.Count; i++)
-                {
-                    AddMissionRow(missions[i], Place(missionH), missionH * _squeeze);
-                    if (i < missions.Count - 1) Gap(missionGap);
-                }
-                Gap(22);
-            }
+            var missions = S.Missions.TodaysMissions;
+            int done = missions.Count(m => m.IsCompleted);
+            int toWin = missions.Where(m => !m.Claimed).Sum(m => m.Definition.CoinReward);
+            AddLink(c, "missions", VectorIconName.LineCheck, Look.BubbleColor(5), Loc.T("missions.title"),
+                Loc.F("ui.profile.missions_sub", done, missions.Count, toWin), cursor - h / 2, h, S.Missions.HasUnclaimedReward,
+                () => App.ShowMissions());
+            cursor -= h + Pt(20);
 
             var all = S.Achievements.Achievements();
-            AddSectionHeader(Loc.T("menu.achievements"), all.Count(a => a.IsUnlocked) + " / " + all.Count, "achievements",
-                Place(sectionH), false, () => App.ShowAchievements());
-            AddAchievementBadges(all, Place(badgesH), badgesH * _squeeze);
-            Gap(16);
+            AddAchievements(c, all, ref cursor);
+            cursor -= Pt(16);
 
-            AddNavRow(Loc.T("menu.leaderboard"), "classement", Place(navH), (navH - 6) * _squeeze, () => App.ShowLeaderboard());
+            AddLink(c, "classement", VectorIconName.LineTrophy, Look.BubbleColor(3), Loc.T("menu.leaderboard"), Loc.T("ui.profile.leaderboard_sub"),
+                cursor - h / 2, h, false, () => App.ShowLeaderboard());
+            cursor -= h;
 
-            // « Réclamer » d'abord : posé sur une rangée elle-même cliquable (ajouté en dernier = testé en premier).
-            foreach (var t in _claims) Targets.Add(t);
-            _claims.Clear();
+            Scroll.ContentHeight = -cursor + Pt(20);
+            Scroll.ApplyClip();
         }
 
-        readonly List<Target> _claims = new();
-
-        /// Deux missions : à réclamer, puis en cours, enfin déjà réclamées.
-        List<DisplayMission> FeaturedMissions()
+        void OpenSettings()
         {
-            int Rank(DisplayMission m) => m.Claimed ? 2 : m.IsCompleted ? 0 : 1;
-            return S.Missions.TodaysMissions.Select((m, i) => (m, i)).OrderBy(p => Rank(p.m)).ThenBy(p => p.i)
-                .Select(p => p.m).Take(2).ToList();
+            if (Overlay != null && Overlay.IsOpen) return;
+            Overlay = App.Overlays.Settings(App, Root, () => App.ShowTutorial());
         }
 
         // MARK: - Blocs
 
-        void AddLevelCard(float y, float height)
+        void AddLevelCard(Transform parent, float y, float height)
         {
-            var tint = Tint(6);
-            var ink = tint.ReadableInk();
-            var card = RenderShared.Node("levelCard", _ui, P(0, y));
-            var bg = ShapeView.Rect("Bg", card, Vector2.zero, new Vector2(_cardWidth, height), 30, tint, default, 0, Z);
-            Relief.Raise(bg, 6);
-
-            float bubbleR = Mathf.Min(46, height / 2 - 14);
-            float bubbleX = -_cardWidth / 2 + 26 + bubbleR;
-            var bubble = ShapeView.Circle("Bubble", card, P(bubbleX, 0), bubbleR, Color.white, default, 0, Z + 3);
-            Relief.Raise(bubble, 4);
+            var card = RenderShared.Node("levelCard", parent, Units.P(0, y));
+            Design.Surface("Bg", card, Vector2.zero, new Vector2(_cw, height), Pt(Design.CardRadius), Z);
             var level = S.Level.Breakdown;
-            TenGoText.Create(card, level.Level.ToString(), Fonts.AvenirHeavy, 38, Colors.White(0.24f), P(bubbleX, 0), Z + 5)
-                .ShrinkToFit(bubbleR * 1.5f);
+            var ringPos = new Vector2(-_cw / 2 + Pt(16 + 32), 0);
+            Design.LevelRing(card, ringPos, level, 29, 29.5f, 5, Z + 1);
+            Design.Text(card, level.Level.ToString(), NunitoWeight.Black, 22, Design.Ink, ringPos, Z + 4).ShrinkToFit(Pt(44));
 
-            float textX = bubbleX + bubbleR + 22;
-            float textW = _cardWidth / 2 - 26 - textX;
-            ProgressUi.Left(card, Loc.T(LevelCurve.TitleKey(level.Level)), Fonts.AvenirBold, 26, ink, textX, 30, Z + 3, textW);
-
+            float textX = ringPos.x + Pt(32 + 14);
+            float textW = _cw / 2 - Pt(16) - textX;
+            Design.Text(card, Loc.T(LevelCurve.TitleKey(level.Level)), NunitoWeight.Black, 20, Design.Ink, new Vector2(textX, Pt(18)), Z + 3,
+                HorizontalAlignmentOptions.Left).ShrinkToFit(textW);
             int into = level.XpIntoLevel, forNext = level.XpForNext;
-            string progressText = forNext > 0 ? Loc.F("level.overlay.xp_progress", into, forNext) : Loc.T("level.title.ten_master");
-            ProgressUi.Left(card, progressText, Fonts.AvenirDemiBold, 16, ink.WithAlpha(0.85f), textX, -2, Z + 3);
-
+            string progress = forNext > 0 ? Loc.F("level.overlay.xp_progress", into, forNext) : Loc.T("level.title.ten_master");
+            Design.Text(card, progress, NunitoWeight.Bold, 13, Design.Ink2, new Vector2(textX, -Pt(4)), Z + 3, HorizontalAlignmentOptions.Left)
+                .ShrinkToFit(textW);
             float ratio = forNext > 0 ? Mathf.Clamp01(into / (float)forNext) : 1;
-            ProgressUi.Bar(card, textW, ratio, Colors.White(1, 0.55f), tint.LedgeShade().LedgeShade(), textX, -32, Z + 3);
+            Design.Bar(card, new Vector2(textX, -Pt(24)), textW / Design.Scale, 8, ratio, Look.BubbleColor(8), Z + 3);
         }
 
-        void AddStatTile(string value, string label, Color tint, Vector2 pos, Vector2 size)
+        void AddStats(Transform parent, float y, float height)
         {
-            var fill = tint.MixedWithWhite(0.45f);
-            var ink = fill.ReadableInk();
-            var tile = RenderShared.Node("Stat", _ui, P(pos.x, pos.y));
-            ShapeView.Rect("Bg", tile, Vector2.zero, size, 24, fill, default, 0, Z);
-            TenGoText.Create(tile, value, Fonts.AvenirHeavy, 30, ink, P(0, 13), Z + 2).ShrinkToFit(size.x - 20);
-            TenGoText.Create(tile, label, Fonts.AvenirMedium, 15, ink.WithAlpha(0.8f), P(0, -20), Z + 2).ShrinkToFit(size.x - 20);
+            var card = RenderShared.Node("stats", parent, Units.P(0, y));
+            Design.Surface("Bg", card, Vector2.zero, new Vector2(_cw, height), Pt(Design.CardRadius), Z);
+            var stats = new (int value, string label)[]
+            {
+                (S.Games.BestScore, "profile.best_score"),
+                (S.Games.RushBest, "ui.profile.rush_best"),
+                (S.Streak.Current, "profile.daily_streak"),
+                (S.Stats.BestChainEver, "profile.best_chain"),
+                (S.Stats.PerfectBoardsTotal, "profile.perfect_count"),
+                (S.Stats.TotalChainsMade, "ui.profile.chains"),
+            };
+            float cellW = _cw / 3, cellH = height / 2;
+            ShapeView.Rect("H", card, Vector2.zero, new Vector2(_cw, Pt(1)), 0, Design.Line, default, 0, Z + 1);
+            for (int i = 1; i < 3; i++)
+                ShapeView.Rect("V", card, Units.P(-_cw / 2 + cellW * i, 0), new Vector2(Pt(1), height), 0, Design.Line, default, 0, Z + 1);
+            for (int i = 0; i < stats.Length; i++)
+            {
+                float cx = -_cw / 2 + cellW * (i % 3 + 0.5f), cy = cellH / 2 - cellH * (i / 3);
+                Design.Text(card, Design.Number(stats[i].value), NunitoWeight.Black, 22, Design.Ink, new Vector2(cx, cy + Pt(10)), Z + 2)
+                    .ShrinkToFit(cellW - Pt(12));
+                Design.Text(card, Loc.T(stats[i].label), NunitoWeight.ExtraBold, 11, Design.Ink2, new Vector2(cx, cy - Pt(14)), Z + 2)
+                    .ShrinkToFit(cellW - Pt(12));
+            }
         }
 
-        void AddSectionHeader(string text, string trailing, string name, float y, bool badged, System.Action action)
+        /// Ligne d'accès : pastille d'icône teintée, titre, sous-titre, chevron.
+        void AddLink(Transform parent, string name, VectorIconName icon, Color tint, string title, string subtitle, float y, float height,
+            bool badged, System.Action action)
         {
-            var header = RenderShared.Node(name, _ui, P(0, y));
-            var label = ProgressUi.Left(header, text, Fonts.AvenirBold, 22, Look.Logo, -_cardWidth / 2 + 4, 0, Z + 2);
-            var trailColor = Look.Logo.WithAlpha(0.65f);
-            // « › » redessiné ; le compteur éventuel le précède (« 9 / 26  › »).
-            ProgressUi.Chevron(header, new Vector2(_cardWidth / 2 - 10, 0), 17, trailColor, Z + 2);
-            if (trailing != null)
-                ProgressUi.Right(header, trailing, Fonts.AvenirDemiBold, 17, trailColor, _cardWidth / 2 - 24, 0, Z + 2);
+            var row = RenderShared.Node(name, parent, Units.P(0, y));
+            Design.Surface("Bg", row, Vector2.zero, new Vector2(_cw, height), Pt(Design.CardRadius), Z);
+            float x = -_cw / 2 + Pt(14);
+            Design.IconChip(row, new Vector2(x + Pt(20), 0), 40, 13, tint, icon, Z + 1, Design.Ink, 21);
             if (badged)
-                ShapeView.Circle("Badge", header, P(-_cardWidth / 2 + 4 + label.WidthPt() + 14, 8), 7,
-                    new Color(0.92f, 0.32f, 0.30f), Colors.White(1, 0.9f), 1.5f, Z + 3);
-            AddTarget(name, header, new Vector2(_cardWidth, 44), action, animate: false);
+                ShapeView.Circle("Badge", row, Units.P(x + Pt(38), Pt(18)), Pt(6), Design.Danger, Design.Card, Pt(2), Z + 4);
+            float textX = x + Pt(40 + 12);
+            float textW = _cw / 2 - Pt(14 + 18 + 12) - textX;
+            Design.Text(row, title, NunitoWeight.Black, 16, Design.Ink, new Vector2(textX, Pt(10)), Z + 2, HorizontalAlignmentOptions.Left)
+                .ShrinkToFit(textW);
+            Design.Text(row, subtitle, NunitoWeight.Bold, 12, Design.Ink2, new Vector2(textX, -Pt(11)), Z + 2, HorizontalAlignmentOptions.Left)
+                .ShrinkToFit(textW);
+            Design.Chevron(row, new Vector2(_cw / 2 - Pt(14 + 9), 0), Z + 2, 18, Design.Ink3);
+            AddTarget(name, row, new Vector2(_cw, height), action, animate: false);
         }
 
-        void AddMissionRow(DisplayMission mission, float y, float height)
+        void AddAchievements(Transform parent, List<DisplayAchievement> all, ref float cursor)
         {
-            var def = mission.Definition;
-            const float rightColumnW = 148;
-            float textLeft = -_cardWidth / 2 + 22;
-            float textW = _cardWidth - rightColumnW - 36;
-            var logo = Look.Logo;
+            var node = RenderShared.Node("achievements", parent, Units.P(0, cursor));
+            float left = -_cw / 2;
+            Design.Text(node, Loc.T("menu.achievements"), NunitoWeight.Black, 17, Design.Ink, new Vector2(left, -Pt(10)), Z + 2,
+                HorizontalAlignmentOptions.Left);
+            Design.Chevron(node, new Vector2(_cw / 2 - Pt(7), -Pt(10)), Z + 2, 14, Design.Ink3);
+            Design.Text(node, all.Count(a => a.IsUnlocked) + " / " + all.Count, NunitoWeight.ExtraBold, 13, Design.Ink3,
+                new Vector2(_cw / 2 - Pt(18), -Pt(10)), Z + 2, HorizontalAlignmentOptions.Right);
 
-            var row = RenderShared.Node("missions", _ui, P(0, y));
-            var bg = ShapeView.Rect("Bg", row, Vector2.zero, new Vector2(_cardWidth, height), 24, Relief.Surface, default, 0, Z);
-            Relief.Raise(bg, 4);
-            AddTarget("missions", row, new Vector2(_cardWidth, height), () => App.ShowMissions(), animate: false);
-
-            ProgressUi.Left(row, ProgressUi.MissionTitle(def), Fonts.AvenirDemiBold, 17, logo, textLeft, 16, Z + 2, textW);
-            float ratio = def.Target > 0 ? Mathf.Clamp01(mission.Progress / (float)def.Target) : 0;
-            var count = ProgressUi.Right(row, Mathf.Min(mission.Progress, def.Target) + " / " + def.Target, Fonts.AvenirMedium, 14,
-                logo.WithAlpha(0.7f), textLeft + textW, -16, Z + 2);
-            // La barre s'arrête avant le compteur (« 6000 / 6000 » dépasse les 74 pt réservés par iOS).
-            float barW = Mathf.Min(textW - 74, textW - count.WidthPt() - 10);
-            ProgressUi.Bar(row, barW, ratio, logo.WithAlpha(0.12f),
-                mission.IsCompleted ? Tint(4).LedgeShade() : Tint(7), textLeft, -16, Z + 2);
-
-            float rightX = _cardWidth / 2 - rightColumnW / 2 - 4;
-            if (mission.Claimed)
+            float d = Pt(46), gap = Pt(8);
+            int count = Mathf.Max(1, Mathf.Min(all.Count, (int)((_cw + gap) / (d + gap))));
+            var shown = all.Where(a => a.IsUnlocked).Concat(all.Where(a => !a.IsUnlocked)).Take(count).ToList();
+            float by = -Pt(20 + 12) - d / 2;
+            int[] tints = { 3, 2, 6, 8, 4, 9, 7 };
+            for (int i = 0; i < shown.Count; i++)
             {
-                ProgressUi.Check(row, new Vector2(rightX, 0), 30, Tint(4).LedgeShade().LedgeShade(), Z + 2);
+                var a = shown[i];
+                var pos = Units.P(left + d / 2 + i * (d + gap), by);
+                var fill = a.IsUnlocked ? Design.Tint(Look.BubbleColor(tints[i % tints.Length]), 0.55f) : Design.Sunk;
+                ShapeView.Circle("Badge", node, pos, d / 2, fill, default, 0, Z + 1);
+                VectorIcon.Create(node, a.IsUnlocked ? CategoryIcon(a.Definition.Category) : VectorIconName.LineLock, pos, Pt(22),
+                    a.IsUnlocked ? Design.Ink : Design.Ink3, Z + 2);
             }
-            else if (mission.IsCompleted)
-            {
-                var claim = RenderShared.Node("claim_" + def.Id, row, P(rightX, 2));
-                var accent = Tint(4);
-                var cbg = ShapeView.Rect("Bg", claim, Vector2.zero, new Vector2(128, 48), 24, accent, default, 0, Z + 4);
-                Relief.Raise(cbg, 4);
-                TenGoText.Create(claim, Loc.T("missions.claim"), Fonts.AvenirBold, 16, accent.ReadableInk(), Vector2.zero, Z + 6)
-                    .ShrinkToFit(110);
-                var t = new Target { Name = "claim_" + def.Id, Node = claim, SizePt = new Vector2(128, 48), Animate = false, Haptic = false };
-                string id = def.Id;
-                t.Action = () => Claim(id);
-                _claims.Add(t);
-            }
-            else
-            {
-                var reward = TenGoText.Create(row, "+" + def.CoinReward, Fonts.AvenirBold, 17, new Color(0.45f, 0.34f, 0.10f),
-                    Vector2.zero, Z + 3, horizontal: TMPro.HorizontalAlignmentOptions.Left);
-                float contentW = 20 + 7 + reward.WidthPt();
-                ShapeView.Rect("Chip", row, P(rightX, 0), new Vector2(contentW + 30, 40), 20, new Color(0.99f, 0.95f, 0.80f), default, 0, Z + 2);
-                CoinIcon.Make(row, P(rightX - contentW / 2 + 10, 0), 10, Z + 3);
-                reward.transform.localPosition = P(rightX - contentW / 2 + 27, 0);
-            }
+            float blockH = Pt(20 + 12) + d;
+            AddTarget("achievements", node, new Vector2(_cw, blockH), () => App.ShowAchievements(), animate: false, offsetPt: new Vector2(0, -blockH / 2));
+            cursor -= blockH;
         }
 
-        /// Réclame une mission (bouton posé sur la rangée).
+        /// Icône au trait d'une catégorie de succès (partagée avec l'écran Succès).
+        internal static VectorIconName CategoryIcon(AchievementCategory c) => c switch
+        {
+            AchievementCategory.Chain => VectorIconName.LineBolt,
+            AchievementCategory.Perfect => VectorIconName.LineStar,
+            AchievementCategory.Score => VectorIconName.LineTrophy,
+            _ => VectorIconName.LineFlame,
+        };
+
+        /// Réclame une mission ; vrai si des pièces ont été créditées.
         public bool Claim(string id)
         {
             if (S.Missions.Claim(id) == null) return false;
@@ -243,60 +215,6 @@ namespace TenGo.Screens
             App.FlushSave();
             Rebuild();
             return true;
-        }
-
-        void AddAchievementBadges(List<DisplayAchievement> all, float y, float height)
-        {
-            var row = RenderShared.Node("achievementsBadges", _ui, P(0, y));
-            AddTarget("achievements", row, new Vector2(_cardWidth, height), () => App.ShowAchievements(), animate: false);
-            float radius = Mathf.Min(36, height / 2 - 6);
-            float step = radius * 2 + 16;
-            int count = Mathf.Max(1, Mathf.Min(all.Count, (int)((_cardWidth + 16) / step)));
-            var shown = all.Where(a => a.IsUnlocked).Concat(all.Where(a => !a.IsUnlocked)).Take(count).ToList();
-            float startX = -_cardWidth / 2 + radius;
-            int[] tints = { 3, 2, 5, 7, 4, 9, 6 };
-            for (int i = 0; i < shown.Count; i++)
-            {
-                var item = shown[i];
-                var center = new Vector2(startX + i * step, 2);
-                var tint = Tint(tints[i % 7]);
-                var medal = ShapeView.Circle("Medal", row, P(center.x, center.y), radius,
-                    item.IsUnlocked ? tint : Look.Logo.WithAlpha(0.10f), default, 0, Z);
-                if (item.IsUnlocked) Relief.Raise(medal, 4);
-                var ink = item.IsUnlocked ? tint.ReadableInk() : Look.Logo.WithAlpha(0.45f);
-                ProgressUi.CategoryIcon(row, center, item.Definition.Category, radius * 0.9f, ink, Z + 2, locked: !item.IsUnlocked);
-            }
-        }
-
-        void AddMirrorCard(float y, float height)
-        {
-            var node = RenderShared.Node("mirror", _ui, P(0, y));
-            var fill = Look.Accent.MixedWithWhite(0.30f);
-            var ink = fill.ReadableInk();
-            var bg = ShapeView.Rect("Bg", node, Vector2.zero, new Vector2(_cardWidth, height), 28, fill, default, 0, Z);
-            Relief.Raise(bg, 5);
-            VectorIcon.Create(node, VectorIconName.IconProgress, P(-_cardWidth / 2 + 44, 0), 34, ink, Z + 2);
-
-            var mirror = S.Mirror;
-            ProgressUi.Left(node, Loc.T("mirror.title"), Fonts.AvenirBold, 22, ink, -_cardWidth / 2 + 84, height * 0.17f, Z + 2);
-            var look = mirror.WeeklyReading(MirrorSkill.Look).Value;
-            string summary = mirror.GamesMeasured == 0
-                ? Loc.T("mirror.card_hint")
-                : Loc.F("mirror.card_summary", ProgressUi.DisplayValue(MirrorSkill.Look, look), mirror.RepertoireCount, Partition.Total);
-            ProgressUi.Left(node, summary, Fonts.AvenirMedium, 15, ink.WithAlpha(0.8f), -_cardWidth / 2 + 84, -height * 0.2f, Z + 2,
-                _cardWidth - 84 - 50);
-            ProgressUi.Chevron(node, new Vector2(_cardWidth / 2 - 30, 2), 30, ink.WithAlpha(0.7f), Z + 2);
-            AddTarget("mirror", node, new Vector2(_cardWidth, height), () => App.ShowMirror(), animate: false);
-        }
-
-        void AddNavRow(string label, string name, float y, float height, System.Action action)
-        {
-            var row = RenderShared.Node(name, _ui, P(0, y));
-            var bg = ShapeView.Rect("Bg", row, Vector2.zero, new Vector2(_cardWidth, height), height / 2, Relief.Surface, default, 0, Z);
-            Relief.Raise(bg, 4);
-            ProgressUi.Left(row, label, Fonts.AvenirDemiBold, 18, Look.Logo, -_cardWidth / 2 + 26, 0, Z + 2);
-            ProgressUi.Chevron(row, new Vector2(_cardWidth / 2 - 30, 2), 26, Look.Logo.WithAlpha(0.6f), Z + 2);
-            AddTarget(name, row, new Vector2(_cardWidth, height), action, animate: false);
         }
 
         public override void Back() => App.ShowMenu();
