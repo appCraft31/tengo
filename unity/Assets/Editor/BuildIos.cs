@@ -9,12 +9,30 @@ namespace TenGo.Editor
     /// Tools/unity.sh TenGo.Editor.BuildIos.Run -buildTarget iOS
     /// L'EDM écrit le Podfile (Firebase, Google Mobile Ads et adaptateurs) et
     /// lance `pod install` ; ouvrir ensuite Builds/iOS/Unity-iPhone.xcworkspace.
+    /// Projet de production (non développement, pour App Store Connect) :
+    /// Tools/unity.sh TenGo.Editor.BuildIos.Release -buildTarget iOS
+    /// Version et build de `ProjectSetup` (4.0.0, CFBundleVersion IosBuild).
     /// Aucun envoi : la signature et l'archivage restent manuels.
     public static class BuildIos
     {
         public const string Output = "Builds/iOS";
 
-        public static void Run()
+        public static void Run() => Export(BuildOptions.Development);
+
+        public static void Release()
+        {
+            bool previousDev = EditorUserBuildSettings.development;
+            try
+            {
+                ProjectSetup.Apply(); // version, build, identifiant, IL2CPP ARM64 + NativeSetup
+                EditorUserBuildSettings.development = false;
+                Export(BuildOptions.None);
+                Debug.Log($"[BuildIos] production {PlayerSettings.bundleVersion} ({PlayerSettings.iOS.buildNumber})");
+            }
+            finally { EditorUserBuildSettings.development = previousDev; }
+        }
+
+        static void Export(BuildOptions options)
         {
             MainScene.Ensure();
             NativeSetup.Apply();
@@ -24,7 +42,7 @@ namespace TenGo.Editor
                 scenes = new[] { MainScene.Path },
                 locationPathName = Output,
                 target = BuildTarget.iOS,
-                options = BuildOptions.Development,
+                options = options,
             });
             if (report.summary.result != BuildResult.Succeeded)
                 throw new System.Exception("Export iOS échoué : " + report.summary.result);

@@ -15,7 +15,9 @@ namespace TenGo.Editor
     ///   consent mode Firebase par défaut, schéma `tengo`, ATS, langues,
     ///   orientations, région de développement fr ;
     /// - entitlements : Game Center et domaines associés (liens universels) ;
-    /// - frameworks : GameKit, AppTrackingTransparency.
+    /// - frameworks : GameKit, AppTrackingTransparency ;
+    /// - UnityFramework : version et build alignés sur l'app ;
+    /// - icône : AppIcon.appiconset de l'app native.
     public sealed class IosPostprocess : IPostprocessBuildWithReport
     {
         public int callbackOrder => 100; // après le plugin Google Mobile Ads
@@ -29,6 +31,47 @@ namespace TenGo.Editor
             string root = report.summary.outputPath;
             UpdatePlist(root);
             UpdateProject(root);
+            AlignFrameworkVersion(root);
+            CopyAppIcon(root);
+        }
+
+        const string NativeAppIcon = "../ios/tenGO/Assets.xcassets/AppIcon.appiconset";
+
+        /// Icône de l'app iOS 3.3.0 (1024 × 1024 unique, clair, sombre et teinté) à
+        /// la place des icônes par défaut d'Unity : sans elle, App Store Connect
+        /// refuse le build (erreur 91111, « Missing app icon »).
+        static void CopyAppIcon(string root)
+        {
+            if (!Directory.Exists(NativeAppIcon))
+                throw new BuildFailedException("Icône introuvable : " + NativeAppIcon);
+            string target = Path.Combine(root, "Unity-iPhone", "Images.xcassets", "AppIcon.appiconset");
+            if (Directory.Exists(target)) Directory.Delete(target, true);
+            Directory.CreateDirectory(target);
+            foreach (var file in Directory.GetFiles(NativeAppIcon))
+                File.Copy(file, Path.Combine(target, Path.GetFileName(file)));
+        }
+
+        /// UnityFramework embarqué : même version et même build que l'app
+        /// (Unity y laisse 1.0 et CURRENT_PROJECT_VERSION 1.0).
+        static void AlignFrameworkVersion(string root)
+        {
+            var path = Path.Combine(root, "UnityFramework", "Info.plist");
+            if (!File.Exists(path)) return;
+            var plist = new PlistDocument();
+            plist.ReadFromFile(path);
+            plist.root.SetString("CFBundleShortVersionString", PlayerSettings.bundleVersion);
+            plist.root.SetString("CFBundleVersion", PlayerSettings.iOS.buildNumber);
+            plist.WriteToFile(path);
+
+            var projPath = PBXProject.GetPBXProjectPath(root);
+            var proj = new PBXProject();
+            proj.ReadFromFile(projPath);
+            foreach (var target in new[] { proj.GetUnityMainTargetGuid(), proj.GetUnityFrameworkTargetGuid() })
+            {
+                proj.SetBuildProperty(target, "MARKETING_VERSION", PlayerSettings.bundleVersion);
+                proj.SetBuildProperty(target, "CURRENT_PROJECT_VERSION", PlayerSettings.iOS.buildNumber);
+            }
+            proj.WriteToFile(projPath);
         }
 
         public static Dictionary<string, string> ReadTracking() =>
