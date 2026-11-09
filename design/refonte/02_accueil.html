@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Refonte — Accueil</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="systeme.css">
+<style>
+  .lvl { display: flex; align-items: center; gap: 10px; }
+  .lvl .n { width: 44px; height: 44px; border-radius: 22px; background: var(--card); box-shadow: var(--hair); display: grid; place-items: center; font-weight: 900; font-size: 16px; position: relative; }
+  .lvl .n svg { position: absolute; inset: -3px; width: 50px; height: 50px; }
+  .lvl .t { font-size: 13px; font-weight: 800; line-height: 1.2; }
+  .lvl .t span { display: block; color: var(--ink-3); font-weight: 700; font-size: 12px; }
+  .right { display: flex; gap: 8px; align-items: center; }
+  .coins { height: 44px; padding: 0 14px 0 10px; border-radius: 22px; background: var(--card); box-shadow: var(--hair); display: flex; align-items: center; gap: 8px; font-weight: 900; font-size: 17px; }
+  .logo { text-align: center; margin: 34px 0 6px; font-weight: 900; font-size: 54px; letter-spacing: -1px; line-height: 1; }
+  .logo i { display: inline-block; width: 18px; height: 18px; border-radius: 9px; background: var(--accent); margin: 0 4px 8px; }
+  .tag { text-align: center; font-size: 15px; font-weight: 700; color: var(--ink-2); }
+  .hero { margin-top: 30px; display: flex; flex-direction: column; gap: 10px; }
+  .hero .btn-primary { height: 68px; font-size: 22px; border-radius: 22px; position: relative; }
+  .hero .btn-primary svg { width: 24px; height: 24px; }
+  .badge { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); height: 30px; padding: 0 10px; border-radius: 15px; background: rgba(255,255,255,.55); display: flex; align-items: center; gap: 4px; font-size: 13px; font-weight: 900; }
+  .badge svg { width: 18px; height: 18px; }
+  .resume { justify-content: space-between; padding: 0 18px; }
+  .resume b { font-weight: 900; }
+  .resume span { color: var(--ink-2); font-weight: 700; font-size: 14px; }
+  .daily { margin-top: 14px; padding: 16px; display: flex; align-items: center; gap: 14px; }
+  .ic { width: 48px; height: 48px; border-radius: 16px; display: grid; place-items: center; flex: none; }
+  .ic svg { width: 24px; height: 24px; }
+  .daily .txt { flex: 1; }
+  .daily .txt b { display: block; font-size: 17px; font-weight: 900; }
+  .daily .txt span { font-size: 13px; font-weight: 700; color: var(--ink-2); }
+  .streak { display: flex; align-items: center; gap: 4px; height: 30px; padding: 0 10px; border-radius: 15px; background: var(--sunk); font-weight: 900; font-size: 14px; }
+  .streak svg { width: 16px; height: 16px; }
+  .modes { margin-top: 12px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+  .mode { padding: 14px 10px 12px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center; }
+  .mode b { font-size: 15px; font-weight: 900; }
+  .mode span { font-size: 12px; font-weight: 700; color: var(--ink-2); margin-top: -6px; }
+  .reward { margin-top: 12px; height: 52px; padding: 0 14px; display: flex; align-items: center; gap: 12px; font-size: 14px; font-weight: 800; }
+  .reward .grow { flex: 1; display: flex; align-items: center; gap: 6px; }
+  .reward > svg { width: 22px; height: 22px; flex: none; }
+  .hero .btn-secondary { position: relative; }
+  .reward .left { color: var(--ink-3); font-weight: 700; font-size: 13px; }
+</style>
+</head>
+<body>
+<div id="board">
+  <div class="col"><div class="label">Actuel<small>Arc-en-ciel sans hiérarchie, Duel en rouge « erreur », bulle de pub qui flotte sous les pièces, onglets sans libellé.</small></div><div class="phone"><img src="ref/accueil_actuel.png" alt=""></div></div>
+  <div class="col"><div class="label">Accueil<small>Une seule action dominante (Jouer). Défi et modes en cartes blanches ; la couleur ne sert qu'aux pastilles d'icône. Pub récompensée rangée en bas, discrète. Onglets libellés.</small></div><div class="phone A" id="p1"></div></div>
+  <div class="col"><div class="label">Avec partie en cours et graine prête<small>« Reprendre » passe au-dessus de « Nouvelle partie » ; la graine fleurie s'affiche en pastille sur Jouer.</small></div><div class="phone A" id="p2"></div></div>
+</div>
+<script src="systeme.js"></script>
+<script>
+const tint = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, '0');
+function screen(resume) {
+  const ring = `<svg viewBox="0 0 50 50"><circle cx="25" cy="25" r="23" fill="none" stroke="var(--line)" stroke-width="3"/><circle cx="25" cy="25" r="23" fill="none" stroke="${PAL[7]}" stroke-width="3" stroke-linecap="round" stroke-dasharray="${0.2 * 144.5} 144.5" transform="rotate(-90 25 25)"/></svg>`;
+  const mode = (k, t, s, col) => `<div class="card mode"><div class="ic" style="background:${tint(col, .45)}">${icon(k)}</div><b>${t}</b><span>${s}</span></div>`;
+  const hero = resume
+    ? `<div class="btn-primary resume"><b>Reprendre</b><span style="color:var(--accent-ink);opacity:.75">1 240 pts</span></div>
+       <div class="btn-secondary">${icon('play')}Nouvelle partie<div class="badge" style="background:var(--sunk)">${icon('seed', '#3E8A5F')}×3</div></div>`
+    : `<div class="btn-primary">${icon('play', '#1F3D2E', true)}Jouer</div>`;
+  return `
+  <div class="scr">
+    <div class="top">
+      <div class="lvl"><div class="n">${ring}25</div><div class="t">Stratège<span>68 / 348 XP</span></div></div>
+      <div class="right"><div class="coins">${coin(20)}340</div><div class="iconbtn">${icon('gear')}</div></div>
+    </div>
+    <div class="logo">TEN<i></i>GO</div>
+    <div class="tag">Relie. Additionne. Libère.</div>
+    <div class="hero">${hero}</div>
+    <div class="card daily">
+      <div class="ic" style="background:${tint(PAL[7], .45)}">${icon('calendar')}</div>
+      <div class="txt"><b>Défi du jour</b><span>Récompense au jour 14</span></div>
+      <div class="streak">${icon('flame', '#D9733A')}12</div>
+    </div>
+    <div class="modes">
+      ${mode('bolt', 'Rush', '60 s', PAL[2])}
+      ${mode('duel', 'Duel', '1 contre 1', PAL[6])}
+      ${mode('puzzle', 'Puzzles', '7 / 20', PAL[3])}
+    </div>
+    <div class="card reward">${icon('video')}<span class="grow">Vidéo : +10 ${coin(16)}</span><span class="left">5 restantes</span></div>
+    <div class="spacer"></div>
+    <div class="tabbar">
+      <div class="tab on"><div class="pill">${icon('play')}</div>Jouer</div>
+      <div class="tab"><div class="pill">${icon('profile', '#8C8376')}</div>Profil</div>
+      <div class="tab"><div class="pill">${icon('duel', '#8C8376')}</div>Duel</div>
+      <div class="tab"><div class="pill">${icon('shop', '#8C8376')}</div>Boutique</div>
+    </div>
+  </div>`;
+}
+document.getElementById('p1').innerHTML = screen(false);
+document.getElementById('p2').innerHTML = screen(true);
+</script>
+</body>
+</html>

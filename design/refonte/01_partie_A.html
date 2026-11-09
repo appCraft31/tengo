@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Refonte — Partie (A)</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="systeme.css">
+<style>
+  .score { text-align: center; line-height: 1; }
+  .score .v { font-size: 40px; font-weight: 900; letter-spacing: -0.5px; }
+  .score .best { font-size: 13px; font-weight: 700; color: var(--ink-3); margin-top: 6px; }
+  .modechip { display: inline-flex; align-items: center; gap: 6px; height: 26px; padding: 0 12px; border-radius: 13px; background: var(--card); box-shadow: var(--hair); font-size: 12px; font-weight: 800; color: var(--ink-2); margin-top: 8px; }
+  .modechip i { width: 8px; height: 8px; border-radius: 4px; display: block; }
+  .timer { margin: 14px 4px 0; height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; }
+  .timer b { display: block; height: 100%; border-radius: 4px; background: var(--ink); }
+  .gridwrap { margin-top: 18px; }
+  .grid { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .b { aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: 22px; font-weight: 700; color: var(--ink); position: relative; z-index: 1; }
+  .b.sel { transform: scale(1.08); box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--ink); }
+  .b.stone { border-radius: 14px; background: #D9D3C9 !important; transform: scale(.86); color: transparent; }
+  .b.frozen::after { content: ""; position: absolute; inset: 3px; border-radius: 50%; border: 2.5px dashed rgba(255,255,255,.95); }
+  .b.anchor::after { content: ""; position: absolute; bottom: 5px; width: 6px; height: 6px; border-radius: 3px; background: var(--ink); opacity: .6; }
+  .grid svg.path { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+  .gain { position: absolute; z-index: 3; font-weight: 900; font-size: 20px; color: var(--ink); background: var(--card); box-shadow: var(--hair); border-radius: 12px; padding: 2px 10px; }
+  .boosters { display: flex; align-items: flex-end; justify-content: center; gap: 12px; }
+  .boost { width: 84px; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+  .boost .btn { width: 64px; height: 64px; border-radius: 22px; display: grid; place-items: center; position: relative; background: var(--card); box-shadow: var(--hair); }
+  .boost .btn svg { width: 28px; height: 28px; }
+  .boost .n { position: absolute; top: -6px; right: -6px; min-width: 24px; height: 24px; border-radius: 12px; font-size: 12px; font-weight: 900; display: grid; place-items: center; padding: 0 6px; background: var(--ink); color: #fff; }
+  .boost .n.plus { background: var(--accent); color: var(--ink); }
+  .boost .t { font-size: 12px; font-weight: 700; color: var(--ink-2); }
+  .boost.small .btn { width: 52px; height: 52px; border-radius: 18px; }
+</style>
+</head>
+<body>
+<div id="board">
+  <div class="col"><div class="label">Normal<small>Score et meilleur au centre, accueil et pause sur les côtés. Le chemin se lit par les anneaux et le trait ; le gain s'affiche en pastille à la validation.</small></div><div class="phone A" data-mode="normal"></div></div>
+  <div class="col"><div class="label">Rush<small>Le meilleur cède la place au chrono : chiffre + barre qui se vide. Pas de logo, pas de cartouche.</small></div><div class="phone A" data-mode="rush"></div></div>
+  <div class="col"><div class="label">Défi du jour<small>Pastille du mode et du twist sous le score. Pierres, bulles gelées (anneau pointillé) et ancrées (point) dessinées en aplat.</small></div><div class="phone A" data-mode="daily"></div></div>
+</div>
+<script src="systeme.js"></script>
+<script>
+const GRID = [
+  [1,7,5,8,2,3,5],[8,8,5,3,3,9,8],[2,7,3,4,6,4,4],[1,6,6,6,7,3,6],[7,8,3,5,4,1,8],
+  [8,7,7,3,4,3,8],[2,6,6,7,1,5,7],[6,9,4,9,5,5,8],[9,2,7,6,5,9,3]];
+const MODES = {
+  normal: { path: [[1,3],[1,4],[2,3]], head: `<div class="score"><div class="v">1 240</div><div class="best">Meilleur 4 820</div></div>`, gain: null },
+  rush:   { path: [[4,3],[4,4],[5,5]], head: `<div class="score"><div class="v">0:42</div><div class="best">2 310 pts</div></div>`, timer: 0.7, gain: [3, 4, '+30'] },
+  daily:  { path: [], head: `<div class="score"><div class="v">860</div><div class="modechip"><i style="background:${PAL[6]}"></i>Défi du jour · Gel</div></div>`,
+            stones: [[1,1],[5,5],[3,6]], frozen: [[2,2],[4,0],[6,4],[0,5]], anchor: [[7,1],[2,5]] },
+};
+document.querySelectorAll('.phone[data-mode]').forEach(ph => {
+  const m = MODES[ph.dataset.mode];
+  const has = (list, r, c) => (list || []).some(p => p[0] === r && p[1] === c);
+  let cells = '';
+  GRID.forEach((row, r) => row.forEach((v, c) => {
+    const cls = ['b'];
+    if (has(m.path, r, c)) cls.push('sel');
+    if (has(m.stones, r, c)) cls.push('stone');
+    if (has(m.frozen, r, c)) cls.push('frozen');
+    if (has(m.anchor, r, c)) cls.push('anchor');
+    cells += `<div class="${cls.join(' ')}" style="background:${PAL[v - 1]}">${v}</div>`;
+  }));
+  const boost = (k, t, n, small) => `<div class="boost${small ? ' small' : ''}"><div class="btn">${icon(k)}${n !== null ? `<div class="n${n === '+' ? ' plus' : ''}">${n}</div>` : ''}</div><div class="t">${t}</div></div>`;
+  const rush = ph.dataset.mode === 'rush';
+  ph.innerHTML = `
+    <div class="scr">
+      <div class="top"><div class="iconbtn">${icon('home')}</div>${m.head}<div class="iconbtn">${icon('pause')}</div></div>
+      ${m.timer ? `<div class="timer"><b style="width:${m.timer * 100}%"></b></div>` : ''}
+      <div class="gridwrap"><div class="grid">${cells}<svg class="path"></svg></div></div>
+      <div class="spacer"></div>
+      ${rush ? '' : `<div class="boosters">${boost('bulb', 'Indice', 2)}${boost('shuffle', 'Mélange', 1)}${boost('hammer', 'Marteau', '+')}${boost('restart', 'Rejouer', null, true)}</div>`}
+    </div>`;
+  requestAnimationFrame(() => {
+    const g = ph.querySelector('.grid'), s = g.querySelector('svg.path');
+    const W = g.clientWidth, H = g.clientHeight, cw = (W + 5) / 7, ch = (H + 5) / 9;
+    const xy = ([r, c]) => [c * cw + (cw - 5) / 2, r * ch + (ch - 5) / 2];
+    s.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    if (m.path.length) s.innerHTML = `<polyline points="${m.path.map(p => xy(p).join(',')).join(' ')}" fill="none" stroke="#34312C" stroke-opacity=".55" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`;
+    if (m.gain) {
+      const [x, y] = xy([m.gain[0], m.gain[1]]);
+      g.insertAdjacentHTML('beforeend', `<div class="gain" style="left:${x - 4}px; top:${y - 52}px">${m.gain[2]}</div>`);
+    }
+  });
+});
+</script>
+</body>
+</html>

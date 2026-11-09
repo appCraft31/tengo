@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Refonte — Partie</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: #2B2B30; font-family: 'Nunito', sans-serif; }
+  #board { display: flex; gap: 36px; padding: 36px 40px 40px; width: max-content; background: #2B2B30; }
+  .col { display: flex; flex-direction: column; gap: 14px; }
+  .label { color: #F2F2F2; font-weight: 800; font-size: 22px; }
+  .label small { display: block; color: #A8A8B3; font-weight: 600; font-size: 13px; margin-top: 3px; max-width: 390px; line-height: 1.35; }
+  .phone { width: 390px; height: 844px; border-radius: 44px; overflow: hidden; position: relative; }
+  .phone img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  /* ---------- Structure commune ---------- */
+  .scr { position: absolute; inset: 0; display: flex; flex-direction: column; padding: 54px 16px 30px; }
+  .top { display: flex; align-items: center; justify-content: space-between; height: 64px; }
+  .iconbtn { width: 44px; height: 44px; border-radius: 22px; display: grid; place-items: center; }
+  .iconbtn svg { width: 22px; height: 22px; }
+  .score { text-align: center; line-height: 1; }
+  .score .v { font-size: 40px; font-weight: 900; letter-spacing: -0.5px; }
+  .score .best { font-size: 13px; font-weight: 700; margin-top: 5px; }
+  .sumrow { height: 46px; display: flex; align-items: center; justify-content: center; margin: 10px 0 8px; }
+  .sum { display: flex; align-items: center; gap: 10px; padding: 0 16px; height: 38px; border-radius: 19px; font-weight: 800; font-size: 17px; }
+  .sum .track { display: flex; gap: 3px; }
+  .sum .track i { width: 9px; height: 9px; border-radius: 3px; display: block; }
+  .grid { position: relative; display: grid; grid-template-columns: repeat(7, 1fr); gap: 5px; }
+  .b { aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: 22px; position: relative; z-index: 1; }
+  .grid svg.path { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 2; pointer-events: none; }
+  .spacer { flex: 1; }
+  .boosters { display: flex; align-items: flex-end; justify-content: center; gap: 12px; }
+  .boost { width: 84px; display: flex; flex-direction: column; align-items: center; gap: 6px; position: relative; }
+  .boost .btn { width: 64px; height: 64px; border-radius: 22px; display: grid; place-items: center; position: relative; }
+  .boost .btn svg { width: 28px; height: 28px; }
+  .boost .n { position: absolute; top: -6px; right: -6px; min-width: 24px; height: 24px; border-radius: 12px; font-size: 12px; font-weight: 900; display: grid; place-items: center; padding: 0 6px; }
+  .boost .t { font-size: 12px; font-weight: 700; }
+  .boost.small .btn { width: 52px; height: 52px; border-radius: 18px; }
+
+  /* ---------- A. Plat crème ---------- */
+  .A { background: #F7F3EC; color: #34312C; }
+  .A .iconbtn { background: #FFFFFF; box-shadow: 0 1px 0 #E6DED1; }
+  .A .score .best { color: #9A9184; }
+  .A .sum { background: #FFFFFF; box-shadow: 0 1px 0 #E6DED1; }
+  .A .sum .track i { background: #ECE5D9; }
+  .A .sum .track i.on { background: #34312C; }
+  .A .b { font-weight: 700; color: #34312C; }
+  .A .b.sel { transform: scale(1.08); box-shadow: 0 0 0 3px #F7F3EC, 0 0 0 6px #34312C; }
+  .A .boost .btn { background: #FFFFFF; box-shadow: 0 1px 0 #E6DED1; }
+  .A .boost .n { background: #34312C; color: #fff; }
+  .A .boost .t { color: #6F675B; }
+
+  /* ---------- B. Clair contrasté ---------- */
+  .B { background: #FFFFFF; color: #1F2430; }
+  .B .iconbtn { background: #F2F3F7; }
+  .B .score .best { color: #8A90A0; }
+  .B .sum { background: #1F2430; color: #fff; }
+  .B .sum .track i { background: #3A4152; }
+  .B .sum .track i.on { background: #7CF0A8; }
+  .B .b { font-weight: 800; color: #1F2430; }
+  .B .b.sel { transform: scale(1.1); box-shadow: 0 0 0 3px #FFFFFF, 0 0 0 5.5px #1F2430; }
+  .B .boost .btn { background: #F2F3F7; }
+  .B .boost .n { background: #FF5A5F; color: #fff; }
+  .B .boost .t { color: #5B6273; }
+
+  /* ---------- C. Relief maîtrisé ---------- */
+  .C { background: #F5F0E8; color: #3B362F; }
+  .C .iconbtn { background: #FFFFFF; box-shadow: 0 3px 0 #E2D8C8; }
+  .C .score .best { color: #9A9184; }
+  .C .sum { background: #FFFFFF; box-shadow: 0 3px 0 #E2D8C8; }
+  .C .sum .track i { background: #ECE5D9; }
+  .C .sum .track i.on { background: #3B362F; }
+  .C .b { font-weight: 800; color: #3B362F; }
+  .C .b::before { content: ""; position: absolute; left: 22%; top: 10%; width: 44%; height: 24%; border-radius: 50%; background: rgba(255,255,255,.55); filter: blur(1px); }
+  .C .b.sel { transform: scale(1.08) translateY(-2px); }
+  .C .boost .btn { background: #FFFFFF; box-shadow: 0 4px 0 #E2D8C8; }
+  .C .boost .n { background: #3B362F; color: #fff; }
+  .C .boost .t { color: #6F675B; }
+</style>
+</head>
+<body>
+<div id="board">
+  <div class="col">
+    <div class="label">Actuel<small>Logo répété, score en gros cartouche, grille collée aux bords, boosters sans libellé, 4 et 8 presque identiques.</small></div>
+    <div class="phone"><img src="ref/partie_actuelle.png" alt=""></div>
+  </div>
+  <div class="col">
+    <div class="label">A — Plat crème<small>Aplats, aucune ombre portée, filets fins. On garde le fond crème et la douceur actuels, en propre.</small></div>
+    <div class="phone A" data-style="A" data-pal="douce"></div>
+  </div>
+  <div class="col">
+    <div class="label">B — Clair contrasté<small>Fond blanc, couleurs plus vives, encre foncée pour l'interface. Plus « app moderne », plus nerveux.</small></div>
+    <div class="phone B" data-style="B" data-pal="vive"></div>
+  </div>
+  <div class="col">
+    <div class="label">C — Relief maîtrisé<small>On garde l'identité « bonbon » en relief, mais un seul relief, cohérent, sans halo ni cercles flous.</small></div>
+    <div class="phone C" data-style="C" data-pal="douce"></div>
+  </div>
+</div>
+<script>
+const PAL = {
+  douce: ['#FACFCC','#DB9661','#D7C06C','#C6E99B','#65BD90','#7FEFFB','#97C6F7','#A99BE6','#F0A5D7'],
+  vive:  ['#FACFCC','#ED8C35','#DFBF3A','#BDEE7B','#36C487','#7FEFFB','#97C6F7','#AA97F5','#F99FDB'],
+};
+// Assombrit une couleur (pour le relief C et le contour B).
+function shade(hex, k) {
+  const n = parseInt(hex.slice(1), 16);
+  const f = c => Math.round(c * k).toString(16).padStart(2, '0');
+  return '#' + f(n >> 16) + f((n >> 8) & 255) + f(n & 255);
+}
+const GRID = [
+  [1,7,5,8,2,3,5],[8,8,5,3,3,9,8],[2,7,3,4,6,4,4],[1,6,6,6,7,3,6],[7,8,3,5,4,1,8],
+  [8,7,7,3,4,3,8],[2,6,6,7,1,5,7],[6,9,4,9,5,5,8],[9,2,7,6,5,9,3]];
+const PATH = [[1,3],[1,4],[2,3]]; // 3 + 3 + 4 : le doigt est sur le 4
+const SUM = 10;
+const ICON = {
+  home: '<path d="M4 11 12 4l8 7v8a1 1 0 0 1-1 1h-4v-6H9v6H5a1 1 0 0 1-1-1z"/>',
+  pause: '<rect x="6" y="5" width="4" height="14" rx="1.5"/><rect x="14" y="5" width="4" height="14" rx="1.5"/>',
+  bulb: '<path d="M9 18h6M10 21h4M12 3a6 6 0 0 0-3.5 10.9c.6.5 1 1.2 1 2.1h5c0-.9.4-1.6 1-2.1A6 6 0 0 0 12 3z"/>',
+  shuffle: '<path d="M4 7h3c4 0 6 10 10 10h3M17 14l3 3-3 3M4 17h3c1.6 0 2.8-1.6 3.8-3.6M13.2 9.6C14.2 8 15.4 7 17 7h3M17 4l3 3-3 3"/>',
+  hammer: '<path d="M14 6l4 4M12.5 7.5 5 15a2.1 2.1 0 0 0 3 3l7.5-7.5M11 4h5l3 3v2l-2 1-5-5z"/>',
+  restart: '<path d="M4 12a8 8 0 1 0 2.3-5.6M4 4v4h4"/>',
+};
+const svg = (k, stroke) => `<svg viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">${ICON[k]}</svg>`;
+
+document.querySelectorAll('.phone[data-style]').forEach(ph => {
+  const st = ph.dataset.style, pal = PAL[ph.dataset.pal];
+  const ink = st === 'B' ? '#1F2430' : (st === 'C' ? '#3B362F' : '#34312C');
+  const onPath = (r, c) => PATH.some(p => p[0] === r && p[1] === c);
+  let cells = '';
+  GRID.forEach((row, r) => row.forEach((v, c) => {
+    const col = pal[v - 1];
+    let style = `background:${col};`;
+    if (st === 'B') style += `box-shadow: inset 0 0 0 2px ${shade(col, .86)};`;
+    if (st === 'C') style += `box-shadow: inset 0 -5px 0 ${shade(col, .84)}, 0 3px 0 ${shade(col, .78)};`;
+    cells += `<div class="b${onPath(r, c) ? ' sel' : ''}" style="${style}">${v}</div>`;
+  }));
+  const partial = PATH.reduce((s, [r, c]) => s + GRID[r][c], 0);
+  const track = Array.from({length: 10}, (_, i) => `<i class="${i < partial ? 'on' : ''}"></i>`).join('');
+  const sumTxt = partial === SUM ? `${PATH.map(([r, c]) => GRID[r][c]).join(' + ')} = 10 · relâche !` : `${partial} / 10`;
+  const boost = (k, t, n, small) => `<div class="boost${small ? ' small' : ''}"><div class="btn">${svg(k, ink)}${n ? `<div class="n">${n}</div>` : ''}</div><div class="t">${t}</div></div>`;
+  ph.innerHTML = `
+    <div class="scr">
+      <div class="top">
+        <div class="iconbtn">${svg('home', ink)}</div>
+        <div class="score"><div class="v">1 240</div><div class="best">Meilleur 4 820</div></div>
+        <div class="iconbtn">${svg('pause', ink)}</div>
+      </div>
+      <div class="sumrow"><div class="sum"><span>${sumTxt}</span><span class="track">${track}</span></div></div>
+      <div class="grid" id="g-${st}">${cells}<svg class="path"></svg></div>
+      <div class="spacer"></div>
+      <div class="boosters">
+        ${boost('bulb', 'Indice', 2)}
+        ${boost('shuffle', 'Mélange', 2)}
+        ${boost('hammer', 'Marteau', 2)}
+        ${boost('restart', 'Rejouer', 0, true)}
+      </div>
+    </div>`;
+  // Tracé du chemin par-dessus les bulles.
+  requestAnimationFrame(() => {
+    const g = ph.querySelector('.grid'), s = g.querySelector('svg.path');
+    const W = g.clientWidth, H = g.clientHeight, cw = (W + 5) / 7, chh = (H + 5) / 9;
+    const pts = PATH.map(([r, c]) => `${c * cw + (cw - 5) / 2},${r * chh + (chh - 5) / 2}`).join(' ');
+    const color = st === 'B' ? '#1F2430' : ink;
+    s.setAttribute('viewBox', `0 0 ${W} ${H}`);
+    s.innerHTML = `<polyline points="${pts}" fill="none" stroke="${color}" stroke-opacity="${st === 'B' ? .85 : .55}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`;
+  });
+});
+</script>
+</body>
+</html>
