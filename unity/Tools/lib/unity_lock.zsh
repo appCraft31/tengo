@@ -68,6 +68,13 @@ trap 'unity_unlock; exit 143' TERM HUP
 # Lance Unity sous verrou. Retourne le code de sortie d'Unity.
 # UNITY_SECONDS contient ensuite la durée de l'exécution (hors attente).
 unity_run() {
+  # Paquets Firebase hors git (Packages/tarballs) : récupérés au premier lancement.
+  if [[ ! -f $ROOT/Packages/tarballs/com.google.firebase.firestore-14.1.0.tgz \
+     || ! -f $ROOT/Packages/tarballs/com.google.firebase.app-14.1.0.tgz \
+     || ! -f $ROOT/Packages/tarballs/com.google.firebase.analytics-14.1.0.tgz \
+     || ! -f $ROOT/Packages/tarballs/com.google.firebase.auth-14.1.0.tgz ]]; then
+    $ROOT/Tools/fetch_packages.sh || return $?
+  fi
   unity_lock || return $?
   local -i t0=$SECONDS code
   "$UNITY" "$@"

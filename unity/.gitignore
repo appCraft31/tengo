@@ -42,3 +42,20 @@ sysinfo.txt
 GoogleService-Info.plist
 google-services.json
 /.utmp/
+
+# Paquets Firebase réempaquetés (~80 Mo) : Tools/fetch_packages.sh les récupère.
+/Packages/tarballs/
+# Configuration Firebase : copiée depuis ../ios et ../android par
+# TenGo.Editor.FirebaseConfig.Copy avant chaque build, jamais versionnée.
+/Assets/google-services.json
+/Assets/google-services.json.meta
+/Assets/GoogleService-Info.plist
+/Assets/GoogleService-Info.plist.meta
+# Fichiers que Firebase génère depuis cette configuration (clés d'API comprises)
+/Assets/Plugins/Android/FirebaseApp.androidlib/
+/Assets/Plugins/Android/FirebaseApp.androidlib.meta
+/Assets/StreamingAssets/google-services-desktop.json
+/Assets/StreamingAssets/google-services-desktop.json.meta
+# Dépôt Maven local généré par Firebase (recopié depuis les paquets)
+/Assets/GeneratedLocalRepo/
+/Assets/GeneratedLocalRepo.meta

@@ -1,5 +1,65 @@
 {
   "dependencies": {
+    "com.google.ads.mobile": {
+      "version": "11.6.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.external-dependency-manager": "2.1.0",
+        "com.unity.modules.androidjni": "1.0.0"
+      },
+      "url": "https://package.openupm.com"
+    },
+    "com.google.ads.mobile.mediation.liftoffmonetize": {
+      "version": "5.7.10",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.google.ads.mobile": "11.0.0"
+      },
+      "url": "https://package.openupm.com"
+    },
+    "com.google.ads.mobile.mediation.unity": {
+      "version": "3.22.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.google.ads.mobile": "11.0.0"
+      },
+      "url": "https://package.openupm.com"
+    },
+    "com.google.firebase.analytics": {
+      "version": "file:tarballs/com.google.firebase.analytics-14.1.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
+      "dependencies": {
+        "com.google.firebase.app": "14.1.0"
+      }
+    },
+    "com.google.firebase.app": {
+      "version": "file:tarballs/com.google.firebase.app-14.1.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
+      "dependencies": {
+        "com.unity.external-dependency-manager": "2.1.0"
+      }
+    },
+    "com.google.firebase.auth": {
+      "version": "file:tarballs/com.google.firebase.auth-14.1.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
+      "dependencies": {
+        "com.google.firebase.app": "14.1.0"
+      }
+    },
+    "com.google.firebase.firestore": {
+      "version": "file:tarballs/com.google.firebase.firestore-14.1.0.tgz",
+      "depth": 0,
+      "source": "local-tarball",
+      "dependencies": {
+        "com.google.firebase.app": "14.1.0"
+      }
+    },
     "com.unity.2d.sprite": {
       "version": "1.0.0",
       "depth": 0,
@@ -28,6 +88,15 @@
       "depth": 1,
       "source": "builtin",
       "dependencies": {}
+    },
+    "com.unity.external-dependency-manager": {
+      "version": "2.1.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.uielements": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
     },
     "com.unity.graph-authoring": {
       "version": "1.0.0",
@@ -60,6 +129,15 @@
       },
       "url": "https://packages.unity.com"
     },
+    "com.unity.mobile.notifications": {
+      "version": "2.5.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.androidjni": "1.0.0"
+      },
+      "url": "https://packages.unity.com"
+    },
     "com.unity.nuget.mono-cecil": {
       "version": "1.11.6",
       "depth": 3,
@@ -79,6 +157,19 @@
       "depth": 2,
       "source": "registry",
       "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.purchasing": {
+      "version": "4.15.0",
+      "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.ugui": "1.0.0",
+        "com.unity.services.core": "1.12.5",
+        "com.unity.modules.androidjni": "1.0.0",
+        "com.unity.modules.jsonserialize": "1.0.0",
+        "com.unity.modules.unitywebrequest": "1.0.0"
+      },
       "url": "https://packages.unity.com"
     },
     "com.unity.render-pipelines.core": {
@@ -115,6 +206,17 @@
       "depth": 2,
       "source": "registry",
       "dependencies": {},
+      "url": "https://packages.unity.com"
+    },
+    "com.unity.services.core": {
+      "version": "1.18.0",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {
+        "com.unity.modules.androidjni": "1.0.0",
+        "com.unity.nuget.newtonsoft-json": "3.2.2",
+        "com.unity.modules.unitywebrequest": "1.0.0"
+      },
       "url": "https://packages.unity.com"
     },
     "com.unity.shadergraph": {
