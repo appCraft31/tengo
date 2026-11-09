@@ -22,6 +22,7 @@ namespace TenGo.Rendering
         public VectorIconName Name => _name;
         public Color Color { get => _color; set { _color = value; Apply(); } }
         public float SizePt { get => _sizePt; set { _sizePt = value; Apply(); } }
+        public int SortingOrder { get => _order; set { _order = value; Apply(); } }
 
         public static VectorIcon Create(Transform parent, VectorIconName name, Vector2 pos, float sizePt, Color color, int sortingOrder)
         {
