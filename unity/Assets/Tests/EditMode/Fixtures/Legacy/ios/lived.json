@@ -1,0 +1,73 @@
+{
+ "AdMob.interstitialLastShownAt": {
+  "t": "date",
+  "v": 815137457.215448
+ },
+ "AdMob.interstitialsSinceNoAdsOffer": {
+  "t": "int",
+  "v": 0
+ },
+ "AdMob.interstitialsTodayCount": {
+  "t": "int",
+  "v": 2
+ },
+ "AdMob.interstitialsTodayDay": {
+  "t": "string",
+  "v": "20261031"
+ },
+ "IABTCF_CmpSdkID": {
+  "t": "int",
+  "v": 300
+ },
+ "IABTCF_gdprApplies": {
+  "t": "int",
+  "v": 1
+ },
+ "tenGO_coins": {
+  "t": "int",
+  "v": 10
+ },
+ "tenGO_firstRunState": {
+  "t": "string",
+  "v": "done"
+ },
+ "tenGO_missionsDayKey": {
+  "t": "int",
+  "v": 20261031
+ },
+ "tenGO_missionsProgress": {
+  "t": "data",
+  "v": "[{\"claimed\":false,\"id\":\"moves35\",\"value\":0},{\"id\":\"games2\",\"claimed\":false,\"value\":2},{\"value\":0,\"claimed\":false,\"id\":\"chain7x1\"},{\"value\":0,\"id\":\"score15000\",\"claimed\":false}]"
+ },
+ "tenGO_notifGamesPlayed": {
+  "t": "int",
+  "v": 1
+ },
+ "tenGO_seedGarden": {
+  "t": "data",
+  "v": "{\"plantedAt\":815834274.994859,\"bloomAt\":815848673.994859,\"chain\":6}"
+ },
+ "tenGO_streakBest": {
+  "t": "int",
+  "v": 1
+ },
+ "tenGO_streakCurrent": {
+  "t": "int",
+  "v": 1
+ },
+ "tenGO_streakLastPlayed": {
+  "t": "double",
+  "v": 815094000.0
+ },
+ "tenGO_totalXP": {
+  "t": "int",
+  "v": 20
+ },
+ "tengo_high_scores": {
+  "t": "array",
+  "v": [
+   0,
+   0
+  ]
+ }
+}

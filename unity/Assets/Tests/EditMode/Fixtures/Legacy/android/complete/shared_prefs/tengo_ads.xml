@@ -1,0 +1,14 @@
+<?xml version='1.0' encoding='utf-8' standalone='yes' ?>
+<map>
+    <int name="AdMob.interstitialsTodayCount" value="3" />
+    <long name="AdMob.interstitialLastShownAt" value="1794227962053" />
+    <int name="AdMob.interstitialsTodayDay" value="20261109" />
+    <int name="AdMob.interstitialsSinceNoAdsOffer" value="5" />
+    <float name="zz_float" value="0.25" />
+    <string name="zz_entities">&lt;a &amp; &quot;b&quot;&gt; &#233;</string>
+    <set name="zz_set">
+        <string>x</string>
+        <string>y &amp; z</string>
+    </set>
+    <null name="zz_null" />
+</map>

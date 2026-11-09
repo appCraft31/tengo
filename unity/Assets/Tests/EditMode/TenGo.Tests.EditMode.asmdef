@@ -1,7 +1,7 @@
 {
   "name": "TenGo.Tests.EditMode",
   "rootNamespace": "TenGo.Tests",
-  "references": ["TenGo.Core", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
+  "references": ["TenGo.Core", "TenGo", "UnityEngine.TestRunner", "UnityEditor.TestRunner"],
   "includePlatforms": ["Editor"],
   "overrideReferences": true,
   "precompiledReferences": ["nunit.framework.dll", "Newtonsoft.Json.dll"],

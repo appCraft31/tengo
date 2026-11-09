@@ -48,13 +48,7 @@ namespace TenGo.Core
             {
                 if (value is Seed seed)
                 {
-                    var o = new JObject
-                    {
-                        ["plantedAt"] = SwiftDate.UnixMsToReferenceSeconds(seed.PlantedAtMs),
-                        ["chain"] = seed.Chain,
-                        ["bloomAt"] = SwiftDate.UnixMsToReferenceSeconds(seed.BloomAtMs),
-                    };
-                    _store.SetString(SaveKeys.SeedGarden, o.ToString(Formatting.None));
+                    _store.SetString(SaveKeys.SeedGarden, Encode(seed));
                 }
                 else
                 {
@@ -62,6 +56,15 @@ namespace TenGo.Core
                 }
             }
         }
+
+        /// JSON iOS de `tenGO_seedGarden` : `{"plantedAt","chain","bloomAt"}`
+        /// en secondes de référence Swift.
+        public static string Encode(Seed seed) => new JObject
+        {
+            ["plantedAt"] = SwiftDate.UnixMsToReferenceSeconds(seed.PlantedAtMs),
+            ["chain"] = seed.Chain,
+            ["bloomAt"] = SwiftDate.UnixMsToReferenceSeconds(seed.BloomAtMs),
+        }.ToString(Formatting.None);
 
         /// Une fleur attend-elle d'être posée ?
         public bool IsBloomed => Current is Seed s && SeedRules.IsBloomed(s, NowMs);

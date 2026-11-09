@@ -1,0 +1,120 @@
+{
+ "hasSeenShopPurchaseGuide": {
+  "t": "bool",
+  "v": true
+ },
+ "hasSeenTutorial": {
+  "t": "bool",
+  "v": true
+ },
+ "tenGO_boosterCoachSeen_hammer": {
+  "t": "bool",
+  "v": true
+ },
+ "tenGO_boosterCoachSeen_hint": {
+  "t": "bool",
+  "v": true
+ },
+ "tenGO_boosterCoachSeen_shuffle": {
+  "t": "bool",
+  "v": true
+ },
+ "tenGO_booster_hammer": {
+  "t": "int",
+  "v": 2
+ },
+ "tenGO_booster_hint": {
+  "t": "int",
+  "v": 2
+ },
+ "tenGO_booster_shuffle": {
+  "t": "int",
+  "v": 2
+ },
+ "tenGO_coins": {
+  "t": "int",
+  "v": 340
+ },
+ "tenGO_firstOpenAt": {
+  "t": "date",
+  "v": 815920828.015542
+ },
+ "tenGO_firstRunState": {
+  "t": "string",
+  "v": "pending"
+ },
+ "tenGO_mirrorPartitions": {
+  "t": "data",
+  "v": "{\"2+8\":814279228.061609,\"5+5\":814538428.061609,\"1+4+5\":814884028.061609,\"3+3+4\":815229628.061609,\"2+3+5\":815056828.061609,\"1+9\":814192828.061609,\"1+1+8\":814624828.061609,\"1+2+7\":814711228.061609,\"4+6\":814452028.061609,\"1+3+6\":814797628.061609,\"2+4+4\":815143228.061609,\"1+1+2+6\":815402428.061609,\"1+1+3+5\":815488828.061609,\"2+2+6\":814970428.061609,\"1+1+4+4\":815575228.061609,\"3+7\":814365628.061609,\"1+1+1+7\":815316028.061609}"
+ },
+ "tenGO_mirrorRecords": {
+  "t": "data",
+  "v": "[{\"moves\":18,\"fallChains\":4,\"lookCount\":18,\"lookSum\":57.6,\"lengthSum\":46,\"fallEligible\":17,\"date\":814711228.061609},{\"moves\":18,\"fallChains\":4,\"lookCount\":18,\"lookSum\":55.44,\"lengthSum\":47,\"fallEligible\":17,\"date\":814797628.061609},{\"moves\":18,\"fallChains\":5,\"lookCount\":18,\"lookSum\":53.28,\"lengthSum\":48,\"fallEligible\":17,\"date\":814884028.061609},{\"moves\":18,\"fallChains\":5,\"lookCount\":18,\"lookSum\":51.120000000000005,\"lengthSum\":50,\"fallEligible\":17,\"date\":814970428.061609},{\"moves\":18,\"fallChains\":6,\"lookCount\":18,\"lookSum\":48.96,\"lengthSum\":51,\"fallEligible\":17,\"date\":815056828.061609},{\"moves\":18,\"fallChains\":6,\"lookCount\":18,\"lookSum\":46.800000000000004,\"lengthSum\":52,\"fallEligible\":17,\"date\":815143228.061609},{\"moves\":18,\"fallChains\":7,\"lookCount\":18,\"lookSum\":44.64000000000001,\"lengthSum\":53,\"fallEligible\":17,\"date\":815229628.061609},{\"moves\":18,\"fallChains\":7,\"lookCount\":18,\"lookSum\":42.480000000000004,\"lengthSum\":54,\"fallEligible\":17,\"date\":815316028.061609},{\"moves\":18,\"fallChains\":8,\"lookCount\":18,\"lookSum\":40.32000000000001,\"lengthSum\":55,\"fallEligible\":17,\"date\":815402428.061609},{\"moves\":18,\"fallChains\":8,\"lookCount\":18,\"lookSum\":38.160000000000004,\"lengthSum\":56,\"fallEligible\":17,\"date\":815488828.061609},{\"lengthSum\":57,\"moves\":18,\"fallChains\":9,\"fallEligible\":17,\"lookSum\":36,\"date\":815575228.061609,\"lookCount\":18},{\"lookCount\":18,\"fallEligible\":17,\"moves\":18,\"fallChains\":9,\"lookSum\":33.84,\"lengthSum\":58,\"date\":815661628.061609}]"
+ },
+ "tenGO_noAdsPurchased": {
+  "t": "bool",
+  "v": true
+ },
+ "tenGO_notifRequested": {
+  "t": "bool",
+  "v": true
+ },
+ "tenGO_seedGarden": {
+  "t": "data",
+  "v": "{\"bloomAt\":815935228.04363,\"chain\":7,\"plantedAt\":815920828.04363}"
+ },
+ "tenGO_statsBestChain": {
+  "t": "int",
+  "v": 9
+ },
+ "tenGO_statsPerfectTotal": {
+  "t": "int",
+  "v": 7
+ },
+ "tenGO_statsTotalChains": {
+  "t": "int",
+  "v": 1463
+ },
+ "tenGO_statsTotalDaily": {
+  "t": "int",
+  "v": 31
+ },
+ "tenGO_statsTotalRushGames": {
+  "t": "int",
+  "v": 24
+ },
+ "tenGO_streakBest": {
+  "t": "int",
+  "v": 18
+ },
+ "tenGO_streakCurrent": {
+  "t": "int",
+  "v": 12
+ },
+ "tenGO_streakShieldCount": {
+  "t": "int",
+  "v": 1
+ },
+ "tenGO_totalXP": {
+  "t": "int",
+  "v": 4820
+ },
+ "tengo_high_scores": {
+  "t": "array",
+  "v": [
+   4820,
+   4310,
+   3980,
+   3720,
+   3450
+  ]
+ },
+ "tengo_rush_high_scores": {
+  "t": "array",
+  "v": [
+   2140,
+   1980,
+   1760
+  ]
+ }
+}

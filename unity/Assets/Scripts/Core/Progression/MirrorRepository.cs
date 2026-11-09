@@ -44,7 +44,13 @@ namespace TenGo.Core
 
         public void Save(MirrorData data)
         {
-            var records = new JArray(data.Records.Select(r => new JObject
+            _store.SetString(SaveKeys.MirrorRecords, EncodeRecords(data.Records));
+            _store.SetString(SaveKeys.MirrorPartitions, EncodePartitions(data.Discovered));
+        }
+
+        /// JSON iOS de `tenGO_mirrorRecords` (dates en secondes de référence Swift).
+        public static string EncodeRecords(IEnumerable<MirrorRecord> records) =>
+            new JArray(records.Select(r => new JObject
             {
                 ["date"] = SwiftDate.UnixMsToReferenceSeconds(r.DateMs),
                 ["moves"] = r.Moves,
@@ -53,11 +59,14 @@ namespace TenGo.Core
                 ["lookCount"] = r.LookCount,
                 ["fallChains"] = r.FallChains,
                 ["fallEligible"] = r.FallEligible,
-            }));
-            var discovered = new JObject();
-            foreach (var pair in data.Discovered) discovered[pair.Key] = SwiftDate.UnixMsToReferenceSeconds(pair.Value);
-            _store.SetString(SaveKeys.MirrorRecords, records.ToString(Formatting.None));
-            _store.SetString(SaveKeys.MirrorPartitions, discovered.ToString(Formatting.None));
+            })).ToString(Formatting.None);
+
+        /// JSON iOS de `tenGO_mirrorPartitions` (décomposition → secondes de référence Swift).
+        public static string EncodePartitions(IEnumerable<KeyValuePair<string, long>> discovered)
+        {
+            var o = new JObject();
+            foreach (var pair in discovered) o[pair.Key] = SwiftDate.UnixMsToReferenceSeconds(pair.Value);
+            return o.ToString(Formatting.None);
         }
 
         /// QA : historique crédible pour l'écran « Ton cerveau » (seedForQA iOS).

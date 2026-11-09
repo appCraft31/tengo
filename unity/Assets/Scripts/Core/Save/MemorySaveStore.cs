@@ -102,13 +102,23 @@ namespace TenGo.Core
 
         public void SetString(string key, string value) => _values[key] = value;
 
-        public IReadOnlyList<string>? GetStringList(string key) =>
-            _values.TryGetValue(key, out object? v) && v is List<string> list ? list.ToList() : null;
+        /// Une liste vide relue d'un fichier JSON n'a plus de type : elle vaut
+        /// pour les deux sortes de listes.
+        public IReadOnlyList<string>? GetStringList(string key)
+        {
+            if (!_values.TryGetValue(key, out object? v)) return null;
+            if (v is List<string> list) return list.ToList();
+            return v is List<int> ints && ints.Count == 0 ? new List<string>() : null;
+        }
 
         public void SetStringList(string key, IEnumerable<string> values) => _values[key] = values.ToList();
 
-        public IReadOnlyList<int>? GetIntList(string key) =>
-            _values.TryGetValue(key, out object? v) && v is List<int> list ? list.ToList() : null;
+        public IReadOnlyList<int>? GetIntList(string key)
+        {
+            if (!_values.TryGetValue(key, out object? v)) return null;
+            if (v is List<int> list) return list.ToList();
+            return v is List<string> strings && strings.Count == 0 ? new List<int>() : null;
+        }
 
         public void SetIntList(string key, IEnumerable<int> values) => _values[key] = values.ToList();
     }
