@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Refonte — Tutoriel jouable</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="systeme.css">
+<style>
+  .top2 { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
+  .steps { display: flex; gap: 6px; }
+  .steps i { width: 8px; height: 8px; border-radius: 4px; background: var(--line); }
+  .steps i.on { width: 22px; background: var(--ink); }
+  .steps i.ok { background: var(--accent); }
+  .skip { font-size: 14px; font-weight: 800; color: var(--ink-2); }
+  .coach { margin-top: 26px; text-align: center; }
+  .coach b { display: block; font-size: 24px; font-weight: 900; }
+  .coach span { display: block; margin-top: 6px; font-size: 15px; font-weight: 700; color: var(--ink-2); line-height: 1.4; }
+  .sum { margin: 22px auto 0; height: 44px; padding: 0 18px; border-radius: 22px; background: var(--card); box-shadow: var(--hair); display: inline-flex; align-items: center; gap: 8px; font-weight: 900; font-size: 18px; }
+  .sum.ok { background: #E3F2EA; color: #2F7A52; box-shadow: none; }
+  .sum i { width: 30px; height: 30px; border-radius: 15px; display: grid; place-items: center; font-style: normal; font-size: 14px; color: var(--ink); }
+  .center { text-align: center; }
+  .grid { position: relative; display: grid; gap: 8px; margin: 26px auto 0; }
+  .b { aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: 28px; font-weight: 700; position: relative; z-index: 1; transition: none; }
+  .b.sel { transform: scale(1.08); box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--ink); }
+  .b.dim { opacity: .28; }
+  .b.goal { box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px rgba(52,49,44,.25); }
+  .b.gone { background: transparent !important; box-shadow: inset 0 0 0 2px var(--line); color: transparent; }
+  .b.new::before { content: ""; position: absolute; left: 50%; top: -22px; width: 2px; height: 16px; background: var(--ink-3); border-radius: 1px; }
+  .grid svg.path { position: absolute; inset: 0; z-index: 2; pointer-events: none; overflow: visible; }
+  .hand { position: absolute; z-index: 3; width: 38px; height: 38px; border-radius: 19px; background: rgba(52,49,44,.16); box-shadow: 0 0 0 7px rgba(52,49,44,.07); }
+  .pop { position: absolute; z-index: 3; font-weight: 900; font-size: 20px; background: var(--card); box-shadow: var(--hair); border-radius: 12px; padding: 2px 10px; }
+  .reward { display: flex; gap: 10px; justify-content: center; margin-top: 18px; }
+  .reward .card { padding: 10px 14px; display: flex; align-items: center; gap: 8px; font-weight: 900; }
+</style>
+</head>
+<body>
+<div id="board">
+  <div class="col"><div class="label">1 · Relie 10<small>Mini grille 3 × 3. Seules les deux bulles utiles sont vives, une main fantôme montre le geste en boucle. Rien d'autre à lire.</small></div><div class="phone A" id="p1"></div></div>
+  <div class="col"><div class="label">2 · Plus long, en diagonale<small>Grille 4 × 4 entière. Le joueur trace seul 4 + 2 + 1 + 3 ; la pastille de somme se remplit en direct et passe au vert à 10.</small></div><div class="phone A" id="p2"></div></div>
+  <div class="col"><div class="label">3 · Ça tombe, ça s'enchaîne<small>Après validation, les bulles tombent et de nouvelles arrivent : on montre la gravité, puis le joueur trouve un 10 sans aide.</small></div><div class="phone A" id="p3"></div></div>
+  <div class="col"><div class="label">Fin du tutoriel<small>Récompense de bienvenue, puis la vraie première partie démarre directement (pas de retour à l'accueil).</small></div><div class="phone A" id="p4"></div></div>
+</div>
+<script src="systeme.js"></script>
+<script>
+const STEPS = (n) => `<div class="steps">${[0,1,2].map(i => `<i class="${i < n ? 'ok' : i === n ? 'on' : ''}"></i>`).join('')}</div>`;
+const header = (n) => `<div class="top2">${STEPS(n)}<div class="skip">Passer</div></div>`;
+const chip = (vals, total, ok) => `<div class="center"><div class="sum${ok ? ' ok' : ''}">${vals.map((v,i) => `${i ? '+' : ''}<i style="background:${PAL[v-1]}">${v}</i>`).join('')}<span>= ${total}${ok ? ' ✓' : ''}</span></div></div>`;
+function grid(id, cols, cells, width, path, extra) {
+  return { html: `<div class="grid" id="${id}" style="grid-template-columns:repeat(${cols},1fr);width:${width}px">${cells.map(c => `<div class="b ${c.cls || ''}" style="background:${PAL[c.v-1]}">${c.v}</div>`).join('')}<svg class="path"></svg></div>`, id, cols, path, extra };
+}
+function draw(g) {
+  const el = document.getElementById(g.id), s = el.querySelector('svg.path');
+  const W = el.clientWidth, H = el.clientHeight, rows = Math.round((el.children.length - 1) / g.cols);
+  const cw = (W + 8) / g.cols, ch = (H + 8) / rows;
+  const xy = ([r, c]) => [c * cw + (cw - 8) / 2, r * ch + (ch - 8) / 2];
+  s.setAttribute('viewBox', `0 0 ${W} ${H}`); s.setAttribute('width', W); s.setAttribute('height', H);
+  if (g.path && g.path.length) s.innerHTML = `<polyline points="${g.path.map(p => xy(p).join(',')).join(' ')}" fill="none" stroke="#34312C" stroke-opacity="${g.ghost ? .22 : .55}" stroke-width="7" stroke-linecap="round" stroke-linejoin="round" ${g.ghost ? 'stroke-dasharray="2 12"' : ''}/>`;
+  if (g.extra) g.extra(el, xy);
+}
+// Étape 1
+const g1 = grid('g1', 3, [{v:2,cls:'dim'},{v:5,cls:'dim'},{v:8,cls:'dim'},{v:4,cls:'goal'},{v:6,cls:'goal'},{v:1,cls:'dim'},{v:7,cls:'dim'},{v:9,cls:'dim'},{v:3,cls:'dim'}], 260, [[1,0],[1,1]],
+  (el, xy) => { const [x, y] = xy([1,0]); el.insertAdjacentHTML('beforeend', `<div class="hand" style="left:${x + 30}px;top:${y + 6}px"></div>`); });
+g1.ghost = true;
+document.getElementById('p1').innerHTML = `<div class="scr">${header(0)}<div class="coach"><b>Fais 10</b><span>Glisse du 4 au 6.</span></div>${g1.html}${chip([4], 4, false)}<div class="spacer"></div></div>`;
+// Étape 2
+const v2 = [[3,0],[7,0],[2,0],[6,0],[4,1],[2,1],[6,0],[8,0],[1,1],[3,1],[5,0],[7,0],[8,0],[4,0],[5,0],[9,0]];
+const g2 = grid('g2', 4, v2.map(([v,s]) => ({v, cls: s ? 'sel' : ''})), 320, [[1,0],[1,1],[2,0],[2,1]],
+  (el, xy) => { const [x, y] = xy([2,1]); el.insertAdjacentHTML('beforeend', `<div class="hand" style="left:${x + 10}px;top:${y + 12}px"></div>`); });
+document.getElementById('p2').innerHTML = `<div class="scr">${header(1)}<div class="coach"><b>Va plus loin</b><span>Autant de bulles que tu veux,<br>même en diagonale.</span></div>${g2.html}${chip([4,2,1,3], 10, true)}<div class="spacer"></div></div>`;
+// Étape 3
+const v3 = [[3,'new'],[7,'new'],[2,'new'],[6,''],[3,''],[7,''],[8,''],[8,''],[6,''],[2,''],[5,''],[7,''],[8,''],[4,''],[5,''],[9,'']];
+const g3 = grid('g3', 4, v3.map(([v,c]) => ({v, cls: c})), 320, [],
+  (el, xy) => { const [x, y] = xy([0,1]); el.insertAdjacentHTML('beforeend', `<div class="pop" style="left:${x - 20}px;top:${y - 62}px">+40</div>`); });
+document.getElementById('p3').innerHTML = `<div class="scr">${header(2)}<div class="coach"><b>Ça tombe !</b><span>Les bulles descendent, de nouvelles arrivent.<br>Trouve un 10 tout seul.</span></div>${g3.html}${chip([], 0, false).replace('<span>= 0</span>', '<span style="color:var(--ink-3)">À toi</span>')}<div class="spacer"></div></div>`;
+// Fin
+document.getElementById('p4').innerHTML = `<div class="scr">${header(3)}<div class="spacer"></div>
+  <div class="center" style="font-size:64px;font-weight:900;line-height:1">10</div>
+  <div class="coach" style="margin-top:12px"><b>Tu as compris !</b><span>Une grille entière t'attend.<br>Plus tes chaînes sont longues, plus tu marques.</span></div>
+  <div class="reward"><div class="card">${coin(22)}+50</div><div class="card">${icon('bulb').replace('<svg','<svg width="22" height="22"')}Indice ×2</div></div>
+  <div class="spacer"></div><div class="btn-primary">${icon('play','#1F3D2E',true).replace('<svg','<svg width="22" height="22"')}Première partie</div></div>`;
+requestAnimationFrame(() => [g1, g2, g3].forEach(draw));
+</script>
+</body>
+</html>
