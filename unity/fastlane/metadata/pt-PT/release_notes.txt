@@ -1,0 +1,4 @@
+• Novo visual: mais claro e legível, com cores de bolhas pensadas também para quem é daltónico.
+• Um tutorial jogável para começar bem, com uma prenda de boas-vindas no fim.
+• Sons novos: kalimba e um ambiente que muda a cada jogo.
+• Loja, perfil e ecrã de fim de jogo totalmente redesenhados.
