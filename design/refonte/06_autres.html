@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Refonte — Duel, Puzzles, Classement, Réglages, Tutoriel</title>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="systeme.css">
+<style>
+  .nav { display: flex; align-items: center; gap: 12px; min-height: 52px; }
+  .nav .t-title { flex: 1; }
+  .nav .meta { font-size: 13px; font-weight: 800; color: var(--ink-3); display: flex; align-items: center; gap: 4px; }
+  .nav .meta svg { width: 16px; height: 16px; }
+  .body { flex: 1; overflow: hidden; padding-top: 10px; display: flex; flex-direction: column; gap: 12px; }
+  h3 { font-size: 17px; font-weight: 900; margin-top: 4px; display: flex; justify-content: space-between; }
+  h3 span { font-size: 13px; color: var(--ink-3); font-weight: 800; }
+  .ic { width: 40px; height: 40px; border-radius: 13px; display: grid; place-items: center; flex: none; }
+  .ic svg { width: 21px; height: 21px; }
+  /* Duel */
+  .hero { padding: 18px 16px 16px; text-align: center; }
+  .vs { display: flex; justify-content: center; align-items: center; gap: 14px; margin-bottom: 12px; }
+  .av { width: 56px; height: 56px; border-radius: 28px; display: grid; place-items: center; font-weight: 900; font-size: 22px; }
+  .av svg { width: 26px; height: 26px; }
+  .vs b { font-size: 13px; font-weight: 900; color: var(--ink-3); }
+  .hero p { font-size: 14px; font-weight: 700; color: var(--ink-2); margin-bottom: 14px; }
+  .code { display: flex; gap: 8px; padding: 10px; }
+  .field { flex: 1; height: 48px; border-radius: 14px; background: var(--sunk); display: flex; align-items: center; padding: 0 14px; font-weight: 900; font-size: 18px; letter-spacing: 4px; color: var(--ink-3); }
+  .btn-sm { height: 48px; padding: 0 18px; border-radius: 14px; background: var(--ink); color: #fff; font-weight: 900; display: grid; place-items: center; }
+  .duel { display: flex; align-items: center; gap: 12px; padding: 12px 14px; }
+  .duel + .duel { border-top: 1px solid var(--line); }
+  .duel .tx { flex: 1; font-size: 15px; font-weight: 900; letter-spacing: 1px; }
+  .duel .tx span { display: block; font-size: 12px; font-weight: 700; color: var(--ink-2); letter-spacing: 0; }
+  .pill { height: 28px; padding: 0 10px; border-radius: 14px; font-size: 12px; font-weight: 900; display: grid; place-items: center; }
+  .duel > svg { width: 20px; height: 20px; }
+  /* Puzzles */
+  .world { padding: 14px; }
+  .world .row { display: flex; justify-content: space-between; font-weight: 900; font-size: 15px; }
+  .world .row span { color: var(--ink-3); font-size: 13px; }
+  .bar { height: 8px; border-radius: 4px; background: var(--line); overflow: hidden; margin-top: 8px; }
+  .bar i { display: block; height: 100%; border-radius: 4px; }
+  .levels { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
+  .lv { aspect-ratio: 1; border-radius: 20px; background: var(--card); box-shadow: var(--hair); display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+  .lv b { font-size: 22px; font-weight: 900; }
+  .lv .st { display: flex; gap: 1px; }
+  .lv .st svg { width: 13px; height: 13px; }
+  .lv.cur { box-shadow: 0 0 0 2.5px var(--ink); }
+  .lv.lock { background: var(--sunk); box-shadow: none; }
+  .lv.lock svg { width: 20px; height: 20px; }
+  /* Classement */
+  .seg { display: flex; background: var(--sunk); border-radius: 14px; padding: 3px; }
+  .seg div { flex: 1; height: 34px; border-radius: 11px; display: grid; place-items: center; font-size: 13px; font-weight: 800; color: var(--ink-2); }
+  .seg .on { background: var(--card); color: var(--ink); box-shadow: var(--hair); }
+  .me { padding: 16px; display: flex; align-items: center; gap: 14px; }
+  .me .rk { font-size: 34px; font-weight: 900; letter-spacing: -.5px; }
+  .me .tx { flex: 1; font-size: 13px; font-weight: 700; color: var(--ink-2); }
+  .me .tx b { display: block; color: var(--ink); font-size: 16px; font-weight: 900; }
+  .rank { display: flex; align-items: center; gap: 12px; padding: 11px 14px; font-weight: 800; font-size: 15px; }
+  .rank + .rank { border-top: 1px solid var(--line); }
+  .rank .n { width: 26px; color: var(--ink-3); font-weight: 900; }
+  .rank .who { flex: 1; }
+  .rank .s { font-weight: 900; }
+  .rank.you { background: #EEF6F1; }
+  .gc { display: flex; align-items: center; justify-content: center; gap: 8px; }
+  /* Réglages */
+  .set { display: flex; align-items: center; gap: 12px; padding: 12px 14px; font-size: 15px; font-weight: 800; }
+  .set + .set { border-top: 1px solid var(--line); }
+  .set .tx { flex: 1; }
+  .set > svg { width: 18px; height: 18px; }
+  .sw { width: 50px; height: 30px; border-radius: 15px; background: var(--sunk); position: relative; flex: none; }
+  .sw::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 12px; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.15); }
+  .sw.on { background: var(--accent); }
+  .sw.on::after { left: 23px; }
+  .ver { text-align: center; font-size: 12px; font-weight: 700; color: var(--ink-3); }
+  .grp { font-size: 12px; font-weight: 900; letter-spacing: .6px; color: var(--ink-3); margin: 2px 0 -4px 4px; }
+  /* Tutoriel */
+  .steps { display: flex; justify-content: center; gap: 6px; }
+  .steps i { width: 8px; height: 8px; border-radius: 4px; background: var(--line); }
+  .steps i.on { width: 22px; background: var(--ink); }
+  .demo { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; width: 250px; margin: 0 auto; }
+  .demo .b { aspect-ratio: 1; border-radius: 50%; display: grid; place-items: center; font-size: 26px; font-weight: 700; position: relative; z-index: 1; }
+  .demo .b.sel { transform: scale(1.08); box-shadow: 0 0 0 3px var(--bg), 0 0 0 6px var(--ink); }
+  .demo svg.path { position: absolute; inset: 0; z-index: 2; pointer-events: none; }
+  .eq { display: flex; justify-content: center; align-items: center; gap: 6px; font-weight: 900; font-size: 20px; }
+  .eq i { width: 34px; height: 34px; border-radius: 17px; display: grid; place-items: center; font-style: normal; font-size: 16px; }
+  .tt { text-align: center; font-size: 24px; font-weight: 900; }
+  .tp { text-align: center; font-size: 15px; font-weight: 700; color: var(--ink-2); line-height: 1.4; }
+  .hand { position: absolute; z-index: 3; width: 34px; height: 34px; border-radius: 17px; background: rgba(52,49,44,.18); box-shadow: 0 0 0 6px rgba(52,49,44,.08); }
+</style>
+</head>
+<body>
+<div id="board">
+  <div class="col"><div class="label">Duel<small>Bloc « défier » en carte blanche (fini le rouge). Saisie du code + « Jouer » sur une ligne. Duels en liste avec un état lisible et le partage.</small></div><div class="phone A" id="p1"></div></div>
+  <div class="col"><div class="label">Puzzles<small>Niveaux en tuiles carrées blanches, étoiles d'or, niveau courant cerclé d'encre, verrouillés en creux. Progression du monde en carte.</small></div><div class="phone A" id="p2"></div></div>
+  <div class="col"><div class="label">Classement<small>Contrôle segmenté (Mondial, Jour, Rush). Ta place en tête, liste lisible où ta ligne est surlignée ; Game Center/Play Games en bouton secondaire.</small></div><div class="phone A" id="p3"></div></div>
+  <div class="col"><div class="label">Réglages<small>Plein écran au lieu d'une modale sur l'accueil. Groupes « Jeu », « Compte », « Aide », interrupteurs aux couleurs du système.</small></div><div class="phone A" id="p4"></div></div>
+  <div class="col"><div class="label">Tutoriel<small>Une idée par page, démonstration avec le vrai rendu des bulles, l'équation 4 + 2 + 1 + 3 = 10 lisible ; pagination en pilule, un seul bouton.</small></div><div class="phone A" id="p5"></div></div>
+</div>
+<script src="systeme.js"></script>
+<script>
+const tint = (hex, a) => hex + Math.round(a * 255).toString(16).padStart(2, '0');
+const tabbar = (on) => `<div class="tabbar">${[['play','Jouer'],['profile','Profil'],['duel','Duel'],['shop','Boutique']].map(([k,t]) => `<div class="tab${t===on?' on':''}"><div class="pill" style="height:30px;padding:0;border-radius:15px;width:56px;display:grid;place-items:center;${t===on?'background:var(--sunk)':''}">${icon(k, t===on?'#34312C':'#8C8376')}</div>${t}</div>`).join('')}</div>`;
+const nav = (title, meta = '', back = true) => `<div class="nav">${back ? `<div class="iconbtn">${icon('back')}</div>` : ''}<div class="t-title">${title}</div>${meta ? `<div class="meta">${meta}</div>` : ''}</div>`;
+
+const duel = (code, sub, st, col, k) => `<div class="duel"><div class="ic" style="background:${tint(col,.45)}">${icon(k)}</div><div class="tx">${code}<span>${sub}</span></div><div class="pill" style="background:${st[1]};color:${st[2]}">${st[0]}</div>${icon('share','#6F675B')}</div>`;
+document.getElementById('p1').innerHTML = `<div class="scr">${nav('Duel', '', false)}
+<div class="body">
+  <div class="card hero">
+    <div class="vs"><div class="av" style="background:${tint(PAL[6],.5)}">${icon('profile')}</div><b>VS</b><div class="av" style="background:var(--sunk);color:var(--ink-3)">?</div></div>
+    <p>Défie un ami sur la même grille.<br>Chacun joue quand il veut.</p>
+    <div class="btn-primary">${icon('duel','#1F3D2E')}Lancer un défi</div>
+  </div>
+  <h3>Répondre à un défi</h3>
+  <div class="card code"><div class="field">ABC123</div><div class="btn-sm">Jouer</div></div>
+  <h3>Tes duels <span>3</span></h3>
+  <div class="card">
+    ${duel('K7MQ2P', 'Ton score : 1 240 · expire dans 2 j', ['En attente', 'var(--sunk)', '#6F675B'], PAL[6], 'duel')}
+    ${duel('B4XN9T', 'Gagné 1 860 à 1 420', ['Gagné', '#E3F2EA', '#2F7A52'], PAL[4], 'trophy')}
+    ${duel('R2WH6C', 'Perdu 980 à 1 310', ['Perdu', '#F6E3E1', '#9A3B35'], PAL[0], 'duel')}
+  </div>
+</div>${tabbar('Duel')}</div>`;
+
+const star = (on) => icon('star', on ? '#C9962A' : '#CFC6B8', on);
+const lv = (n, s, cls = '') => cls === 'lock' ? `<div class="lv lock">${icon('lock','#8C8376')}</div>` : `<div class="lv ${cls}"><b>${n}</b><div class="st">${[0,1,2].map(i => star(i < s)).join('')}</div></div>`;
+document.getElementById('p2').innerHTML = `<div class="scr">${nav('Puzzles', `${icon('star','#C9962A',true)}17 / 60`)}
+<div class="body">
+  <div class="card world"><div class="row">Monde 1 · Apprentissage<span>7 / 20</span></div><div class="bar"><i style="width:35%;background:var(--ink)"></i></div></div>
+  <div class="levels">${[3,3,2,3,1,2,3].map((s,i)=>lv(i+1,s)).join('')}${lv(8,0,'cur')}${Array.from({length:12},()=>lv(0,0,'lock')).join('')}</div>
+  <div class="spacer"></div>
+  <div class="btn-primary">${icon('play','#1F3D2E',true)}Niveau 8</div>
+</div></div>`;
+
+const rank = (n, who, s, you) => `<div class="rank${you?' you':''}"><div class="n">${n}</div><div class="who">${who}</div><div class="s">${s}</div></div>`;
+document.getElementById('p3').innerHTML = `<div class="scr">${nav('Classement')}
+<div class="body">
+  <div class="seg"><div class="on">Mondial</div><div>Défi du jour</div><div>Rush</div></div>
+  <div class="card me"><div class="ic" style="background:${tint(PAL[2],.5)};width:52px;height:52px;border-radius:17px">${icon('trophy')}</div><div class="tx"><b>4 820</b>Ton meilleur · cette semaine</div><div class="rk">1 284ᵉ</div></div>
+  <h3>Tes meilleures parties</h3>
+  <div class="card">
+    ${rank(1, 'Aujourd\'hui', '4 820', true)}
+    ${rank(2, 'Hier', '4 310')}
+    ${rank(3, '3 nov.', '3 980')}
+    ${rank(4, '1 nov.', '3 720')}
+    ${rank(5, '28 oct.', '3 450')}
+  </div>
+  <div class="spacer"></div>
+  <div class="btn-secondary">${icon('trophy')}Voir dans Game Center</div>
+</div></div>`;
+
+const set = (k, col, t, right) => `<div class="set"><div class="ic" style="background:${tint(col,.45)};width:34px;height:34px;border-radius:11px">${icon(k)}</div><div class="tx">${t}</div>${right}</div>`;
+const sw = on => `<div class="sw${on?' on':''}"></div>`;
+const chev = icon('chevron','#8C8376');
+document.getElementById('p4').innerHTML = `<div class="scr">${nav('Réglages')}
+<div class="body">
+  <div class="grp">JEU</div>
+  <div class="card">
+    ${set('bolt', PAL[2], 'Son', sw(true))}
+    ${set('star', PAL[8], 'Vibrations', sw(true))}
+    ${set('seed', PAL[3], 'Animations réduites', sw(false))}
+    ${set('calendar', PAL[7], 'Notifications', chev)}
+  </div>
+  <div class="grp">COMPTE</div>
+  <div class="card">
+    ${set('shop', PAL[4], 'Restaurer les achats', chev)}
+    ${set('lock', PAL[6], 'Confidentialité', chev)}
+  </div>
+  <div class="grp">AIDE</div>
+  <div class="card">
+    ${set('play', PAL[1], 'Revoir le tutoriel', chev)}
+    ${set('star', PAL[2], 'Noter l\'application', chev)}
+    ${set('share', PAL[5], 'Partager tenGO', chev)}
+    ${set('video', PAL[0], 'Contacter le support', chev)}
+  </div>
+  <div class="ver">Version 4.0.0</div>
+</div></div>`;
+
+document.getElementById('p5').innerHTML = `<div class="scr">
+  <div class="nav"><div class="steps" style="flex:1;justify-content:flex-start"><i></i><i class="on"></i><i></i><i></i></div><div class="t-small" style="font-weight:800">Passer</div></div>
+  <div class="spacer"></div>
+  <div class="tt">Relie jusqu'à 10</div>
+  <div class="tp" style="margin-top:8px">Glisse le doigt de bulle en bulle,<br>même en diagonale.</div>
+  <div style="height:30px"></div>
+  <div class="demo" id="demo">${[[3,0],[7,0],[2,0],[4,1],[2,1],[6,0],[1,1],[3,1],[5,0],[8,0],[4,0],[5,0]].map(([v,s])=>`<div class="b${s?' sel':''}" style="background:${PAL[v-1]}">${v}</div>`).join('')}<svg class="path"></svg></div>
+  <div style="height:26px"></div>
+  <div class="eq">${[4,2,1,3].map((v,i)=>`${i?'<span>+</span>':''}<i style="background:${PAL[v-1]}">${v}</i>`).join('')}<span>= 10</span></div>
+  <div class="spacer"></div>
+  <div class="btn-primary">Suivant</div>
+</div>`;
+requestAnimationFrame(() => {
+  const g = document.getElementById('demo'), s = g.querySelector('svg.path');
+  const W = g.clientWidth, H = g.clientHeight, cw = (W + 10) / 3, ch = (H + 10) / 4;
+  const xy = ([r, c]) => [c * cw + (cw - 10) / 2, r * ch + (ch - 10) / 2];
+  s.setAttribute('viewBox', `0 0 ${W} ${H}`); s.setAttribute('width', W); s.setAttribute('height', H);
+  const pts = [[1,0],[1,1],[2,0],[2,1]];
+  s.innerHTML = `<polyline points="${pts.map(p => xy(p).join(',')).join(' ')}" fill="none" stroke="#34312C" stroke-opacity=".55" stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const [hx, hy] = xy([2,1]);
+  g.insertAdjacentHTML('beforeend', `<div class="hand" style="left:${hx+8}px;top:${hy+10}px"></div>`);
+});
+</script>
+</body>
+</html>
