@@ -1,45 +1,47 @@
-TEN·GO — The zen puzzle that wakes up your brain
+Ten Go is the make 10 number puzzle: connect bubbles that add up to exactly 10 and watch the grid clear.
 
-One grid. One rule: connect bubbles that sum to 10.
-The longer the chain, the higher your score.
+Easy to learn, deep to master. Swipe across neighboring bubbles from 1 to 9: 3+7, 2+5+3, 1+1+2+6… The longer the chain, the more it scores. Long chains make flowers bloom, and every flower is worth ×3.
 
-Anticipate. Think further. Master the grid.
-
-THE PIANO THAT BECOMES YOUR STRATEGY
-Each bubble is a note. Each chain becomes a unique melody. Your phone vibrates in sync with the music. You don't just play with your eyes — your fingers become the score.
+HOW TO PLAY
+• Draw a chain through adjacent bubbles
+• The sum must be exactly 10
+• Longer chains score far more points
+• Go for ×3 flowers and clear the grid for a perfect bonus
 
 FIVE WAYS TO PLAY
-• Free play — no timer, no limit: the heart of the game
-• Daily Challenge — one grid, the same for everyone
-• Rush — 60 seconds on the clock, if you want the pressure
-• Duel — challenge a friend on the exact same grid, each plays whenever
-• Puzzles — 20 grids with a guaranteed solution
+• Free play: no timer, at your own pace
+• Daily Challenge: the same grid for everyone
+• Rush: 60 seconds of pure mental math
+• Duel: challenge a friend on the exact same grid, each of you plays whenever you like
+• Puzzles: 20 grids to solve, each with a guaranteed solution
 
-THE MAIN MODE STAYS ZEN
-• No timer — Rush exists, it is never forced on you
-• No locked levels
-• No energy to recharge
-• Offline — only Duel needs a connection
+A REAL BRAIN GAME
+• The 10 notebook collects all 41 ways to make 10 as you play
+• "Your brain" tracks your quick eye, vision and foresight
+• Math, logic and strategy, with no pressure
 
-Five minutes between meetings or an hour of deep focus — TEN·GO adapts.
+PLAY YOUR WAY
+• No energy to refill, no locked levels
+• Works offline (only Duel needs a connection)
+• Five minutes on the bus or an hour of deep focus
+• Sound, vibration and visual effects adjustable in one tap
 
-CRYSTAL-CLEAR GAMEPLAY
-• Swipe across adjacent bubbles
-• The sum must be exactly 10
-• Longer chains score higher — substantially higher
-• Clear the whole grid for a perfect bonus
+WHY YOU'LL KEEP COMING BACK
+• Every grid is different: no two games are alike
+• Short games, perfect for a coffee break
+• A calm puzzle that trains your logic as much as your arithmetic
 
-PROGRESS YOUR OWN WAY
-• 100 experience levels and titles to earn
-• Daily missions and a day streak to keep alive
-• 26 achievements to unlock
-• A Profile screen gathering all your stats
+NEW IN 4.0
+• A bright, clear look, with bubble colors designed for colorblind players too
+• A playable tutorial that gets you going in seconds
+• Kalimba sounds and a soundscape that changes every game
+• Redesigned shop, profile and end-of-game screens
 
-WHY YOU'LL LOVE IT
-• Soothing pastel palette, easy on the eyes
-• Fluid animations, natural portrait mode
-• Built-in tutorial — start in 30 seconds
-• Sound, haptics and tutorial adjustable in one tap
-• Global leaderboard via Game Center
+PROGRESS AND THEMES
+• 100 experience levels, daily missions and a day streak
+• 26 achievements and leaderboards with Google Play Games
+• Themes to collect: pastel, forest, ocean, night…
+
+If you love number games, logic puzzles and math puzzles, Ten Go is made for you: a sum 10 puzzle for curious minds, and for anyone who likes to make 10.
 
 Available in 10 languages.

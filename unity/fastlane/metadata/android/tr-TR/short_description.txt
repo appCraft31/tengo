@@ -1,0 +1,1 @@
+Toplamı 10 olan sayıları birleştir: rahatlatan bir sayı bulmaca ve zeka oyunu

@@ -1,45 +1,46 @@
-TEN·GO — El puzle zen que despierta tu cerebro
+Ten Go es el puzle de suma 10: une burbujas numeradas que sumen exactamente 10 y vacía el tablero.
 
-Una cuadrícula. Una regla: conecta burbujas que sumen 10.
-Cuanto más larga la cadena, más alta la puntuación.
+Fácil de aprender, difícil de dominar. Desliza el dedo por burbujas vecinas del 1 al 9: 3+7, 2+5+3, 1+1+2+6… Cuanto más larga es la cadena, más puntos da. Las cadenas largas hacen brotar flores que valen ×3.
 
-Anticipa. Piensa más allá. Domina la cuadrícula.
-
-EL PIANO QUE SE VUELVE ESTRATEGIA
-Cada burbuja es una nota. Cada cadena se convierte en una melodía única. El teléfono vibra al ritmo de la música. No juegas solo con los ojos — tus dedos se vuelven la partitura.
+CÓMO SE JUEGA
+• Traza una cadena de burbujas adyacentes
+• La suma debe dar 10, ni más ni menos
+• Las cadenas largas dan muchos más puntos
+• Busca las flores ×3 y vacía el tablero para el bonus perfecto
 
 CINCO FORMAS DE JUGAR
-• Partida libre — sin cronómetro, sin límite: el corazón del juego
-• Reto diario — una cuadrícula, la misma para todos
-• Rush — 60 segundos, si buscas tensión
-• Duelo — reta a un amigo en la misma cuadrícula, cada uno juega cuando quiere
-• Puzles — 20 cuadrículas con solución garantizada
+• Partida libre: sin reloj, a tu ritmo
+• Reto diario: el mismo tablero para todo el mundo
+• Rush: 60 segundos de cálculo mental puro
+• Duelo: reta a un amigo en exactamente el mismo tablero, cada uno juega cuando quiere
+• Puzles: 20 tableros con solución garantizada
 
-EL MODO PRINCIPAL SIGUE SIENDO ZEN
-• Sin cronómetro — Rush existe, nunca se impone
-• Sin niveles bloqueados
-• Sin energía que recargar
-• Sin conexión — solo el Duelo la necesita
+UN ENTRENAMIENTO MENTAL DE VERDAD
+• El cuaderno del 10 reúne las 41 formas de sumar 10 mientras juegas
+• «Tu cerebro» sigue tu golpe de vista, tu visión y tu anticipación
+• Cálculo mental, lógica y estrategia, sin presión
 
-Cinco minutos entre reuniones o una hora de concentración profunda — TEN·GO se adapta.
+A TU RITMO
+• Sin energía que recargar ni niveles bloqueados
+• Funciona sin conexión (solo el Duelo la necesita)
+• Cinco minutos en el metro o una hora de concentración
 
-JUGABILIDAD NÍTIDA
-• Desliza el dedo por burbujas vecinas
-• La suma debe ser exactamente 10
-• Las cadenas largas puntúan más — bastante más
-• Vacía toda la cuadrícula para el bono perfecto
+POR QUÉ ENGANCHA
+• Cada tablero es distinto: no hay dos partidas iguales
+• Partidas cortas, perfectas para un descanso
+• Un puzle tranquilo que entrena la lógica tanto como el cálculo
 
-PROGRESA A TU MANERA
-• 100 niveles de experiencia y títulos por conseguir
-• Misiones diarias y una racha de días consecutivos
-• 26 logros por desbloquear
-• Una pantalla de Perfil con todas tus estadísticas
+NOVEDADES DE LA 4.0
+• Un aspecto claro y legible, con colores de burbujas pensados también para daltónicos
+• Un tutorial jugable para empezar en segundos
+• Sonidos de kalimba y un ambiente que cambia en cada partida
+• Tienda, perfil y pantalla final totalmente renovados
 
-POR QUÉ TE VA A ENCANTAR
-• Paleta pastel relajante, agradable a la vista
-• Animaciones fluidas, modo vertical natural
-• Tutorial integrado — empieza en 30 segundos
-• Sonido, vibración y tutorial ajustables con un toque
-• Clasificación mundial vía Game Center
+PROGRESO Y TEMAS
+• 100 niveles de experiencia, misiones diarias y racha de días
+• 26 logros y clasificaciones con Google Play Juegos
+• Temas para coleccionar: pastel, bosque, océano, noche…
+
+¿Te gustan los juegos de números, los puzles de lógica y el cálculo mental? Ten Go está hecho para ti: un juego de números para mentes curiosas y para quien disfrute buscando la suma 10.
 
 Disponible en 10 idiomas.

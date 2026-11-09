@@ -1,0 +1,46 @@
+Ten Go là trò chơi ghép số 10: nối các bong bóng số có tổng đúng bằng 10 và dọn sạch bàn chơi.
+
+Dễ học, khó thành thạo. Vuốt ngón tay qua các bong bóng kề nhau từ 1 đến 9: 3+7, 2+5+3, 1+1+2+6… Chuỗi càng dài, điểm càng cao. Chuỗi dài làm hoa nở, và mỗi bông hoa có giá trị ×3.
+
+CÁCH CHƠI
+• Vẽ một chuỗi qua các bong bóng kề nhau
+• Tổng phải đúng bằng 10
+• Chuỗi dài cho nhiều điểm hơn hẳn
+• Săn hoa ×3 và dọn sạch bàn để nhận thưởng hoàn hảo
+
+NĂM CÁCH CHƠI
+• Chơi tự do: không tính giờ, theo nhịp của bạn
+• Thử thách hằng ngày: cùng một bàn chơi cho mọi người
+• Rush: 60 giây tính nhẩm thuần túy
+• Đấu tay đôi: thách đấu bạn bè trên cùng một bàn chơi, mỗi người chơi khi nào tùy thích
+• Câu đố: 20 bàn chơi chắc chắn có lời giải
+
+LUYỆN NÃO THỰC SỰ
+• Sổ tay số 10: 41 cách ghép số 10 được ghi lại khi bạn chơi
+• "Bộ não của bạn" theo dõi tốc độ nhìn, tầm nhìn và khả năng đoán trước
+• Tính nhẩm, logic và chiến thuật, không áp lực
+
+THEO NHỊP CỦA BẠN
+• Không có năng lượng phải chờ hồi, không có màn bị khóa
+• Chơi offline (chỉ Đấu tay đôi cần kết nối)
+• Năm phút trên xe buýt hay một giờ tập trung cao độ
+
+VÌ SAO BẠN SẼ QUAY LẠI
+• Mỗi bàn chơi đều khác: không có hai ván giống nhau
+• Ván chơi ngắn, hợp cho lúc nghỉ giải lao
+• Một trò chơi giải đố nhẹ nhàng, rèn cả tính toán lẫn logic
+
+MỚI TRONG BẢN 4.0
+• Giao diện sáng và dễ nhìn, màu bong bóng được chọn cả cho người mù màu
+• Hướng dẫn chơi thử để bắt đầu chỉ trong vài giây
+• Âm thanh kalimba và không khí thay đổi mỗi ván
+• Cửa hàng, hồ sơ và màn hình kết thúc được làm mới hoàn toàn
+
+TIẾN TRÌNH VÀ CHỦ ĐỀ
+• 100 cấp kinh nghiệm, nhiệm vụ hằng ngày và chuỗi ngày chơi
+• 26 thành tích và bảng xếp hạng trên Google Play Games
+• Chủ đề để sưu tầm: pastel, rừng, đại dương, đêm…
+
+Bạn thích trò chơi số, câu đố logic và tính nhẩm? Ten Go dành cho bạn: trò chơi giải đố số cho những bộ óc tò mò và cho ai thích ghép số 10.
+
+Giao diện trò chơi bằng tiếng Anh.

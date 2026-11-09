@@ -1,1 +1,1 @@
-Ten Go: Numeros e Logica
+Ten Go: Faça 10 com Números

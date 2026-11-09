@@ -1,45 +1,46 @@
-TEN·GO — O quebra-cabeça zen que desperta o seu cérebro
+Ten Go é o jogo de números em que tens de fazer 10: liga bolhas numeradas cuja soma dá exatamente 10 e esvazia o tabuleiro.
 
-Uma grade. Uma regra: conecte bolhas cuja soma dê 10.
-Quanto mais longa a corrente, maior a pontuação.
+Fácil de aprender, difícil de dominar. Desliza o dedo por bolhas vizinhas de 1 a 9: 3+7, 2+5+3, 1+1+2+6… Quanto mais longa a corrente, mais pontos vale. As correntes longas fazem desabrochar flores que valem ×3.
 
-Antecipe. Pense mais longe. Domine a grade.
+COMO SE JOGA
+• Traça uma corrente de bolhas adjacentes
+• A soma tem de dar 10, nem mais nem menos
+• As correntes longas valem muito mais pontos
+• Procura as flores ×3 e esvazia o tabuleiro para o bónus perfeito
 
-O PIANO QUE VIRA ESTRATÉGIA
-Cada bolha é uma nota. Cada corrente vira uma melodia única. O telefone vibra no ritmo da música. Você não joga só com os olhos — seus dedos viram a partitura.
+CINCO FORMAS DE JOGAR
+• Partida livre: sem cronómetro, ao teu ritmo
+• Desafio diário: o mesmo tabuleiro para toda a gente
+• Rush: 60 segundos de cálculo mental puro
+• Duelo: desafia um amigo exatamente no mesmo tabuleiro, cada um joga quando quiser
+• Quebra-cabeças: 20 tabuleiros com solução garantida
 
-CINCO MANEIRAS DE JOGAR
-• Partida livre — sem cronômetro, sem limite: o coração do jogo
-• Desafio do dia — uma grade, a mesma para todos
-• Rush — 60 segundos, se você quer tensão
-• Duelo — desafie um amigo na mesma grade, cada um joga quando quiser
-• Quebra-cabeças — 20 grades com solução garantida
+UM VERDADEIRO TREINO PARA O CÉREBRO
+• O caderno do 10 reúne as 41 formas de fazer 10 enquanto jogas
+• «O teu cérebro» acompanha o teu golpe de vista, a tua visão e a tua antecipação
+• Cálculo mental, lógica e estratégia, sem pressão
 
-O MODO PRINCIPAL CONTINUA ZEN
-• Sem cronômetro — o Rush existe, nunca é imposto
-• Sem níveis bloqueados
-• Sem energia para recarregar
-• Offline — só o Duelo precisa de conexão
+AO TEU RITMO
+• Sem energia para recarregar, sem níveis bloqueados
+• Funciona offline (só o Duelo precisa de ligação)
+• Cinco minutos no metro ou uma hora de concentração
 
-Cinco minutos entre reuniões ou uma hora de concentração profunda — TEN·GO se adapta.
+PORQUE VAIS VOLTAR
+• Cada tabuleiro é diferente: nunca há duas partidas iguais
+• Partidas curtas, perfeitas para uma pausa para café
+• Um quebra-cabeças calmo que treina a lógica tanto como as contas
 
-JOGABILIDADE LIMPA
-• Deslize o dedo por bolhas vizinhas
-• A soma deve dar exatamente 10
-• Correntes longas valem mais — bem mais
-• Esvazie a grade inteira para o bônus perfeito
+NOVIDADES DA 4.0
+• Um visual claro e legível, com cores de bolhas pensadas também para daltónicos
+• Um tutorial jogável para começar em segundos
+• Sons de kalimba e um ambiente que muda a cada partida
+• Loja, perfil e ecrã final totalmente redesenhados
 
-PROGRIDA DO SEU JEITO
-• 100 níveis de experiência e títulos a conquistar
-• Missões diárias e uma sequência de dias seguidos
-• 26 conquistas para desbloquear
-• Uma tela de Perfil reunindo todas as suas estatísticas
+PROGRESSO E TEMAS
+• 100 níveis de experiência, missões diárias e série de dias
+• 26 conquistas e tabelas de classificação com o Google Play Jogos
+• Temas para colecionar: pastel, floresta, oceano, noite…
 
-POR QUE VOCÊ VAI GOSTAR
-• Paleta pastel suave, agradável aos olhos
-• Animações fluidas, modo retrato natural
-• Tutorial integrado — comece em 30 segundos
-• Som, vibração e tutorial ajustáveis com um toque
-• Classificação mundial via Game Center
+Gostas de jogos de números, jogos de lógica e cálculo mental? O Ten Go foi feito para ti: um jogo de números para mentes curiosas e para quem gosta de fazer 10.
 
 Disponível em 10 idiomas.
