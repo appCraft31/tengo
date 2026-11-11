@@ -1,7 +1,0 @@
-Descubra o que suas partidas dizem sobre você.
-
-- Novo: "Seu cérebro". Seu progresso medido enquanto você joga (rapidez, visão, antecipação) e um caderno com todos os seus jeitos de fazer 10.
-- Novo: as sementes do dez. Faça sua semente crescer: quando ela floresce, coloca uma flor ×N na grade que multiplica suas cadeias.
-- Tela final renovada: continue, jogue de novo e veja seu novo jeito de fazer 10 num piscar de olhos.
-- Cadeias na diagonal ficaram mais fáceis de traçar.
-- Nova barra de abas e resposta tátil nos menus.

@@ -1,7 +1,0 @@
-See what your games say about you.
-
-- New: "Your brain". Your progress measured as you play (quick eye, vision, foresight) and a notebook of every way you've made 10.
-- New: seeds of ten. Grow your seed: once it blooms, it places a ×N flower on the grid that multiplies your chains.
-- Redesigned end screen: continue, replay and see your new way to make 10 at a glance.
-- Diagonal chains are easier to draw.
-- New tab bar and haptic feedback in the menus.

@@ -1,7 +1,0 @@
-Entdecke, was deine Partien über dich verraten.
-
-- Neu: „Dein Gehirn“. Deine Fortschritte, gemessen beim Spielen (Blick, Weitsicht, Vorausdenken), und ein Heft mit all deinen Wegen zur 10.
-- Neu: Zehner-Samen. Lass deinen Samen wachsen: Sobald er blüht, setzt er eine ×N-Blume aufs Raster, die deine Ketten vervielfacht.
-- Neuer Endbildschirm: weiterspielen, neu starten und deinen neuen Weg zur 10 auf einen Blick sehen.
-- Diagonale Ketten lassen sich leichter ziehen.
-- Neue Tab-Leiste und haptisches Feedback in den Menüs.

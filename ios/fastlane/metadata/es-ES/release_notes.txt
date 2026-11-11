@@ -1,7 +1,0 @@
-Descubre lo que tus partidas dicen de ti.
-
-- Nuevo: «Tu cerebro». Tu progreso medido mientras juegas (rapidez, visión, anticipación) y un cuaderno con todas tus formas de sumar 10.
-- Nuevo: las semillas del diez. Haz crecer tu semilla: cuando florece, coloca una flor ×N en la cuadrícula que multiplica tus cadenas.
-- Pantalla final renovada: continúa, vuelve a jugar y ve de un vistazo tu nueva forma de sumar 10.
-- Las cadenas en diagonal se trazan más fácilmente.
-- Nueva barra de pestañas y respuesta háptica en los menús.

@@ -1,7 +1,0 @@
-Ontdek wat je potjes over jou zeggen.
-
-- Nieuw: 'Je brein'. Je vooruitgang gemeten tijdens het spelen (snelheid, overzicht, vooruitzien) en een notitieboek met al je manieren om 10 te maken.
-- Nieuw: tienzaadjes. Laat je zaadje groeien: zodra het bloeit, zet het een ×N-bloem op het raster die je ketens vermenigvuldigt.
-- Vernieuwd eindscherm: doorgaan, opnieuw spelen en je nieuwe manier om 10 te maken in één oogopslag.
-- Diagonale ketens trek je makkelijker.
-- Nieuwe tabbalk en haptische feedback in de menu's.
