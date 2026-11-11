@@ -10,7 +10,7 @@ namespace TenGo.Tests
     /// Icônes vectorielles : tracés embarqués identiques aux SVG iOS, lecture correcte.
     public class IconTests
     {
-        static string IosAssets => Path.GetFullPath(Path.Combine(Application.dataPath, "../../ios/tenGO/Assets.xcassets"));
+        static string IosAssets => Path.GetFullPath(Path.Combine(Application.dataPath, "../../../../Archives/tenGO/ios/tenGO/Assets.xcassets"));
 
         [Test]
         public void EmbeddedSvgMatchIosCatalog()

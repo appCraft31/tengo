@@ -12,14 +12,14 @@ namespace TenGo.Editor
     /// Identifiant `com.appcraft31.tengo`, version et versionCode de
     /// `ProjectSetup`, IL2CPP ARM64, build non développement, symboles natifs
     /// inclus dans le bundle. Signé avec la clé d'upload de l'app native
-    /// (`../android/tengo-upload.jks`), dont les mots de passe sont lus dans
-    /// `../android/keystore.properties` au moment du build, gardés en mémoire
+    /// (`config/tengo-upload.jks`), dont les mots de passe sont lus dans
+    /// `config/keystore.properties` au moment du build, gardés en mémoire
     /// seulement et effacés des réglages à la fin (rien ne doit finir dans
     /// ProjectSettings.asset ni dans le dépôt).
     public static class BuildAndroidRelease
     {
         public static readonly string Output = $"Builds/Android/tengo-{ProjectSetup.Version}-{ProjectSetup.AndroidVersionCode}.aab";
-        const string KeystoreProperties = "../android/keystore.properties";
+        const string KeystoreProperties = "config/keystore.properties";
 
         public static void Run()
         {
@@ -75,10 +75,10 @@ namespace TenGo.Editor
         struct Signing { public string storeFile, storePassword, keyAlias, keyPassword; }
 
         /// Lit keystore.properties (clé=valeur) ; le chemin du keystore est
-        /// résolu depuis le dossier `../android` s'il est relatif.
+        /// résolu depuis le dossier `config` s'il est relatif.
         static Signing ReadSigning()
         {
-            string androidDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "..", "android"));
+            string androidDir = Path.GetFullPath(Path.Combine(Directory.GetCurrentDirectory(), "config"));
             string file = Path.GetFullPath(KeystoreProperties);
             if (!File.Exists(file)) throw new System.Exception("keystore.properties introuvable dans " + androidDir);
             var values = new Dictionary<string, string>();

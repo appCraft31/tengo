@@ -35,7 +35,7 @@ namespace TenGo.Editor
             CopyAppIcon(root);
         }
 
-        const string NativeAppIcon = "../ios/tenGO/Assets.xcassets/AppIcon.appiconset";
+        const string NativeAppIcon = "BuildAssets/iOS/AppIcon.appiconset";
 
         /// Icône de l'app iOS 3.3.0 (1024 × 1024 unique, clair, sombre et teinté) à
         /// la place des icônes par défaut d'Unity : sans elle, App Store Connect

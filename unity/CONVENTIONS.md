@@ -1,13 +1,13 @@
 # Conventions du portage Swift/SpriteKit → C#/Unity
 
-La référence est le jeu iOS `../ios/tenGO/` (3.3.0, build 282). Le portage Android `../android/` (Kotlin) est une seconde référence, déjà vérifiée contre l'iOS : sa logique pure (`core-game`, `app/.../progression`, `economy`, `game/GameEndCoordinator`) et ses tests JUnit servent de point de départ.
+La référence est le jeu iOS `~/StudioProjects/Archives/tenGO/ios/tenGO/` (3.3.0, build 282). Le portage Android `~/StudioProjects/Archives/tenGO/android/` (Kotlin) est une seconde référence, déjà vérifiée contre l'iOS : sa logique pure (`core-game`, `app/.../progression`, `economy`, `game/GameEndCoordinator`) et ses tests JUnit servent de point de départ.
 
 ## Ce qui doit être identique au bit près
 
 - **Aléatoire** : `SeededGenerator` (SplitMix64), `next(upperBound:)` de Lemire, `shuffle` (Fisher-Yates) et `randomElement` de Swift.
 - **Génération** : grilles, validation par `GridValidator`, défi du jour (bascule à 5 h, twist, difficulté) et catalogue des puzzles.
 
-Sans ça, un duel ou un défi du jour donnerait une grille différente selon la plateforme. Vérification par les vecteurs de `../ios/tools/rng_vectors` et les tests `SwiftRngParityTest` et `DailyChallengeTest.dailyGridMatchesIos`.
+Sans ça, un duel ou un défi du jour donnerait une grille différente selon la plateforme. Vérification par les vecteurs de `~/StudioProjects/Archives/tenGO/ios/tools/rng_vectors` et les tests `SwiftRngParityTest` et `DailyChallengeTest.dailyGridMatchesIos`.
 
 - **Sauvegardes** : les clés et formats de `AppConfig.swift` (`tenGO_*`, `tengo_*`, `AdMob.*`) sont repris tels quels dans `ISaveStore`. Les données des apps natives sont importées au premier lancement (étape 3).
 - **Analytics** : mêmes noms d'événements et de paramètres que `AnalyticsService.swift` et `AnalyticsService.kt`.

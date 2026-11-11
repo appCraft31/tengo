@@ -2,7 +2,7 @@
 """Génère Assets/Resources/Localization/strings.json depuis le catalogue iOS.
 
 Usage (depuis unity/) :
-  python3 -I Tools/i18n/gen_strings.py ../ios/tenGO/Localizable.xcstrings Assets/Resources/Localization/strings.json
+  python3 -I Tools/i18n/gen_strings.py ../../../Archives/tenGO/ios/tenGO/Localizable.xcstrings Assets/Resources/Localization/strings.json
 
 Format de sortie : {"languages": [...], "strings": {clé: {langue: texte}}}.
 Les formats Swift sont convertis pour `string.Format` de C# :

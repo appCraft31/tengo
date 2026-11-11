@@ -1,32 +1,21 @@
-# tenGO — monorepo iOS + Android
+# tenGO — Unity
 
-Jeu de puzzle mobile (chemins de bulles dont la somme fait 10). Le dépôt est organisé par plateforme :
+Jeu de puzzle mobile (chemins de bulles dont la somme fait 10). Depuis la 4.0.0, une seule base Unity
+pour iOS et Android.
 
-- **`ios/`** — projet iOS d'origine (Swift + SpriteKit), **référence fonctionnelle et visuelle**.
-  Workspace : `ios/tenGO.xcworkspace`, code dans `ios/tenGO/`, Fastlane iOS dans `ios/fastlane/`,
-  docs iOS dans `ios/docs/`.
-- **`android/`** — portage Kotlin/Jetpack Compose. ⚠️ **Dépôt git séparé (imbriqué)**, ignoré par
-  le repo parent : commits Android à faire depuis `android/`. Voir `android/CLAUDE.md`.
-- **`unity/`** — portage Unity 6 en cours (4.0.0), destiné à remplacer `ios/` et `android/` par une
-  seule base. Versionné dans le repo parent. Voir `unity/CLAUDE.md` et `unity/MIGRATION.md` ; toujours
-  passer par `unity/Tools/*.sh` (verrou Unity).
-- **`marketing/`** — assets communs (screenshots, icônes, visuels, fiches store, pubs).
+- **`unity/`** — le jeu (Unity 6). Voir `unity/CLAUDE.md`, `unity/README.md` et `unity/MIGRATION.md` ;
+  toujours passer par `unity/Tools/*.sh` (verrou Unity). Clés de signature et configs Firebase dans
+  `unity/config/` (ignoré par git).
+- **`marketing/`**, **`design/`** — assets communs (captures, icônes, visuels, fiches store, pubs, refonte).
+- **`firebase/`** — règles Firestore et leurs tests.
 
-## Commandes usuelles
+## Anciennes versions (archivées, lecture seule)
 
-```bash
-# iOS (depuis ios/)
-xcodebuild -workspace tenGO.xcworkspace -scheme tenGO -configuration Debug \
-  -destination 'generic/platform=iOS Simulator' build
-bundle exec fastlane <lane>          # Gemfile/Fastfile dans ios/
-
-# Android (depuis android/)
-./gradlew :core-game:test
-./gradlew :app:assembleDebug
-```
+- iOS Swift + SpriteKit 3.3.0 : `~/StudioProjects/Archives/tenGO/ios/`, et dans ce dépôt au tag
+  `archive/ios-swift-3.3.0` (`git show archive/ios-swift-3.3.0:ios/<chemin>`).
+- Android Kotlin + Compose : `~/StudioProjects/Archives/tenGO/android/` (dépôt git `appCraft31/tengo-android`,
+  tag `archive/android-kotlin`).
 
 ## Git
 
 - Branches : features sur `develop`, `main` = prod (avec validation).
-- Le repo parent ne versionne que `ios/`, `marketing/` et la config racine ; `android/` a son
-  propre historique.

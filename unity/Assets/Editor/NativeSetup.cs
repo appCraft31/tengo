@@ -91,7 +91,7 @@ namespace TenGo.Editor
 
     /// Avant chaque build Android ou iOS : symboles, identifiants AdMob et
     /// fichiers Firebase à jour (les fichiers Firebase ne sont jamais versionnés
-    /// dans unity/ : ils viennent de ../ios et ../android à chaque build).
+    /// dans unity/ : ils viennent de config/ à chaque build).
     public sealed class NativePreBuild : IPreprocessBuildWithReport
     {
         public int callbackOrder => -100;

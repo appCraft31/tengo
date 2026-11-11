@@ -14,7 +14,7 @@ namespace TenGo.Tests
     public class UnityStringsTests
     {
         static string Dir => Path.Combine(Application.dataPath, "Resources/Localization");
-        static string Xcstrings => Path.GetFullPath(Path.Combine(Application.dataPath, "../../ios/tenGO/Localizable.xcstrings"));
+        static string Xcstrings => Path.GetFullPath(Path.Combine(Application.dataPath, "../../../../Archives/tenGO/ios/tenGO/Localizable.xcstrings"));
 
         [Test]
         public void EveryKeyHasEveryLanguage()

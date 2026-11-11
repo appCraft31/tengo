@@ -6,15 +6,15 @@ namespace TenGo.Editor
 {
     /// Fichiers de configuration Firebase (projet tengo-b62b1), repris des
     /// apps natives — la même app Firebase, donc les mêmes données :
-    /// - `../ios/tenGO/GoogleService-Info.plist` → `Assets/GoogleService-Info.plist`
-    /// - `../android/app/google-services.json` → `Assets/google-services.json`
+    /// - `config/GoogleService-Info.plist` → `Assets/GoogleService-Info.plist`
+    /// - `config/google-services.json` → `Assets/google-services.json`
     /// Ignorés par git (unity/.gitignore, comme le module FirebaseApp.androidlib
     /// que le plugin en génère) : ne jamais les committer. Appelé par
     /// `NativeSetup.Apply` et avant chaque build (`NativePreBuild`).
     public static class FirebaseConfig
     {
-        public const string IosSource = "../ios/tenGO/GoogleService-Info.plist";
-        public const string AndroidSource = "../android/app/google-services.json";
+        public const string IosSource = "config/GoogleService-Info.plist";
+        public const string AndroidSource = "config/google-services.json";
         public const string IosDest = "Assets/GoogleService-Info.plist";
         public const string AndroidDest = "Assets/google-services.json";
 
