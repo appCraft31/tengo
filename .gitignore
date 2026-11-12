@@ -55,3 +55,7 @@ marketing/tiktok/capture/
 marketing/tiktok/sfx_render/build/
 marketing/tiktok/sfx_render/.gradle/
 marketing/tiktok/cta/.cta.html
+
+# Fichiers locaux (worktrees Claude, réglages perso, caches) : jamais versionnés
+.claude/settings.local.json
+.store-screenshots/
