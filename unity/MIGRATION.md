@@ -499,3 +499,20 @@ Sans humanisation et à gain final égal (0,70), render.py et le moteur C# coïn
 - `SynthTests` : throttle de 70 ms, humanisation bornée, arpège selon la chaîne, cloche à partir de 6, victoire, défaite, tok, coupure du son, vol de voix sans claquement, séquence type sans saturation et au niveau de l'ancien son.
 
 **À vérifier sur appareil** : écoute sur haut-parleur de téléphone (les graves de 175 Hz y passent mal, la lame et le clic portent la note), coût CPU des 12 voix à 48 kHz sur un appareil d'entrée de gamme.
+
+## Unity Ads en médiation (2026-11-20)
+
+Unity Ads passe par la médiation AdMob, en **enchères seulement** (Google ne permet plus de créer de placement en cascade depuis le 31/01/2026). Les adaptateurs sont déjà embarqués depuis l'étape 7 (`com.google.ads.mobile.mediation.unity` 3.22.0 : SDK Unity Ads 4.21.0, pod `GoogleMobileAdsMediationUnity`).
+
+- **Console Unity** : un projet par plateforme, avec AdMob comme partenaire de médiation.
+  - iOS : Game ID `800104462`, placements `BP_Interstitial_iOS` et `BP_Rewarded_iOS`.
+  - Android : Game ID `800368789`, placements `BP_Interstitial_Android` et `BP_Rewarded_Android`.
+- **Console AdMob** (faite le 2026-11-20) : Unity Ads (enchères) est mappé sur les 4 blocs de tenGO, dans les groupes partagés « interstitiel ios », « Recompense IOS », « liftoff android » et « Recompense Android ». Les blocs Android n'étaient dans aucun groupe : ils y ont été ajoutés. Les partenaires RGPD sont ajoutés automatiquement (réglage du compte). `app-ads.txt` contient déjà la ligne `unity.com`, et `SKAdNetworkIds.txt` l'identifiant d'Unity.
+- **Vidéo récompensée iOS au format « avec récompense ».** Unity Ads ne sert pas l'interstitiel récompensé utilisé depuis la 3.x sur iOS (bloc `2440159179`). Le nouveau bloc iOS « recompense v2 » (`7989844573`) remplace l'ancien, et `AdMobRewardedAds` charge un `RewardedAd` sur les deux plateformes. `ad_impression` envoie désormais `ad_format=rewarded` partout.
+- **Consentement transmis à Unity Ads** :
+  - Android : l'adaptateur relaie la chaîne TCF écrite par UMP, sans rien à ajouter ;
+  - iOS (ATT seul, donc sans chaîne TCF) : `AdMobSdk.Start` appelle `UnityAds.SetConsentMetaData("gdpr.consent" / "privacy.consent", personnalisé)` avant `MobileAds.Initialize`. Seul un ATT « autorisé » donne `true`.
+- **Reste à faire** :
+  - vérifier sur appareil avec l'Ad Inspector (source unique « Unity Ads (Bidding) ») et le mode test forcé dans la console Unity ;
+  - relier Liftoff aux blocs tenGO si on veut aussi ses enchères (son mappage est encore incomplet dans ces groupes) ;
+  - il n'existe pas encore de message « Réglementations des États américains » dans AdMob.

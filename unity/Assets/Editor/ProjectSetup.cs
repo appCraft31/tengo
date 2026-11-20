@@ -21,11 +21,11 @@ namespace TenGo.Editor
         /// Identifiants des apps en ligne : la version Unity les remplace.
         public const string AndroidId = "com.appcraft31.tengo";
         public const string IosId = "AppCraft31.tenGO";
-        public const string Version = "4.0.0";
+        public const string Version = "4.0.1";
         /// Dernières versions natives : Android 16 (3.3.0), iOS build 282.
         /// Android 17 = 4.0.0 avec les icônes par défaut d'Unity, remplacée par 18.
-        public const int AndroidVersionCode = 18;
-        public const int IosBuild = 283;
+        public const int AndroidVersionCode = 19;
+        public const int IosBuild = 284;
         public const string DemoScene = "Assets/Scenes/GlowDemo.unity";
         /// Graisses de Nunito (instances statiques de la police variable d'Android).
         public static readonly string[] FontWeights = { "Regular", "SemiBold", "Bold", "ExtraBold", "Black" };

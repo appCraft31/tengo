@@ -61,7 +61,17 @@ namespace TenGo.Tests
             var e = AnalyticsCatalog.AdImpression("rewarded_interstitial", "ca-app-pub-x/1", 12_345, "USD");
             Assert.AreEqual("ad_impression ad_platform=AdMob ad_source=AdMob ad_format=rewarded_interstitial ad_unit_name=ca-app-pub-x/1 value=0.012345 currency=USD",
                 e.ToString());
-            Assert.AreEqual("rewarded", AdUnits.RewardedFormat(false));
+            Assert.AreEqual("rewarded", AdUnits.RewardedFormat);
+        }
+
+        [Test]
+        public void RewardedUsesRewardedUnitsOnBothPlatforms()
+        {
+            // Unity Ads ne sert pas l'interstitiel récompensé : plus de bloc 2440159179.
+            Assert.AreEqual("ca-app-pub-4352408747876735/7989844573", AdUnits.Rewarded(true, false));
+            Assert.AreEqual("ca-app-pub-4352408747876735/7026785763", AdUnits.Rewarded(false, false));
+            Assert.AreEqual("ca-app-pub-3940256099942544/1712485313", AdUnits.Rewarded(true, true));
+            Assert.AreEqual("ca-app-pub-3940256099942544/5224354917", AdUnits.Rewarded(false, true));
         }
 
         [Test]

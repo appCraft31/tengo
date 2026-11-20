@@ -33,6 +33,14 @@ namespace TenGo.Services
             Personalized = personalized;
             // Les rappels du SDK arrivent sur ses fils : chacun est ramené sur
             // celui d'Unity par `MainThread.Run`.
+#if UNITY_IOS
+            // Unity Ads (médiation) ne lit pas l'ATT : sur iOS, sans formulaire
+            // UMP donc sans chaîne TCF, on lui transmet la même décision que
+            // pour AdMob (RGPD et lois des États américains). Sur Android,
+            // l'adaptateur relaie la chaîne TCF écrite par UMP.
+            GoogleMobileAds.Mediation.UnityAds.Api.UnityAds.SetConsentMetaData("gdpr.consent", personalized);
+            GoogleMobileAds.Mediation.UnityAds.Api.UnityAds.SetConsentMetaData("privacy.consent", personalized);
+#endif
             if (!personalized)
             {
                 var config = MobileAds.GetRequestConfiguration() ?? new RequestConfiguration();
@@ -151,18 +159,15 @@ namespace TenGo.Services
         }
     }
 
-    /// Vidéo récompensée AdMob (RewardedAdManager.swift, partie réseau) :
-    /// interstitiel récompensé sur iOS, récompensée sur Android. La récompense
-    /// est versée à la FERMETURE, pour que l'effet se joue sous les yeux du joueur.
+    /// Vidéo récompensée AdMob (RewardedAdManager.swift, partie réseau), au
+    /// format « avec récompense » sur les deux plateformes (servi aussi par
+    /// Unity Ads). La récompense est versée à la FERMETURE, pour que l'effet se
+    /// joue sous les yeux du joueur.
     public sealed class AdMobRewardedAds : IRewardedAds
     {
         readonly AdMobSdk _sdk;
         readonly IAnalytics _analytics;
-#if UNITY_IOS
-        RewardedInterstitialAd _ad;
-#else
         RewardedAd _ad;
-#endif
         bool _loading;
 
         public AdMobRewardedAds(AdMobSdk sdk, IAnalytics analytics)
@@ -177,13 +182,9 @@ namespace TenGo.Services
         {
             if (!_sdk.Started || _loading || _ad != null) return;
             string unit = AdUnits.Rewarded(AdMobSdk.IsIos, AdMobSdk.UseTestAds);
-            string format = AdUnits.RewardedFormat(AdMobSdk.IsIos);
+            string format = AdUnits.RewardedFormat;
             _loading = true;
-#if UNITY_IOS
-            RewardedInterstitialAd.Load(unit, _sdk.NewRequest(), (ad, error) => MainThread.Run(() =>
-#else
             RewardedAd.Load(unit, _sdk.NewRequest(), (ad, error) => MainThread.Run(() =>
-#endif
             {
                 _loading = false;
                 if (error != null || ad == null)
