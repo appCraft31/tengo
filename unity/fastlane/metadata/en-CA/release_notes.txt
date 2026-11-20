@@ -1,4 +1,2 @@
-• A fresh look: clearer, easier to read, with bubble colours designed to work for colourblind players too.
-• A playable tutorial to get you started, with a welcome gift at the end.
-• New sounds: a kalimba and a soundscape that changes every game.
-• Redesigned shop, profile and end-of-game screens.
+• Rewarded videos are available more often, so you can earn hints and second chances.
+• Bug fixes and stability improvements.

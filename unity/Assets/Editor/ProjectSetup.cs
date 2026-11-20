@@ -25,7 +25,7 @@ namespace TenGo.Editor
         /// Dernières versions natives : Android 16 (3.3.0), iOS build 282.
         /// Android 17 = 4.0.0 avec les icônes par défaut d'Unity, remplacée par 18.
         public const int AndroidVersionCode = 19;
-        public const int IosBuild = 283;
+        public const int IosBuild = 284;
         public const string DemoScene = "Assets/Scenes/GlowDemo.unity";
         /// Graisses de Nunito (instances statiques de la police variable d'Android).
         public static readonly string[] FontWeights = { "Regular", "SemiBold", "Bold", "ExtraBold", "Black" };

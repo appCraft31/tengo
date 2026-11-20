@@ -1,4 +1,2 @@
-• Nouveau look : un jeu plus clair et plus lisible, avec des couleurs de bulles pensées aussi pour les daltoniens.
-• Un tutoriel jouable pour bien démarrer, et un cadeau de bienvenue à la clé.
-• De nouveaux sons : kalimba et ambiance qui change à chaque partie.
-• Boutique, profil et écran de fin entièrement repensés.
+• Vidéos récompensées plus souvent disponibles pour gagner indices et seconde chance.
+• Corrections et améliorations de stabilité.
